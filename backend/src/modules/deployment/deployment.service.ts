@@ -1,0 +1,321 @@
+/**
+ * deployment.service.ts — Deployment pipeline (10 steps)
+ *
+ * Step  1 — enqueue:    create pending DB row, push to FIFO deployQueue
+ * Step  2 — validate:   repo exists, user owns it, check auto_deploy_enabled
+ * Step  3 — checkout:   git --work-tree /tmp/build/{user}/{depId} checkout HEAD --
+ * Step  4 — detect:     Strategy Pattern (Vite / CRA / Static)
+ * Step  5 — build:      run framework build command
+ * Step  6 — upload:     parallel upload to Supabase Storage (deployments bucket)
+ * Step  7 — DB update:  markSuccess → DB trigger atomically swaps active_deployment_id
+ * Step  8 — history:    update commit_sha + commit_message on the deployment row
+ * Step  9 — cleanup:    fs.rmSync /tmp/build/{user}/{depId}
+ * Step 10 — emit:       observer events via logger + deployQueue EventEmitter
+ *
+ * FAILURE RULE (enforced here AND at DB trigger level):
+ *   Any error → markFailed (NOT markSuccess).
+ *   active_deployment_id is NEVER updated on a failed deployment.
+ *
+ * Architecture: Service Layer + Strategy Pattern + Observer + FIFO Queue
+ */
+
+import path       from 'path';
+import fs         from 'fs';
+import { execFileSync } from 'child_process';
+import { DeploymentRepository, LogRepository }   from './deployment.repository';
+import { RepoRepository }                        from '../repos/repo.repository';
+import { RepoFactory }                           from '../repos/repo.service';
+import { StorageService }                        from '../../lib/storage.service';
+import { deployQueue, QueueJob }                 from '../../lib/deployQueue';
+import { deployEvents }                          from '../../lib/deployEvents';
+import { logger }                                from '../../lib/logger';
+import { createError }                           from '../../middleware/errorHandler';
+import { AuthRepository }                        from '../auth/auth.repository';
+import { detectStrategy }                        from './strategies';
+import { bustDeploymentCache }                   from '../../lib/cacheBust';
+
+// ── Constants ─────────────────────────────────────────────────────────────────
+
+/** Ephemeral build workspaces live under /tmp/build */
+const BUILD_ROOT = '/tmp/build';
+
+
+
+// ── Log helper ────────────────────────────────────────────────────────────────
+
+function makeLog(deploymentId: string, repoId: string, userId: string) {
+  return async (text: string): Promise<void> => {
+    // Parse "[STEP] message" format used throughout the pipeline
+    const stepMatch = text.match(/^\[([A-Z:_]+)\]\s*(.*)$/);
+    const step      = stepMatch ? stepMatch[1].toLowerCase() : 'info';
+
+    logger.info(`[pipeline:${deploymentId.slice(0, 8)}] ${text}`, {
+      userId, repoId, deploymentId,
+    });
+
+    // Emit deploy:step event → subscribers broadcast via Realtime + persist to DB
+    deployEvents.step(deploymentId, repoId, userId, step, text);
+
+    // Direct DB persistence (fallback — logSubscribers also do this)
+    await LogRepository.append(deploymentId, repoId, userId, text).catch(() => undefined);
+  };
+}
+
+// ── Pipeline step implementations ─────────────────────────────────────────────
+
+/**
+ * Step 3 — Checkout using git --work-tree.
+ *
+ * For a bare repo, the canonical way to extract a working tree is:
+ *   git --git-dir={repo.git} --work-tree={dest} checkout HEAD --
+ *
+ * This is safer than `git archive | tar` because:
+ *   - Respects .gitattributes (line endings, filters)
+ *   - No extra tar process required
+ *   - Works identically on Railway (Linux)
+ */
+function stepCheckout(
+  repoPath: string,
+  workDir: string
+): void {
+  fs.mkdirSync(workDir, { recursive: true });
+
+  execFileSync(
+    'git',
+    [
+      `--git-dir=${repoPath}`,
+      `--work-tree=${workDir}`,
+      'checkout',
+      'HEAD',
+      '--',   // end of options
+    ],
+    {
+      stdio: 'pipe',
+      timeout: 60_000,
+    }
+  );
+}
+
+/**
+ * Step 3b — Read commit info from the bare repo HEAD.
+ */
+function getCommitInfo(repoPath: string): { sha: string; message: string } {
+  try {
+    const sha = execFileSync(
+      'git', ['--git-dir', repoPath, 'rev-parse', 'HEAD'],
+      { encoding: 'utf8', timeout: 5_000 }
+    ).trim();
+    const message = execFileSync(
+      'git', ['--git-dir', repoPath, 'log', '-1', '--pretty=%s'],
+      { encoding: 'utf8', timeout: 5_000 }
+    ).trim();
+    return { sha, message };
+  } catch {
+    return { sha: 'unknown', message: '' };
+  }
+}
+
+
+// ── Main pipeline (runs as a QueueJob thunk) ──────────────────────────────────
+
+async function runPipeline(
+  deploymentId: string,
+  repoId:       string,
+  userId:       string,
+  username:     string,
+  repoName:     string
+): Promise<void> {
+  const startMs = Date.now();
+  const workDir = path.join(BUILD_ROOT, username, deploymentId);
+  const log     = makeLog(deploymentId, repoId, userId);
+
+  try {
+
+    // ── Step 2: validate ───────────────────────────────────────────────────────
+    await log('[validate] Checking repository and auto_deploy status');
+    const repo = await RepoRepository.findById(repoId);
+
+    if (!repo || repo.owner_id !== userId) {
+      throw createError(403, 'Repository not found or access denied');
+    }
+
+    // First-time push: auto_deploy_enabled is still false.
+    // We allow it — the DB trigger will flip the flag on first success.
+    // All subsequent hooks-triggered deploys will arrive with flag = true.
+    // Manual API calls (POST /api/repos/:name/deploy) are ALWAYS allowed.
+    if (!RepoFactory.exists(username, repoName)) {
+      throw createError(422, 'Git repository does not exist on server filesystem');
+    }
+
+    await log(`[validate] OK — auto_deploy_enabled=${repo.auto_deploy_enabled}`);
+
+    // ── Step 3: mark building + checkout ──────────────────────────────────────
+    await DeploymentRepository.markBuilding(deploymentId);
+    await log(`[checkout] git --work-tree=${workDir} checkout HEAD --`);
+
+    const repoPath = RepoFactory.repoPath(username, repoName);
+    stepCheckout(repoPath, workDir);
+
+    const { sha, message } = getCommitInfo(repoPath);
+    await log(`[checkout] commit=${sha.slice(0, 8)} "${message}"`);
+
+    // Persist commit info into the deployment row (mutable fields during build)
+    await DeploymentRepository.updateCommitInfo(deploymentId, sha, message);
+
+    // ── Step 4: detect strategy ────────────────────────────────────────────────
+    await log('[detect] Inspecting source tree');
+    const strategy = detectStrategy(workDir);
+    await log(`[detect] Strategy selected: ${strategy.name}`);
+
+    // ── Step 5: build ──────────────────────────────────────────────────────────
+    await log(`[build] Running ${strategy.name} build`);
+    const outputDir = await strategy.build(workDir, log);
+    await log(`[build] Output directory: ${outputDir}`);
+
+    // ── Step 6: upload via StorageService ─────────────────────────────────────
+    const storagePath = await StorageService.upload(outputDir, username, deploymentId, log);
+
+    // ── Step 7: DB update → triggers atomic active_deployment_id swap ──────────
+    const durationMs = Date.now() - startMs;
+    await log('[db] Marking success + swapping active_deployment_id pointer');
+    await DeploymentRepository.markSuccess(deploymentId, durationMs, storagePath);
+
+    // ── Step 8: history already written; prune old Storage folders ─────────────
+    await log(`[history] Deployment ${deploymentId.slice(0, 8)} recorded (${durationMs}ms)`);
+
+    // Prune old deployment folders in Supabase Storage (keep last 5)
+    const recentIds = await DeploymentRepository.findSuccessfulDepIds(repoId);
+    StorageService.pruneOldDeployments(username, recentIds).catch((err: unknown) =>
+      logger.warn(`[pipeline] Prune failed (non-blocking): ${String(err)}`)
+    );
+
+    // ── Step 10: emit deploy:success event (Observer) ──────────────────────────
+    deployEvents.success({
+      deploymentId,
+      repoId,
+      userId,
+      username,
+      repoName,
+      durationMs,
+      storagePath,
+      commitSha: sha,
+    });
+
+    // ── Step 11: bust Vercel edge cache so new deployment is live immediately ──
+    bustDeploymentCache(username).catch(() =>
+      logger.warn('[pipeline] Cache bust fire-and-forget failed (non-critical)')
+    );
+
+  } catch (pipelineErr) {
+
+    // ── FAILURE RULE —————————————————————————————————————————————————————————
+    // markFailed NEVER touches active_deployment_id.
+    // The DB trigger (trg_auto_deploy_on_success) only fires on status='success'.
+    const durationMs = Date.now() - startMs;
+    await DeploymentRepository.markFailed(deploymentId, durationMs).catch(() => undefined);
+    await log(`[failed] ${String(pipelineErr)}`).catch(() => undefined);
+
+    // ── Step 10: emit deploy:failed event (Observer) ──────────────────────────
+    deployEvents.failed({
+      deploymentId,
+      repoId,
+      userId,
+      username,
+      repoName,
+      durationMs,
+      error: String(pipelineErr),
+    });
+
+    throw pipelineErr; // re-throw → deployQueue.emit('failed', job, err)
+
+  } finally {
+
+    // ── Step 9: cleanup — always, even on failure ──────────────────────────────
+    try {
+      fs.rmSync(workDir, { recursive: true, force: true });
+      await log('[cleanup] Workspace removed').catch(() => undefined);
+    } catch (cleanErr) {
+      logger.warn(`[pipeline] Cleanup failed for ${workDir}: ${String(cleanErr)}`);
+    }
+
+  }
+}
+
+// ── DeploymentService (public API) ────────────────────────────────────────────
+
+export const DeploymentService = {
+
+  /**
+   * Step 1 — ENQUEUE
+   * Creates a 'pending' deployment row in DB, then pushes to FIFO queue.
+   * Returns immediately with { deploymentId }.
+   */
+  async enqueue(userId: string, repoId: string): Promise<{ deploymentId: string }> {
+    const user = await AuthRepository.findById(userId);
+    if (!user) throw createError(404, 'User not found');
+
+    const repo = await RepoRepository.findById(repoId);
+    if (!repo)                  throw createError(404, 'Repository not found');
+    if (repo.owner_id !== userId) throw createError(403, 'Access denied');
+
+    // Create the pending row — pipeline will transition it through building → success|failed
+    const deployment = await DeploymentRepository.create({
+      repo_id: repoId,
+      user_id: userId,
+    });
+
+    const job: QueueJob = {
+      id:          deployment.id,
+      userId,
+      repoId,
+      enqueuedAt:  new Date(),
+      thunk: ()  => runPipeline(deployment.id, repoId, userId, user.username, repo.name),
+    };
+
+    // Step 1b: emit deploy:start → logSubscribers open Realtime channel
+    deployEvents.start({
+      deploymentId: deployment.id,
+      repoId,
+      userId,
+      username:    user.username,
+      repoName:    repo.name,
+      enqueuedAt:  job.enqueuedAt,
+    });
+
+    deployQueue.enqueue(job);
+
+    return { deploymentId: deployment.id };
+  },
+
+  /** List all deployments for a repo (ownership check). */
+  async listForRepo(userId: string, repoId: string) {
+    const repo = await RepoRepository.findById(repoId);
+    if (!repo)                  throw createError(404, 'Repository not found');
+    if (repo.owner_id !== userId) throw createError(403, 'Access denied');
+    return DeploymentRepository.findAllByRepo(repoId);
+  },
+
+  /** Get a single deployment (ownership check via repo). */
+  async getOne(userId: string, deploymentId: string) {
+    const dep = await DeploymentRepository.findById(deploymentId);
+    if (!dep) throw createError(404, 'Deployment not found');
+    const repo = await RepoRepository.findById(dep.repo_id);
+    if (!repo || repo.owner_id !== userId) throw createError(403, 'Access denied');
+    return dep;
+  },
+
+  /** Get logs for a deployment (ownership check). */
+  async getLogs(userId: string, deploymentId: string) {
+    const dep = await DeploymentRepository.findById(deploymentId);
+    if (!dep) throw createError(404, 'Deployment not found');
+    const repo = await RepoRepository.findById(dep.repo_id);
+    if (!repo || repo.owner_id !== userId) throw createError(403, 'Access denied');
+    return LogRepository.findByDeployment(deploymentId);
+  },
+
+  /** Queue depth for monitoring. */
+  queueDepth(): number { return deployQueue.depth; },
+};
+
+
+
