@@ -67,7 +67,7 @@ function makeLog(deploymentId: string, repoId: string, userId: string) {
  * Step 3 — Checkout using git --work-tree.
  *
  * For a bare repo, the canonical way to extract a working tree is:
- *   git --git-dir={repo.git} --work-tree={dest} checkout HEAD --
+ *   git --git-dir={repo.git} --work-tree={dest} checkout -f HEAD -- .
  *
  * This is safer than `git archive | tar` because:
  *   - Respects .gitattributes (line endings, filters)
@@ -86,8 +86,10 @@ function stepCheckout(
       `--git-dir=${repoPath}`,
       `--work-tree=${workDir}`,
       'checkout',
+      '-f',
       'HEAD',
       '--',   // end of options
+      '.'
     ],
     {
       stdio: 'pipe',
@@ -151,7 +153,7 @@ async function runPipeline(
 
     // ── Step 3: mark building + checkout ──────────────────────────────────────
     await DeploymentRepository.markBuilding(deploymentId);
-    await log(`[checkout] git --work-tree=${workDir} checkout HEAD --`);
+    await log(`[checkout] git --work-tree=${workDir} checkout -f HEAD -- .`);
 
     const repoPath = RepoFactory.repoPath(username, repoName);
     stepCheckout(repoPath, workDir);
@@ -180,12 +182,20 @@ async function runPipeline(
     await log('[db] Marking success + swapping active_deployment_id pointer');
     await DeploymentRepository.markSuccess(deploymentId, durationMs, storagePath);
 
+    // Atomically swap the live-site pointer + enable auto-deploy for future pushes
+    await RepoRepository.setActiveDeployment(repoId, deploymentId);
+    await log(`[db] active_deployment_id → ${deploymentId.slice(0, 8)}, auto_deploy_enabled → true`);
+
     // ── Step 8: history already written; prune old Storage folders ─────────────
     await log(`[history] Deployment ${deploymentId.slice(0, 8)} recorded (${durationMs}ms)`);
 
-    // Prune old deployment folders in Supabase Storage (keep last 5)
+    // Prune old deployment folders in Supabase Storage (keep last 5).
+    // Re-read the repo row to get the authoritative active_deployment_id after
+    // the DB trigger has fired.  Pass it so pruning never deletes the live folder.
     const recentIds = await DeploymentRepository.findSuccessfulDepIds(repoId);
-    StorageService.pruneOldDeployments(username, recentIds).catch((err: unknown) =>
+    const freshRepo = await RepoRepository.findById(repoId);
+    const activeId  = freshRepo?.active_deployment_id ?? deploymentId;
+    StorageService.pruneOldDeployments(username, recentIds, activeId).catch((err: unknown) =>
       logger.warn(`[pipeline] Prune failed (non-blocking): ${String(err)}`)
     );
 
@@ -214,6 +224,14 @@ async function runPipeline(
     const durationMs = Date.now() - startMs;
     await DeploymentRepository.markFailed(deploymentId, durationMs).catch(() => undefined);
     await log(`[failed] ${String(pipelineErr)}`).catch(() => undefined);
+
+    // ── Clean up any partial Supabase Storage upload ─────────────────────────
+    // Plan invariant: "Partial uploads to deployments/{user}/{depId}/ are deleted
+    // on failure." active_deployment_id is NOT updated so the live site is safe,
+    // but leftover objects would accumulate in storage if not pruned here.
+    StorageService.deleteDeployment(username, deploymentId).catch((err: unknown) =>
+      logger.warn(`[pipeline] Partial-upload cleanup failed (non-blocking): ${String(err)}`)
+    );
 
     // ── Step 10: emit deploy:failed event (Observer) ──────────────────────────
     deployEvents.failed({
@@ -315,6 +333,13 @@ export const DeploymentService = {
 
   /** Queue depth for monitoring. */
   queueDepth(): number { return deployQueue.depth; },
+
+  /** List deployments for a publicly viewable repo. */
+  async listPublicForRepo(repoId: string) {
+    const repo = await RepoRepository.findById(repoId);
+    if (!repo) throw createError(404, 'Repository not found');
+    return DeploymentRepository.findAllByRepo(repoId);
+  },
 };
 
 
