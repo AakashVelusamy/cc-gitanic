@@ -1,0 +1,71 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<?import javafx.scene.layout.BorderPane?>
+<?import javafx.scene.layout.VBox?>
+<?import javafx.scene.layout.HBox?>
+<?import javafx.scene.layout.StackPane?>
+<?import javafx.scene.layout.Region?>
+<?import javafx.scene.control.Label?>
+<?import javafx.scene.control.TextField?>
+<?import javafx.scene.control.PasswordField?>
+<?import javafx.scene.control.Button?>
+<?import javafx.scene.control.ProgressIndicator?>
+<?import javafx.scene.control.Separator?>
+<?import javafx.scene.image.ImageView?>
+<?import javafx.scene.image.Image?>
+<?import javafx.geometry.Insets?>
+
+<BorderPane xmlns="http://javafx.com/javafx/17"
+            xmlns:fx="http://javafx.com/fxml/1"
+            fx:controller="com.gitanic.controllers.LoginController"
+            styleClass="screen-root">
+
+    <center>
+        <VBox alignment="CENTER" spacing="0" maxWidth="420">
+
+            <!-- ── Logo block ── -->
+            <VBox alignment="CENTER" spacing="6" styleClass="login-logo-block">
+                <ImageView fitWidth="48" fitHeight="48" preserveRatio="true">
+                    <image><Image url="@../images/logo.png"/></image>
+                </ImageView>
+            </VBox>
+
+            <!-- ── Card ── -->
+            <VBox spacing="14" styleClass="login-card">
+                <padding><Insets top="32" right="32" bottom="32" left="32"/></padding>
+
+                <Label text="USERNAME" styleClass="field-label"/>
+                <TextField fx:id="usernameField" maxWidth="Infinity"/>
+
+                <Label text="PASSWORD" styleClass="field-label"/>
+                <HBox spacing="8" alignment="CENTER_LEFT">
+                    <StackPane HBox.hgrow="ALWAYS">
+                        <PasswordField fx:id="passwordField" maxWidth="Infinity"/>
+                        <TextField fx:id="passwordVisibleField" maxWidth="Infinity" visible="false" managed="false"/>
+                    </StackPane>
+                    <Button fx:id="togglePasswordButton"
+                            text="👁"
+                            onAction="#onTogglePassword"
+                            styleClass="icon-button"
+                            focusTraversable="false"/>
+                </HBox>
+
+                <Button fx:id="loginButton"
+                        text="Sign In"
+                        onAction="#onLoginClicked"
+                        styleClass="primary-button,full-width-btn"
+                        maxWidth="Infinity">
+                    <VBox.margin><Insets top="4"/></VBox.margin>
+                </Button>
+
+                <!-- Loading -->
+                <HBox alignment="CENTER">
+                    <ProgressIndicator fx:id="loadingIndicator" maxWidth="22" maxHeight="22"/>
+                </HBox>
+
+                <Label fx:id="errorLabel" styleClass="error-label" wrapText="true" maxWidth="Infinity"/>
+            </VBox>
+
+        </VBox>
+    </center>
+
+</BorderPane>
