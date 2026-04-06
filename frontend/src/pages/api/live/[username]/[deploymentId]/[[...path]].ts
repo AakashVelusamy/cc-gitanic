@@ -42,6 +42,18 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     
     const relativePath = pathArr.length === 0 ? 'index.html' : pathArr.join('/');
 
+    // Ensure trailing slash for root requests so relative assets resolve properly
+    if (pathArr.length === 0 && req.url && !req.url.endsWith('/')) {
+        const queryParamsIndex = req.url.indexOf('?');
+        if (queryParamsIndex === -1) {
+            res.redirect(308, req.url + '/');
+            return;
+        } else {
+            res.redirect(308, req.url.substring(0, queryParamsIndex) + '/' + req.url.substring(queryParamsIndex));
+            return;
+        }
+    }
+
     const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
     const targetUrl = `${supabaseUrl}/storage/v1/object/public/deployments/${uname}/${depId}/${relativePath}`;
 
