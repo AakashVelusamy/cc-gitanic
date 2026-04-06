@@ -33,9 +33,9 @@ const UPLOAD_CONCURRENCY = 5;
 /**
  * Number of recent deployment folders to keep in Supabase Storage.
  * Older folders are deleted after each successful deployment.
- * Range 3–5 per spec (default 5).
+ * Range 3–5 per spec (default 5). Now overridden to 1.
  */
-const KEEP_DEPLOYMENTS = 5;
+const KEEP_DEPLOYMENTS = 1;
 
 // ── StorageService ────────────────────────────────────────────────────────────
 
