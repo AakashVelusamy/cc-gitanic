@@ -366,7 +366,7 @@ public class WorkspaceController {
             HBox row = new HBox(6);
             row.setAlignment(Pos.CENTER_LEFT);
 
-            Label nameLabel = new Label(shortName(item.getPath()));
+            Label nameLabel = new Label(item.getPath());
             nameLabel.setStyle("-fx-text-fill:#f8fafc;-fx-font-size:12;");
             HBox.setHgrow(nameLabel, Priority.ALWAYS);
 
@@ -382,11 +382,6 @@ public class WorkspaceController {
             setGraphic(row);
             setText(null);
             setStyle("-fx-padding:3 8 3 12;");
-        }
-
-        private static String shortName(String path) {
-            int sep = Math.max(path.lastIndexOf('/'), path.lastIndexOf('\\'));
-            return sep >= 0 ? path.substring(sep + 1) : path;
         }
 
         private static FileStatus.Code displayCode(FileStatus fs) {
