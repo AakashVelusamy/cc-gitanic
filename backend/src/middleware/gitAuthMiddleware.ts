@@ -67,7 +67,7 @@ export async function gitAuthMiddleware(
   let user: UserRow | undefined;
   try {
     const rows = await query<UserRow>(
-      'SELECT id, username, password_hash FROM users WHERE username = $1',
+      'SELECT id, username, password_hash FROM users WHERE LOWER(username) = LOWER($1)',
       [credUsername]
     );
     user = rows[0];
@@ -90,10 +90,10 @@ export async function gitAuthMiddleware(
   }
 
   // ── URL ownership check ────────────────────────────────────────────────────
-  // The :username segment in the URL must match the authenticated user exactly.
+  // The :username segment in the URL must match the authenticated user exactly (case-insensitive).
   // This prevents user A from pushing to user B's repo.
   const urlUsername = req.params['username'] as string | undefined;
-  if (urlUsername && urlUsername !== user.username) {
+  if (urlUsername && urlUsername.toLowerCase() !== user.username.toLowerCase()) {
     logger.warn(`[gitAuth] User "${user.username}" attempted access to "${urlUsername}" repos`, {
       userId: user.id,
       meta: { urlUsername },
