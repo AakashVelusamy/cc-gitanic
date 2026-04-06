@@ -239,6 +239,12 @@ public final class GitCommandService {
         if (message == null || message.isBlank()) {
             throw new Exception("Commit message cannot be empty.");
         }
+        
+        // Auto-rename local master to main to align with server policy
+        if ("master".equals(getCurrentBranch(repoDir))) {
+            runSilent(repoDir, "branch", "-m", "master", "main");
+        }
+
         run(repoDir, "add", ".");
         run(repoDir, "commit", "-m", message);
     }
@@ -318,9 +324,8 @@ public final class GitCommandService {
             String currentRemote = getRemoteUrl(repoDir);
             try {
                 runSilent(repoDir, "remote", "set-url", "origin", authUrl);
-                // --set-upstream origin HEAD: works for both first push (no tracking branch)
-                // and subsequent pushes; HEAD pushes whatever branch is currently checked out
-                return run(repoDir, "push", "--set-upstream", "origin", "HEAD");
+                // Always push current HEAD to remote's main branch to trigger deployments
+                return run(repoDir, "push", "--set-upstream", "origin", "HEAD:main");
             } finally {
                 if (!currentRemote.isBlank()) {
                     String cleanUrl = stripCredentials(authUrl);
@@ -328,7 +333,7 @@ public final class GitCommandService {
                 }
             }
         }
-        return run(repoDir, "push", "--set-upstream", "origin", "HEAD");
+        return run(repoDir, "push", "--set-upstream", "origin", "HEAD:main");
     }
 
     // ================================================================
