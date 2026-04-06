@@ -122,6 +122,11 @@ export const RepoFactory = {
           timeout: 5_000,
         });
 
+      // Step 2 — install post-receive hook
+      const hooksDir   = path.join(tmpPath, 'hooks');
+      const hookPath   = path.join(hooksDir, 'post-receive');
+      const hookScript = buildPostReceiveHook(username, repoName);
+
       fs.writeFileSync(hookPath, hookScript, { encoding: 'utf8', mode: 0o755 });
 
       // Step 3 — atomic rename to final path
