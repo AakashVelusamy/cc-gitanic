@@ -87,7 +87,7 @@ export default function NewRepositoryPage() {
                     type="text"
                     value={name}
                     onChange={(e) =>
-                      setName(e.target.value.replaceAll(/[^a-zA-Z0-9._-]/g, ''))
+                      setName(e.target.value.replace(/[^a-zA-Z0-9._-]/g, ''))
                     }
                     
                     required

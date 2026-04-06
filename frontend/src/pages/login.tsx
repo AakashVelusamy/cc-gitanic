@@ -178,7 +178,7 @@ export default function LoginPage() {
                         autoComplete="one-time-code"
                         disabled={!otpSent}
                         value={otp}
-                        onChange={(e) => setOtp(e.target.value.replaceAll(/\D/g, '').slice(0, 6))}
+                        onChange={(e) => setOtp(e.target.value.replace(/\D/g, '').slice(0, 6))}
                         className={`${!otpSent ? disabledInputClass : inputClass} text-center text-xl tracking-[0.5em] font-mono`}
 
                       />

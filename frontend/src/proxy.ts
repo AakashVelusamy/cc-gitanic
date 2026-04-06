@@ -47,7 +47,7 @@ export async function proxy(req: NextRequest) {
 // -- Helpers -----------------------------------------------------------------
 
 function extractSubdomain(hostname: string, rootDomain: string): string | null {
-  const host = hostname.replaceAll(/:\d+$/, '');
+  const host = hostname.replace(/:\d+$/, '');
   if (host === rootDomain || host === `www.${rootDomain}`) return null;
   if (host.endsWith(`.${rootDomain}`)) {
     const sub = host.slice(0, host.length - rootDomain.length - 1);
