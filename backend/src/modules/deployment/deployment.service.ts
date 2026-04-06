@@ -55,7 +55,7 @@ function assertSafePath(resolvedPath: string, base: string): void {
 function makeLog(deploymentId: string, repoId: string, userId: string) {
   return async (text: string): Promise<void> => {
     // Parse "[step] message" — pipeline calls use lowercase step names
-    const stepMatch = text.match(/^\[([a-zA-Z0-9:_]+)\]\s*(.*)$/);
+    const stepMatch = /^\[([a-zA-Z0-9:_]+)\][ \t]*(.*)$/.exec(text);
     const step      = stepMatch ? stepMatch[1].toLowerCase() : 'info';
     const msgBody   = stepMatch ? stepMatch[2] : text;
 
