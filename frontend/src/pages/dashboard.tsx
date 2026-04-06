@@ -4,7 +4,7 @@ import { fetchApi, getToken } from '@/lib/api';
 import { routes } from '@/lib/routes';
 import { Navbar } from '@/components/navbar';
 import { useToast } from '@/contexts/toast-context';
-import { BookOpen, Search, PlusCircle, Activity, Clock } from 'lucide-react';
+import { BookOpen, Search, PlusCircle, Ship, Clock } from 'lucide-react';
 import Link from 'next/link';
 
 interface Repo {
@@ -54,7 +54,7 @@ export default function DashboardPage() {
       <div className="min-h-[calc(100vh-4.5rem)] bg-background flex flex-col">
         <Navbar />
         <div className="flex-1 flex items-center justify-center">
-            <Activity className="animate-pulse text-primary opacity-50" size={32} />
+            <Ship className="animate-bounce text-primary opacity-50" size={32} />
         </div>
       </div>
     );

@@ -5,7 +5,7 @@ import { routes } from '@/lib/routes';
 import { Navbar } from '@/components/navbar';
 import { useToast } from '@/contexts/toast-context';
 import { MarkdownContent } from '@/components/markdown-content';
-import { FileText, ChevronRight, Folder, Copy, Check, Download, ArrowLeft, Image as ImageIcon, FileCode, Binary } from 'lucide-react';
+import { FileText, ChevronRight, Folder, Copy, Check, Download, ArrowLeft, Image as ImageIcon, FileCode, Binary, Ship } from 'lucide-react';
 import Link from 'next/link';
 import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter';
 import { vscDarkPlus } from 'react-syntax-highlighter/dist/cjs/styles/prism';

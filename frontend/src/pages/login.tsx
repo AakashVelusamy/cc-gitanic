@@ -278,7 +278,7 @@ export default function LoginPage() {
                 className="w-full btn-primary py-3 flex justify-center items-center gap-2 text-lg disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 {loading ? (
-                  <div className="w-5 h-5 border-2 border-background/20 border-t-background rounded-full animate-spin"></div>
+                  <Ship className="animate-bounce" size={24} />
                 ) : isLogin ? (
                   'Sign In'
                 ) : step === 1 ? (

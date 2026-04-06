@@ -1,5 +1,5 @@
 import Link from 'next/link';
-import { Folder, FileText, ChevronRight, Clock } from 'lucide-react';
+import { Folder, FileText, ChevronRight, Clock, Ship } from 'lucide-react';
 import { routes } from '@/lib/routes';
 
 export interface TreeEntry {

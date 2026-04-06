@@ -6,7 +6,7 @@ import { Navbar } from '@/components/navbar';
 import { useToast } from '@/contexts/toast-context';
 import { FileBrowser, TreeEntry } from '@/components/file-browser';
 import { MarkdownContent } from '@/components/markdown-content';
-import { BookOpen, ShieldAlert, Terminal, Trash2, Rocket, Copy, Check, ExternalLink } from 'lucide-react';
+import { BookOpen, ShieldAlert, Terminal, Trash2, Rocket, Copy, Check, ExternalLink, Ship } from 'lucide-react';
 import Link from 'next/link';
 
 interface RepoData {

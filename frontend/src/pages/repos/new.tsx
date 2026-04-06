@@ -4,7 +4,7 @@ import { fetchApi, getCanonicalUsername, getToken, getTokenPayload } from '@/lib
 import { routes } from '@/lib/routes';
 import { Navbar } from '@/components/navbar';
 import { useToast } from '@/contexts/toast-context';
-import { PlusCircle } from 'lucide-react';
+import { PlusCircle, Ship } from 'lucide-react';
 
 interface Repo {
   id: string;
