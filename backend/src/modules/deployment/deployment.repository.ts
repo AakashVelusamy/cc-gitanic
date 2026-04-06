@@ -8,8 +8,7 @@
  * Architecture: Repository Pattern
  */
 
-import { query } from '../../lib/db';
-import { pool } from '../../lib/db';
+import { query, pool } from '../../lib/db';
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 

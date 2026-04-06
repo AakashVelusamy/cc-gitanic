@@ -45,18 +45,20 @@ const BUILD_ROOT = '/tmp/build';
 
 function makeLog(deploymentId: string, repoId: string, userId: string) {
   return async (text: string): Promise<void> => {
-    // Parse "[STEP] message" format used throughout the pipeline
-    const stepMatch = text.match(/^\[([A-Z:_]+)\]\s*(.*)$/);
+    // Parse "[step] message" — pipeline calls use lowercase step names
+    const stepMatch = text.match(/^\[([a-zA-Z0-9:_]+)\]\s*(.*)$/);
     const step      = stepMatch ? stepMatch[1].toLowerCase() : 'info';
+    const msgBody   = stepMatch ? stepMatch[2] : text;
 
     logger.info(`[pipeline:${deploymentId.slice(0, 8)}] ${text}`, {
       userId, repoId, deploymentId,
     });
 
-    // Emit deploy:step event → subscribers broadcast via Realtime + persist to DB
-    deployEvents.step(deploymentId, repoId, userId, step, text);
+    // Pass msgBody (without prefix) so deployEvents.step doesn't double-wrap it.
+    // DB stores original `text`; Realtime gets the cleanly formatted version.
+    deployEvents.step(deploymentId, repoId, userId, step, msgBody);
 
-    // Direct DB persistence (fallback — logSubscribers also do this)
+    // Direct DB persistence — raw text keeps the "[step] message" audit format
     await LogRepository.append(deploymentId, repoId, userId, text).catch(() => undefined);
   };
 }

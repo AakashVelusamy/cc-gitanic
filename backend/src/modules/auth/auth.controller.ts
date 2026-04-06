@@ -10,22 +10,34 @@ import { Request, Response, NextFunction } from 'express';
 import { AuthService } from './auth.service';
 
 export const AuthController = {
+  async requestOtp(req: Request, res: Response, next: NextFunction): Promise<void> {
+    try {
+      const { email } = req.body as { email?: string };
+      await AuthService.requestOtp(email ?? '');
+      res.status(200).json({ message: 'OTP sent to email' });
+    } catch (err) {
+      next(err);
+    }
+  },
+
   /**
    * POST /api/auth/register
    *
-   * Body:   { username: string, password: string }
-   * 201:    { id: uuid, username: string }
-   * 400:    validation error
-   * 409:    username taken
+   * Body:   { username, password, email, otp }
+   * 201:    { id, username, token } — auto-login on registration
+   * 400:    validation error / invalid OTP
+   * 409:    username or email taken
+   * 429:    too many OTP attempts
    */
   async register(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
-      const { username, password, email } = req.body as {
+      const { username, password, email, otp } = req.body as {
         username?: string;
         password?: string;
         email?: string;
+        otp?: string;
       };
-      const result = await AuthService.register(username ?? '', password ?? '', email ?? '');
+      const result = await AuthService.register(username ?? '', password ?? '', email ?? '', otp ?? '');
       res.status(201).json(result);
     } catch (err) {
       next(err);

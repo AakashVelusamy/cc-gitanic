@@ -27,8 +27,7 @@ export interface UpdateProfileInput {
 
 export const AuthRepository = {
   /**
-   * Find a user by username. Returns undefined if not found.
-   * Note: username lookup is case-sensitive.
+   * Find a user by username (case-insensitive). Returns undefined if not found.
    */
   async findByUsername(username: string): Promise<UserRow | undefined> {
     const rows = await query<UserRow>(

@@ -12,6 +12,7 @@ const router = Router();
 
 // POST /api/auth/register
 router.post('/register', AuthController.register);
+router.post('/request-otp', AuthController.requestOtp);
 
 // POST /api/auth/login
 router.post('/login', AuthController.login);

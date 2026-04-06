@@ -10,6 +10,7 @@ import bcrypt from 'bcrypt';
 import jwt from 'jsonwebtoken';
 import { AuthRepository } from './auth.repository';
 import { createError } from '../../middleware/errorHandler';
+import { otpService } from './otp.service';
 
 // ── Constants ─────────────────────────────────────────────────────────────────
 
@@ -20,11 +21,22 @@ const JWT_EXPIRY = '7d';
 const USERNAME_RE = /^[a-zA-Z0-9][a-zA-Z0-9-]*[a-zA-Z0-9]$|^[a-zA-Z0-9]$/;
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
+// ── JWT helper ───────────────────────────────────────────────────────────────
+
+function signJwt(userId: string, username: string): string {
+  const secret = process.env.JWT_SECRET;
+  if (!secret) {
+    throw createError(500, 'Server misconfiguration: JWT_SECRET not set');
+  }
+  return jwt.sign({ sub: userId, username }, secret, { expiresIn: JWT_EXPIRY });
+}
+
 // ── Types ─────────────────────────────────────────────────────────────────────
 
 export interface RegisterResult {
   id: string;
   username: string;
+  token: string;
 }
 
 export interface LoginResult {
@@ -44,6 +56,16 @@ export interface UpdateProfileInput {
 // ── Service ───────────────────────────────────────────────────────────────────
 
 export const AuthService = {
+  async requestOtp(email: string): Promise<void> {
+    if (!email || typeof email !== 'string') {
+      throw createError(400, 'email is required');
+    }
+    if (!EMAIL_RE.test(email.trim())) {
+      throw createError(400, 'email must be a valid email address');
+    }
+    await otpService.sendOtp(email.trim().toLowerCase());
+  },
+
   /**
    * Register a new user.
    * - Validates username + email format
@@ -51,11 +73,11 @@ export const AuthService = {
    * - Hashes password with bcrypt
    * - Persists user
    */
-  async register(username: string, password: string, email: string): Promise<RegisterResult> {
+async register(username: string, password: string, email: string, otp: string): Promise<RegisterResult> {
     const normalizedUsername = username.toLowerCase();
 
     // ── Input validation ──────────────────────────────────────────────────────
-    if (!normalizedUsername || typeof normalizedUsername !== 'string') {
+    if (!normalizedUsername) {
       throw createError(400, 'username is required');
     }
     if (!USERNAME_RE.test(normalizedUsername)) {
@@ -65,7 +87,7 @@ export const AuthService = {
       );
     }
     if (normalizedUsername.length > 39) {
-      throw createError(400, 'username must be 39 characters or fewer');
+      throw createError(400, 'username must be 39 characters or fewer');        
     }
     if (!password || typeof password !== 'string') {
       throw createError(400, 'password is required');
@@ -81,6 +103,14 @@ export const AuthService = {
     }
     if (email.length > 254) {
       throw createError(400, 'email must be 254 characters or fewer');
+    }
+    if (!otp || typeof otp !== 'string' || otp.length !== 6) {
+      throw createError(400, 'A valid 6-digit OTP is required');
+    }
+
+    // ── Validate OTP ──────────────────────────────────────────────────────────
+    if (!otpService.verifyOtp(email.trim().toLowerCase(), otp)) {
+      throw createError(400, 'Invalid or expired OTP');
     }
 
     // ── Uniqueness pre-check (friendly error) ─────────────────────────────────
@@ -110,7 +140,10 @@ export const AuthService = {
       throw err;
     }
 
-    return { id: user.id, username: user.username };
+    // Auto-login: issue JWT immediately (user already proved identity via OTP)
+    const token = signJwt(user.id, user.username);
+
+    return { id: user.id, username: user.username, token };
   },
 
   /**
@@ -131,18 +164,7 @@ export const AuthService = {
       throw createError(401, 'Invalid credentials');
     }
 
-    const secret = process.env.JWT_SECRET;
-    if (!secret) {
-      throw createError(500, 'Server misconfiguration: JWT_SECRET not set');
-    }
-
-    const token = jwt.sign(
-      { sub: user.id, username: user.username },
-      secret,
-      { expiresIn: JWT_EXPIRY }
-    );
-
-    return { token };
+    return { token: signJwt(user.id, user.username) };
   },
 
   async me(userId: string): Promise<MeResult> {
