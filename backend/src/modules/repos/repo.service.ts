@@ -115,10 +115,12 @@ export const RepoFactory = {
         timeout: 15_000,
       });
 
-      // Step 2 — install post-receive hook
-      const hooksDir  = path.join(tmpPath, 'hooks');
-      const hookPath  = path.join(hooksDir, 'post-receive');
-      const hookScript = buildPostReceiveHook(username, repoName);
+        // Step 1b — enable http receive-pack (allow pushes over smart HTTP)
+        execFileSync('git', ['config', 'http.receivepack', 'true'], {
+          cwd: tmpPath,
+          stdio: 'pipe',
+          timeout: 5_000,
+        });
 
       fs.writeFileSync(hookPath, hookScript, { encoding: 'utf8', mode: 0o755 });
 
