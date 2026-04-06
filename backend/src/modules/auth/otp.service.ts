@@ -44,7 +44,9 @@ function createTransporter(): nodemailer.Transporter | null {
   }
 
   return nodemailer.createTransport({
-    service: 'gmail',
+    host: 'smtp.gmail.com',
+    port: 465,
+    secure: true,
     auth: { user, pass },
   });
 }
@@ -112,13 +114,6 @@ class OtpService {
       attempts: 0,
       lastSentAt: now,
     });
-
-    try {
-      await this.transporter.verify();
-    } catch (err) {
-      logger.error(`[otp] SMTP configuration error: ${String(err)}`);
-      throw createError(500, 'Email service is currently unavailable. Please try again later.');
-    }
 
     try {
       await this.transporter.sendMail({
