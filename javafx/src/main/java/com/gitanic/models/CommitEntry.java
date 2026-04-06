@@ -1,7 +1,11 @@
 package com.gitanic.models;
 
 /**
- * Represents one commit from `git log --pretty=format:"%H|%an|%ae|%ad|%s" --date=short`
+ * Represents one commit from
+ * {@code git log --pretty=format:"%H|%an|%ae|%ad|%s" --date=short}.
+ *
+ * <p>Instances are immutable.  Use {@link #parse(String)} to create them from
+ * a porcelain log line.
  */
 public class CommitEntry {
 
@@ -12,6 +16,15 @@ public class CommitEntry {
     private final String date;
     private final String subject;
 
+    /**
+     * Constructs a {@link CommitEntry}.
+     *
+     * @param hash        full 40-character SHA-1 hash (or partial)
+     * @param authorName  author display name
+     * @param authorEmail author email address
+     * @param date        ISO-8601 short date (e.g. {@code 2026-04-07})
+     * @param subject     first line of the commit message
+     */
     public CommitEntry(String hash, String authorName, String authorEmail,
                        String date, String subject) {
         this.hash        = hash        != null ? hash.trim()        : "";
@@ -24,17 +37,27 @@ public class CommitEntry {
 
     // ---- Getters -------------------------------------------------------
 
+    /** Returns the full commit hash. */
     public String getHash()        { return hash; }
+    /** Returns the first 7 characters of the hash. */
     public String getShortHash()   { return shortHash; }
+    /** Returns the author's display name. */
     public String getAuthorName()  { return authorName; }
+    /** Returns the author's email address. */
     public String getAuthorEmail() { return authorEmail; }
+    /** Returns the commit date in ISO-8601 short format. */
     public String getDate()        { return date; }
+    /** Returns the first line of the commit message. */
     public String getSubject()     { return subject; }
 
     // ---- Factory -------------------------------------------------------
 
     /**
-     * Parse a pipe-delimited log line: hash|authorName|authorEmail|date|subject
+     * Parses a pipe-delimited log line in the format:
+     * {@code hash|authorName|authorEmail|date|subject}.
+     *
+     * @param logLine one line from the formatted git log output
+     * @return the parsed entry, or {@code null} for blank/null input
      */
     public static CommitEntry parse(String logLine) {
         if (logLine == null || logLine.isBlank()) return null;
@@ -50,6 +73,6 @@ public class CommitEntry {
 
     @Override
     public String toString() {
-        return shortHash + "  " + subject + "  ·  " + authorName + "  " + date;
+        return shortHash + "  " + subject + "  \u00B7  " + authorName + "  " + date;
     }
 }

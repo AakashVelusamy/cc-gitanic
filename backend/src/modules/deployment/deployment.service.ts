@@ -22,7 +22,7 @@
 import path       from 'path';
 import fs         from 'fs';
 import { execFileSync } from 'child_process';
-import { DeploymentRepository, LogRepository }   from './deployment.repository';
+import { DeploymentRepository, LogRepository, DeploymentRow, LogRow }   from './deployment.repository';
 import { RepoRepository }                        from '../repos/repo.repository';
 import { RepoFactory }                           from '../repos/repo.service';
 import { StorageService }                        from '../../lib/storage.service';
@@ -38,6 +38,15 @@ import { bustDeploymentCache, bustLocalServeCache } from '../../lib/cacheBust';
 
 /** Ephemeral build workspaces live under /tmp/build */
 const BUILD_ROOT = '/tmp/build';
+
+/** Validate a path stays within a base directory to prevent traversal (S2083). */
+function assertSafePath(resolvedPath: string, base: string): void {
+  const normalBase = path.resolve(base);
+  const normalPath = path.resolve(resolvedPath);
+  if (!normalPath.startsWith(normalBase + path.sep) && normalPath !== normalBase) {
+    throw createError(400, 'Path traversal detected');
+  }
+}
 
 
 
@@ -131,6 +140,8 @@ async function runPipeline(
 ): Promise<void> {
   const startMs = Date.now();
   const workDir = path.join(BUILD_ROOT, username, deploymentId);
+  // Guard: ensure workDir stays under BUILD_ROOT (S2083)
+  assertSafePath(workDir, BUILD_ROOT);
   const log     = makeLog(deploymentId, repoId, userId);
 
   try {
@@ -313,7 +324,7 @@ export const DeploymentService = {
   },
 
   /** List all deployments for a repo (ownership check). */
-  async listForRepo(userId: string, repoId: string) {
+  async listForRepo(userId: string, repoId: string): Promise<DeploymentRow[]> {
     const repo = await RepoRepository.findById(repoId);
     if (!repo)                  throw createError(404, 'Repository not found');
     if (repo.owner_id !== userId) throw createError(403, 'Access denied');
@@ -321,7 +332,7 @@ export const DeploymentService = {
   },
 
   /** Get a single deployment (ownership check via repo). */
-  async getOne(userId: string, deploymentId: string) {
+  async getOne(userId: string, deploymentId: string): Promise<DeploymentRow> {
     const dep = await DeploymentRepository.findById(deploymentId);
     if (!dep) throw createError(404, 'Deployment not found');
     const repo = await RepoRepository.findById(dep.repo_id);
@@ -330,7 +341,7 @@ export const DeploymentService = {
   },
 
   /** Get logs for a deployment (ownership check). */
-  async getLogs(userId: string, deploymentId: string) {
+  async getLogs(userId: string, deploymentId: string): Promise<LogRow[]> {
     const dep = await DeploymentRepository.findById(deploymentId);
     if (!dep) throw createError(404, 'Deployment not found');
     const repo = await RepoRepository.findById(dep.repo_id);
@@ -342,7 +353,7 @@ export const DeploymentService = {
   queueDepth(): number { return deployQueue.depth; },
 
   /** List deployments for a publicly viewable repo. */
-  async listPublicForRepo(repoId: string) {
+  async listPublicForRepo(repoId: string): Promise<DeploymentRow[]> {
     const repo = await RepoRepository.findById(repoId);
     if (!repo) throw createError(404, 'Repository not found');
     return DeploymentRepository.findAllByRepo(repoId);

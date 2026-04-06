@@ -1,0 +1,80 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<?import javafx.scene.layout.BorderPane?>
+<?import javafx.scene.layout.VBox?>
+<?import javafx.scene.layout.HBox?>
+<?import javafx.scene.layout.Region?>
+<?import javafx.scene.control.Label?>
+<?import javafx.scene.control.TextField?>
+<?import javafx.scene.control.Button?>
+<?import javafx.scene.control.ProgressBar?>
+<?import javafx.scene.control.ScrollPane?>
+<?import javafx.scene.control.Separator?>
+<?import javafx.geometry.Insets?>
+<?import javafx.scene.image.ImageView?>
+<?import javafx.scene.image.Image?>
+
+<BorderPane xmlns="http://javafx.com/javafx/17"
+            xmlns:fx="http://javafx.com/fxml/1"
+            fx:controller="com.gitanic.controllers.CloneController"
+            styleClass="screen-root">
+
+    <!-- App bar -->
+    <top>
+        <HBox styleClass="app-bar" alignment="CENTER_LEFT" spacing="12">
+            <padding><Insets top="10" right="20" bottom="10" left="20"/></padding>
+            <ImageView fitWidth="32" fitHeight="32" preserveRatio="true">
+                <Image url="@../images/logo.png"/>
+            </ImageView>
+            <Separator orientation="VERTICAL" styleClass="bar-sep"/>
+            <Label fx:id="welcomeLabel" styleClass="app-bar-welcome"/>
+            <Region HBox.hgrow="ALWAYS"/>
+            <Button text="Logout" onAction="#onLogoutClicked" styleClass="danger-button"/>
+        </HBox>
+    </top>
+
+    <!-- Center: Local repos grid + Clone form -->
+    <center>
+        <VBox spacing="0">
+
+            <!-- Local repos section header -->
+            <HBox alignment="CENTER_LEFT" spacing="8" styleClass="section-bar">
+                <padding><Insets top="14" right="20" bottom="14" left="20"/></padding>
+                <Label text="Local Repositories" styleClass="section-title"/>
+                <Region HBox.hgrow="ALWAYS"/>
+                <Label fx:id="workspaceFolderLabel" styleClass="muted-label"
+                       maxWidth="320" HBox.hgrow="NEVER"/>
+                <Button text="Change..." onAction="#onChangeFolderClicked" styleClass="toolbar-btn"/>
+                <Button text="Open Folder..." onAction="#onOpenExistingClicked" styleClass="toolbar-btn"/>
+            </HBox>
+
+            <ScrollPane fitToWidth="true" VBox.vgrow="ALWAYS"
+                        styleClass="cards-scroll" hbarPolicy="NEVER">
+                <VBox fx:id="localReposContainer" spacing="10" styleClass="cards-container">
+                    <padding><Insets top="16" right="20" bottom="16" left="20"/></padding>
+                </VBox>
+            </ScrollPane>
+
+            <Separator/>
+
+            <!-- Clone form -->
+            <VBox styleClass="bottom-panel" spacing="10">
+                <padding><Insets top="14" right="20" bottom="16" left="20"/></padding>
+
+                <Label text="CLONE A REPOSITORY" styleClass="field-label"/>
+                <HBox spacing="8">
+                    <TextField fx:id="urlField" HBox.hgrow="ALWAYS"/>
+                </HBox>
+
+                <HBox spacing="10" alignment="CENTER_RIGHT">
+                    <ProgressBar fx:id="progressBar" prefWidth="200" progress="-1"/>
+                    <Label fx:id="statusLabel" wrapText="true" HBox.hgrow="ALWAYS"/>
+                    <Button fx:id="cloneButton"
+                            text="Clone"
+                            onAction="#onCloneClicked"
+                            styleClass="primary-button"/>
+                </HBox>
+            </VBox>
+        </VBox>
+    </center>
+
+</BorderPane>

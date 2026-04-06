@@ -1,5 +1,5 @@
 import Link from 'next/link';
-import { Folder, FileText, ChevronRight, File, Clock } from 'lucide-react';
+import { Folder, FileText, ChevronRight, Clock } from 'lucide-react';
 import { routes } from '@/lib/routes';
 
 export interface TreeEntry {
@@ -49,7 +49,6 @@ export function FileBrowser({ repoName, entries, currentPath = '', ref = 'HEAD',
         </div>
         <div className="p-8 text-center text-muted-foreground flex flex-col items-center justify-center gap-3">
            <div className="w-6 h-6 border-2 border-primary/20 border-t-primary rounded-full animate-spin"></div>
-           <p>Indexing files...</p>
         </div>
       </div>
     );
@@ -61,22 +60,15 @@ export function FileBrowser({ repoName, entries, currentPath = '', ref = 'HEAD',
         <div className="bg-secondary/40 px-4 py-3 border-b border-white/5 flex items-center font-medium">
            <Folder size={18} className="text-muted-foreground mr-2" /> Source Code
         </div>
-        <div className="p-16 text-center flex flex-col items-center">
-          <div className="w-16 h-16 bg-white/5 rounded-2xl flex items-center justify-center mb-4">
-            <FileText className="text-muted-foreground" size={32} />
-          </div>
-          <h3 className="text-xl font-semibold mb-2">Repository is empty</h3>
-          <p className="text-muted-foreground max-w-sm">
-            Push your first commit from your terminal to establish the codebase.
-          </p>
+        <div className="p-12 text-center flex flex-col items-center">
+          <FileText className="text-muted-foreground opacity-50" size={32} />
         </div>
       </div>
     );
   }
 
   return (
-    <div className="glass rounded-xl overflow-hidden mb-8 border border-white/5 shadow-lg">
-      {/* Header with breadcrumb */}
+    <div className="glass rounded-xl overflow-hidden mb-6 border border-white/5 shadow-lg">
       <div className="bg-secondary/40 px-4 py-3 border-b border-white/5 flex items-center justify-between shadow-inner">
         <div className="flex items-center flex-wrap gap-1 text-sm min-w-0">
           {onFolderDoubleClick ? (

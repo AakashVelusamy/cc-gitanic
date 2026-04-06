@@ -19,14 +19,27 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 import java.util.prefs.Preferences;
+import java.util.regex.Pattern;
 
 /**
  * Home screen after login.
- * Shows cards for all git repos found in the persistent workspace folder.
+ *
+ * <p>Shows cards for all git repos found in the persistent workspace folder.
  * Clone always writes into the workspace folder.
+ *
+ * <p>Security: the raw clone URL is validated to be a git HTTP(S) URL before
+ * credentials are injected and the clone is executed.
  */
 public class CloneController {
+
+    private static final Logger LOG = Logger.getLogger(CloneController.class.getName());
+
+    /** Accepts http:// or https:// git URLs only. */
+    private static final Pattern GIT_URL_PATTERN =
+            Pattern.compile("^https?://[\\w.@:/%-]+\\.git$", Pattern.CASE_INSENSITIVE);
 
     @FXML private Label       welcomeLabel;
     @FXML private Label       workspaceFolderLabel;
@@ -38,6 +51,11 @@ public class CloneController {
 
     private static final String PREFS_KEY_WORKSPACE = "gitanic.workspace.dir";
 
+    /**
+     * Called by the JavaFX runtime after FXML injection.
+     * Populates the welcome label, pre-fills any override clone URL, and
+     * renders the local repo cards.
+     */
     @FXML
     public void initialize() {
         progressBar.setVisible(false);
@@ -64,7 +82,11 @@ public class CloneController {
         return Preferences.userNodeForPackage(CloneController.class);
     }
 
-    /** Returns the persisted workspace folder path, defaulting to ~/gitanic. */
+    /**
+     * Returns the persisted workspace folder path, defaulting to {@code ~/gitanic}.
+     *
+     * @return the workspace directory path string
+     */
     public static String getWorkspaceDir() {
         String def = System.getProperty("user.home") + File.separator + "gitanic";
         return prefs().get(PREFS_KEY_WORKSPACE, def);
@@ -78,7 +100,12 @@ public class CloneController {
     //  Scan workspace for repos
     // ====================================================================
 
-    /** Returns all immediate subdirectories of the workspace that contain .git. */
+    /**
+     * Returns all immediate subdirectories of the workspace that contain a
+     * {@code .git} directory.  Results are sorted by directory name.
+     *
+     * @return sorted list of repository directories (may be empty)
+     */
     private List<File> scanWorkspace() {
         File workspace = new File(getWorkspaceDir());
         if (!workspace.exists() || !workspace.isDirectory()) return Collections.emptyList();
@@ -97,7 +124,8 @@ public class CloneController {
         List<File> repos = scanWorkspace();
 
         if (repos.isEmpty()) {
-            Label empty = new Label("No repositories in workspace. Clone one below or change the workspace folder.");
+            Label empty = new Label(
+                    "No repositories in workspace. Clone one below or change the workspace folder.");
             empty.getStyleClass().add("muted-label");
             empty.setWrapText(true);
             localReposContainer.getChildren().add(empty);
@@ -112,7 +140,8 @@ public class CloneController {
     private Node buildRepoCard(File dir) {
         GitCommandService git      = GitCommandService.getInstance();
         String            repoName  = dir.getName();
-        String            remoteUrl = GitCommandService.stripCredentials(git.getRemoteUrl(dir).trim());
+        String            remoteUrl = GitCommandService.stripCredentials(
+                git.getRemoteUrl(dir).trim());
 
         HBox card = new HBox(12);
         card.getStyleClass().add("repo-card");
@@ -149,6 +178,9 @@ public class CloneController {
     //  Actions
     // ====================================================================
 
+    /**
+     * Opens a directory chooser to change the workspace folder.
+     */
     @FXML
     protected void onChangeFolderClicked() {
         DirectoryChooser chooser = new DirectoryChooser();
@@ -163,11 +195,21 @@ public class CloneController {
         }
     }
 
+    /**
+     * Validates the URL, injects credentials, and clones the repository in a
+     * background thread.  UI state is updated via {@link Platform#runLater}.
+     */
     @FXML
     protected void onCloneClicked() {
         String rawUrl = urlField.getText().trim();
         if (rawUrl.isEmpty()) {
             showStatus("Repository URL is required.", true);
+            return;
+        }
+
+        // Validate URL format before injecting credentials
+        if (!GIT_URL_PATTERN.matcher(rawUrl).matches()) {
+            showStatus("Invalid git URL. Expected: https://host/path/repo.git", true);
             return;
         }
 
@@ -183,16 +225,18 @@ public class CloneController {
 
         setCloning(true);
 
-        new Thread(() -> {
+        Thread t = new Thread(() -> {
             try {
                 GitCommandService.getInstance().clone(authUrl, workspace, repoName);
 
-                // Clean remote URL — remove embedded credentials
+                // Restore clean remote URL — remove embedded credentials from config
                 File repoDir = new File(workspace, repoName);
                 String cleanUrl = GitCommandService.stripCredentials(authUrl);
                 try {
                     GitCommandService.getInstance().run(repoDir, "remote", "set-url", "origin", cleanUrl);
-                } catch (Exception ignored) {}
+                } catch (Exception ignored) {
+                    LOG.log(Level.WARNING, "Could not restore clean remote URL after clone");
+                }
 
                 state.setCurrentRepoDir(repoDir);
                 state.setOverrideCloneUrl(null);
@@ -205,14 +249,20 @@ public class CloneController {
                     App.setRoot("WorkspaceScreen");
                 });
             } catch (Exception e) {
+                LOG.log(Level.WARNING, "Clone failed", e);
                 Platform.runLater(() -> {
                     setCloning(false);
                     showStatus("Clone failed: " + e.getMessage(), true);
                 });
             }
-        }).start();
+        });
+        t.setDaemon(true);
+        t.start();
     }
 
+    /**
+     * Opens a directory chooser to open an existing local git repository.
+     */
     @FXML
     protected void onOpenExistingClicked() {
         DirectoryChooser chooser = new DirectoryChooser();
@@ -233,6 +283,9 @@ public class CloneController {
         App.setRoot("WorkspaceScreen");
     }
 
+    /**
+     * Logs the current user out and navigates to the login screen.
+     */
     @FXML
     protected void onLogoutClicked() {
         AppState.getInstance().logout();

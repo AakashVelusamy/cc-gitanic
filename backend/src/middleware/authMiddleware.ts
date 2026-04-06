@@ -47,7 +47,8 @@ export function authMiddleware(
   }
 
   try {
-    const payload = jwt.verify(token, secret) as AuthPayload;
+    // Explicitly specify algorithm to prevent algorithm-confusion attacks (S5659)
+    const payload = jwt.verify(token, secret, { algorithms: ['HS256'] }) as AuthPayload;
     res.locals.user = payload;
     next();
   } catch {

@@ -8,7 +8,21 @@ import javafx.application.Platform;
 import javafx.fxml.FXML;
 import javafx.scene.control.*;
 
+import java.util.logging.Level;
+import java.util.logging.Logger;
+
+/**
+ * Controller for the login screen.
+ *
+ * <p>Handles credential input (with a show/hide password toggle), delegates
+ * authentication to {@link NetworkService}, and navigates to
+ * {@code CloneScreen} on success.
+ *
+ * <p>Security note: passwords are never passed to any logger.
+ */
 public class LoginController {
+
+    private static final Logger LOG = Logger.getLogger(LoginController.class.getName());
 
     @FXML private TextField         usernameField;
     @FXML private PasswordField     passwordField;
@@ -20,6 +34,11 @@ public class LoginController {
 
     private boolean passwordVisible = false;
 
+    /**
+     * Called by the JavaFX runtime after FXML injection.
+     * Sets up visibility bindings between the password and clear-text fields,
+     * and wires the Enter key to submit the form.
+     */
     @FXML
     public void initialize() {
         errorLabel.setVisible(false);
@@ -27,6 +46,7 @@ public class LoginController {
         passwordVisibleField.setVisible(false);
         passwordVisibleField.setManaged(false);
 
+        // Keep both fields in sync so toggling visibility does not lose input
         passwordField.textProperty().addListener((obs, oldVal, newVal) -> {
             if (!passwordVisible) {
                 passwordVisibleField.setText(newVal);
@@ -43,10 +63,18 @@ public class LoginController {
         usernameField.setOnAction(e -> onLoginClicked());
     }
 
+    /**
+     * Validates inputs and performs login on a background daemon thread.
+     * On success, navigates to {@code CloneScreen}.
+     * On failure, displays the error message from the server.
+     */
     @FXML
     protected void onLoginClicked() {
         String username = usernameField.getText().trim();
-        String password = passwordVisible ? passwordVisibleField.getText() : passwordField.getText();
+        // Read password from whichever field is currently visible
+        String password = passwordVisible
+                ? passwordVisibleField.getText()
+                : passwordField.getText();
 
         if (username.isEmpty() || password.isEmpty()) {
             showError("Username and password are required.");
@@ -55,7 +83,8 @@ public class LoginController {
 
         setLoading(true);
 
-        new Thread(() -> {
+        // NOTE: password must not be logged — pass only as a method argument
+        Thread t = new Thread(() -> {
             try {
                 NetworkService.getInstance().login(username, password);
                 Platform.runLater(() -> {
@@ -64,14 +93,21 @@ public class LoginController {
                     App.setRoot("CloneScreen");
                 });
             } catch (Exception e) {
+                LOG.log(Level.WARNING, "Login failed for user: {0}", username);
                 Platform.runLater(() -> {
                     setLoading(false);
                     showError(e.getMessage());
                 });
             }
-        }).start();
+        });
+        t.setDaemon(true);
+        t.start();
     }
 
+    /**
+     * Toggles between the masked {@link PasswordField} and a plain
+     * {@link TextField}, keeping their contents in sync.
+     */
     @FXML
     protected void onTogglePassword() {
         passwordVisible = !passwordVisible;
@@ -81,7 +117,7 @@ public class LoginController {
             passwordVisibleField.setManaged(true);
             passwordField.setVisible(false);
             passwordField.setManaged(false);
-            togglePasswordButton.setText("🙈");
+            togglePasswordButton.setText("\uD83D\uDE48"); // 🙈
             passwordVisibleField.requestFocus();
             passwordVisibleField.positionCaret(passwordVisibleField.getText().length());
         } else {
@@ -90,17 +126,21 @@ public class LoginController {
             passwordField.setManaged(true);
             passwordVisibleField.setVisible(false);
             passwordVisibleField.setManaged(false);
-            togglePasswordButton.setText("👁");
+            togglePasswordButton.setText("\uD83D\uDC41"); // 👁
             passwordField.requestFocus();
             passwordField.positionCaret(passwordField.getText().length());
         }
     }
 
+    // ------------------------------------------------------------------ private
+
     private void setLoading(boolean loading) {
         loadingIndicator.setVisible(loading);
         loginButton.setDisable(loading);
-        if (!loading) errorLabel.setVisible(
-            errorLabel.getText() != null && !errorLabel.getText().isEmpty());
+        if (!loading) {
+            errorLabel.setVisible(
+                errorLabel.getText() != null && !errorLabel.getText().isEmpty());
+        }
     }
 
     private void showError(String msg) {

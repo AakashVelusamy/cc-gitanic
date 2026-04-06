@@ -5,6 +5,13 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 
 import com.gitanic.AppState;
 
+/**
+ * Represents a Gitanic repository as returned by the REST API.
+ *
+ * <p>Deserialized from {@code /api/repos} and {@code /api/repos/:name}
+ * responses.  The {@link #getGitUrl()} helper derives the clone URL from the
+ * current {@link AppState} so it always reflects the configured git host.
+ */
 @JsonIgnoreProperties(ignoreUnknown = true)
 public class Repository {
 

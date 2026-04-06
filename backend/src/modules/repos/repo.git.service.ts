@@ -11,8 +11,24 @@ const REPOS_ROOT = process.env.REPOS_ROOT ?? '/repos';
 /** Valid ref: alphanumeric, hyphen, dot, underscore, forward-slash, HEAD */
 const SAFE_REF_RE = /^[a-zA-Z0-9._\-/]+$/;
 
+/** Valid username: alphanumeric and hyphens only. */
+const SAFE_USERNAME_RE = /^[a-zA-Z0-9][a-zA-Z0-9-]*[a-zA-Z0-9]$|^[a-zA-Z0-9]$/;
+
+/** Valid repo name: alphanumeric, hyphen, underscore, dot; 1–100 chars. */
+const SAFE_REPO_RE = /^[a-zA-Z0-9._-]{1,100}$/;
+
 function repoPath(username: string, repoName: string): string {
-  return path.join(REPOS_ROOT, username, `${repoName}.git`);
+  // Validate inputs to prevent path traversal (S2083)
+  if (!SAFE_USERNAME_RE.test(username) || !SAFE_REPO_RE.test(repoName)) {
+    throw createError(400, 'Invalid username or repository name');
+  }
+  const resolved = path.join(REPOS_ROOT, username, `${repoName}.git`);
+  // Final sanity check: ensure constructed path stays within REPOS_ROOT
+  const normalBase = path.resolve(REPOS_ROOT);
+  if (!path.resolve(resolved).startsWith(normalBase + path.sep)) {
+    throw createError(400, 'Path traversal detected');
+  }
+  return resolved;
 }
 
 function validateRef(ref: string): void {
@@ -22,8 +38,16 @@ function validateRef(ref: string): void {
 }
 
 function validatePath(p: string): void {
-  // Disallow path traversal
-  if (p.includes('..') || p.startsWith('/')) {
+  // Resolve the path relative to a dummy root to detect traversal (S2083)
+  if (!p) return; // empty path is valid (root of tree)
+  const normalized = path.normalize(p);
+  // Disallow absolute paths, parent traversal, or null bytes
+  if (
+    normalized.startsWith('/') ||
+    normalized.startsWith('..') ||
+    normalized.includes('\0') ||
+    normalized.split(path.sep).some((seg) => seg === '..')
+  ) {
     throw createError(400, 'Invalid path');
   }
 }
@@ -122,11 +146,14 @@ export const RepoGitService = {
   getCommits(username: string, repoName: string, ref = 'HEAD', limit = 20): CommitInfo[] {
     validateRef(ref);
 
+    // Ensure limit is a safe integer before interpolating into argument (S2076)
+    const safeLimit = Math.min(Math.max(1, Math.trunc(limit)), 200);
+
     const cwd = repoPath(username, repoName);
     let raw: string;
     try {
       raw = gitRun(
-        ['log', `--max-count=${limit}`, '--format=%H%x00%an%x00%s%x00%ci', ref],
+        ['log', `--max-count=${safeLimit}`, '--format=%H%x00%an%x00%s%x00%ci', ref],
         cwd
       ).toString('utf8');
     } catch {

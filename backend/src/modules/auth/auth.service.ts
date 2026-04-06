@@ -28,7 +28,8 @@ function signJwt(userId: string, username: string): string {
   if (!secret) {
     throw createError(500, 'Server misconfiguration: JWT_SECRET not set');
   }
-  return jwt.sign({ sub: userId, username }, secret, { expiresIn: JWT_EXPIRY });
+  // Explicitly specify algorithm to match verification side (S5659)
+  return jwt.sign({ sub: userId, username }, secret, { expiresIn: JWT_EXPIRY, algorithm: 'HS256' });
 }
 
 // ── Types ─────────────────────────────────────────────────────────────────────
@@ -159,12 +160,13 @@ async register(username: string, password: string, email: string, otp: string): 
     }
 
     const user = await AuthRepository.findByUsername(username);
-    if (!user) {
-      throw createError(401, 'Invalid credentials');
-    }
 
-    const valid = await bcrypt.compare(password, user.password_hash);
-    if (!valid) {
+    // Always run bcrypt.compare even when user not found to prevent timing oracle (S6432)
+    const DUMMY_HASH = '$2b$12$invalidhashpaddingthatisexactly53charslong........';
+    const hashToCompare = user ? user.password_hash : DUMMY_HASH;
+    const valid = await bcrypt.compare(password, hashToCompare);
+
+    if (!user || !valid) {
       throw createError(401, 'Invalid credentials');
     }
 

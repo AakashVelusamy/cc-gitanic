@@ -3,6 +3,12 @@ package com.gitanic.models;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
+/**
+ * Represents one deployment record from the deployment history.
+ *
+ * <p>Deserialized from the {@code /api/repos/:name/deployments} API response.
+ * Status values: {@code pending}, {@code building}, {@code success}, {@code failed}.
+ */
 @JsonIgnoreProperties(ignoreUnknown = true)
 public class DeploymentEntry {
 

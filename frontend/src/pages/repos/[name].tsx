@@ -3,9 +3,10 @@ import { useRouter } from 'next/router';
 import { fetchApi, getCanonicalUsername, getToken, getTokenPayload } from '@/lib/api';
 import { routes } from '@/lib/routes';
 import { Navbar } from '@/components/navbar';
+import { useToast } from '@/contexts/toast-context';
 import { FileBrowser, TreeEntry } from '@/components/file-browser';
 import { MarkdownContent } from '@/components/markdown-content';
-import { BookOpen, Activity, GitBranch, ShieldAlert, Terminal, Trash2, Rocket, Copy, Check, Lock, ExternalLink } from 'lucide-react';
+import { BookOpen, ShieldAlert, Terminal, Trash2, Rocket, Copy, Check, ExternalLink } from 'lucide-react';
 import Link from 'next/link';
 
 interface RepoData {
@@ -35,10 +36,9 @@ export default function RepositoryPage() {
   const [readme, setReadme] = useState<string | null>(null);
   const [commits, setCommits] = useState<CommitInfo[]>([]);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState('');
   const [username, setUsername] = useState('');
   const [deploying, setDeploying] = useState(false);
-  const [deployError, setDeployError] = useState('');
+  const { toast } = useToast();
   const [copied, setCopied] = useState(false);
 
   const loadRepoData = useCallback(async (repoName: string, path: string = '') => {
@@ -75,12 +75,13 @@ export default function RepositoryPage() {
       if (error.status === 401) {
         router.push(routes.login);
       } else {
-        setError('Repository not found');
+        toast('Repository not found', 'error');
+        router.push(routes.dashboard);
       }
     } finally {
       setLoading(false);
     }
-  }, [router]);
+  }, [router, toast]);
 
   useEffect(() => {
     if (!name) return;
@@ -103,7 +104,6 @@ export default function RepositoryPage() {
 
   async function handleDeploy() {
     setDeploying(true);
-    setDeployError('');
     try {
       await fetchApi<{ id: string }>(`/api/repos/${name}/deploy`, {
         method: 'POST',
@@ -114,8 +114,9 @@ export default function RepositoryPage() {
         // Refresh repo data after enough time to let it finish (optional)
         loadRepoData(name);
       }, 3000);
+      toast('Deployment started successfully', 'success');
     } catch (err: unknown) {
-      setDeployError((err as Error).message || 'Something went wrong with the deployment');
+      toast((err as Error).message || 'Something went wrong with the deployment', 'error');
       setDeploying(false);
     }
   }
@@ -124,9 +125,10 @@ export default function RepositoryPage() {
     if (!confirm('This will permanently delete this repository and all its deployments. Are you sure?')) return;
     try {
       await fetchApi(`/api/repos/${name}`, { method: 'DELETE' });
+      toast('Repository deleted', 'success');
       router.push(routes.dashboard);
     } catch (err: unknown) {
-      alert((err as Error).message || 'Failed to delete');
+      toast((err as Error).message || 'Failed to delete', 'error');
     }
   }
 
@@ -143,17 +145,8 @@ export default function RepositoryPage() {
     );
   }
 
-  if (error || !repo) {
-    return (
-      <div className="min-h-[calc(100vh-4.5rem)] bg-background flex flex-col">
-        <Navbar />
-        <div className="max-w-4xl mx-auto mt-12 p-6 glass rounded-2xl text-center bg-destructive/10 border border-destructive/30">
-          <ShieldAlert className="text-destructive mx-auto mb-4" size={48} />
-          <h2 className="text-2xl font-bold text-destructive mb-2">{error || 'Not found'}</h2>
-          <Link href={routes.dashboard} className="btn-secondary mt-4 inline-block">Back to Dashboard</Link>
-        </div>
-      </div>
-    );
+  if (!repo) {
+    return null; /* Handled by toast + redirect */
   }
 
   return (
@@ -168,12 +161,12 @@ export default function RepositoryPage() {
                <BookOpen size={24} />
              </div>
              <div className="min-w-0">
-               <div className="flex items-center gap-3 mb-1">
-                   <h1 className="text-2xl md:text-3xl font-bold flex items-center truncate">
-                     <Link href={routes.dashboard} className="text-white truncate hover:text-primary transition-colors">{username}</Link>
+               <div className="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-3 mb-1">
+                   <h1 className="text-2xl md:text-3xl font-bold flex flex-wrap items-center">
+                     <Link href={routes.dashboard} className="text-white break-all hover:text-primary transition-colors">{username}</Link>
                      <span className="text-muted-foreground/30 mx-2 font-normal shrink-0">/</span>
-                     <span className="text-primary truncate">{repo.name}</span>
-                 </h1>
+                     <span className="text-primary break-all">{repo.name}</span> 
+                   </h1>
                </div>
              </div>
           </div>
@@ -229,14 +222,8 @@ export default function RepositoryPage() {
 
         {/* Main Content */}
         <div className="w-full space-y-8 min-w-0">
-           {deployError && (
-             <div className="p-4 rounded-xl bg-destructive/10 border border-destructive/30 text-destructive flex items-center gap-3">
-               <ShieldAlert size={20} /> {deployError}
-             </div>
-           )}
-
-           <FileBrowser 
-             repoName={repo.name} 
+           <FileBrowser
+             repoName={repo.name}
              entries={entries} 
              currentPath={currentPath}
              commits={commits}

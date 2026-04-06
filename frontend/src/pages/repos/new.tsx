@@ -3,7 +3,8 @@ import { useRouter } from 'next/router';
 import { fetchApi, getCanonicalUsername, getToken, getTokenPayload } from '@/lib/api';
 import { routes } from '@/lib/routes';
 import { Navbar } from '@/components/navbar';
-import { PlusCircle, AlertCircle } from 'lucide-react';
+import { useToast } from '@/contexts/toast-context';
+import { PlusCircle } from 'lucide-react';
 
 interface Repo {
   id: string;
@@ -12,10 +13,10 @@ interface Repo {
 
 export default function NewRepositoryPage() {
   const router = useRouter();
+  const { toast } = useToast();
   const [username, setUsername] = useState('');
   const [name, setName] = useState('');
   const [creating, setCreating] = useState(false);
-  const [error, setError] = useState('');
 
   useEffect(() => {
     if (!getToken()) {
@@ -39,7 +40,6 @@ export default function NewRepositoryPage() {
     if (!name.trim()) return;
 
     setCreating(true);
-    setError('');
     try {
       const repo = await fetchApi<Repo>('/api/repos', {
         method: 'POST',
@@ -48,7 +48,7 @@ export default function NewRepositoryPage() {
       router.push(routes.repo(repo.name));
     } catch (err: unknown) {
       const e = err as { message?: string };
-      setError(e.message || 'Failed to create repository');
+      toast(e.message || 'Failed to create repository', 'error');
       setCreating(false);
     }
   }
@@ -71,11 +71,7 @@ export default function NewRepositoryPage() {
           <div className="w-full max-w-2xl">
 
           <div className="glass rounded-2xl p-6 sm:p-8 shadow-2xl">
-            {error && (
-              <div className="mb-6 sm:mb-8 p-3 sm:p-4 rounded-xl bg-destructive/10 border border-destructive/30 text-destructive text-sm flex items-center gap-2 sm:gap-3">
-                <AlertCircle size={16} className="sm:size-5 shrink-0" /> <span className="break-words w-full">{error}</span>
-              </div>
-            )}
+            
 
             <form onSubmit={handleSubmit} className="space-y-6 sm:space-y-8">
               <div>
@@ -84,7 +80,7 @@ export default function NewRepositoryPage() {
                 </label>
                 <div className="flex flex-col sm:flex-row items-center gap-2 mb-2">
                   <span className="w-full sm:w-auto text-muted-foreground px-3 sm:px-4 h-[42px] flex items-center bg-secondary/30 border border-white/5 rounded-xl text-sm sm:text-base">
-                    {username || 'username'} <span className="text-white/20 mx-1">/</span>
+                    {username} <span className="text-white/20 mx-1">/</span>
                   </span>
                   <input
                     id="repo-name"
@@ -93,7 +89,7 @@ export default function NewRepositoryPage() {
                     onChange={(e) =>
                       setName(e.target.value.replace(/[^a-zA-Z0-9._-]/g, ''))
                     }
-                    placeholder=""
+                    
                     required
                     autoFocus
                     className="w-full sm:flex-1 h-[42px] bg-secondary/50 border border-white/10 rounded-xl px-3 sm:px-4 text-sm sm:text-base text-foreground focus:outline-none focus:border-primary/50 focus:ring-1 focus:ring-primary/50 transition-all"

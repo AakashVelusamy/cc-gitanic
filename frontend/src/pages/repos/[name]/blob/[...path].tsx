@@ -3,6 +3,7 @@ import { useRouter } from 'next/router';
 import { fetchApi, getToken } from '@/lib/api';
 import { routes } from '@/lib/routes';
 import { Navbar } from '@/components/navbar';
+import { useToast } from '@/contexts/toast-context';
 import { MarkdownContent } from '@/components/markdown-content';
 import { FileText, ChevronRight, Folder, Copy, Check, Download, ArrowLeft, Image as ImageIcon, FileCode, Binary } from 'lucide-react';
 import Link from 'next/link';
@@ -68,7 +69,7 @@ export default function BlobPage() {
 
   const [blob, setBlob] = useState<BlobResult | null>(null);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState('');
+  const { toast } = useToast();
   const [copied, setCopied] = useState(false);
 
   const loadBlob = useCallback(async () => {
@@ -83,12 +84,13 @@ export default function BlobPage() {
       if (e.status === 401) {
         router.push(routes.login);
       } else {
-        setError(e.message || 'Failed to load file');
+        toast(e.message || 'Failed to load file', 'error');
+        router.push(routes.repo(repoName));
       }
     } finally {
       setLoading(false);
     }
-  }, [repoName, filePath, router]);
+  }, [repoName, filePath, router, toast]);
 
   useEffect(() => {
     if (!repoName || !filePath) return;
@@ -136,19 +138,8 @@ export default function BlobPage() {
   }
 
   // Error state
-  if (error || !blob) {
-    return (
-      <div className="min-h-[calc(100vh-4.5rem)] bg-background flex flex-col">
-        <Navbar />
-        <div className="max-w-4xl mx-auto mt-12 p-6 glass rounded-2xl text-center bg-destructive/10 border border-destructive/30">
-          <FileText className="text-destructive mx-auto mb-4" size={48} />
-          <h2 className="text-2xl font-bold text-destructive mb-2">{error || 'File not found'}</h2>
-          <Link href={routes.repo(repoName)} className="btn-secondary mt-4 inline-block">
-            Back to Repository
-          </Link>
-        </div>
-      </div>
-    );
+  if (!blob) {
+    return null; // Handled by toast + redirect
   }
 
   const language = getLanguage(fileName);
@@ -261,7 +252,7 @@ export default function BlobPage() {
                     className="max-w-full max-h-[600px] object-contain"
                   />
                 </div>
-                <p className="text-muted-foreground text-sm mt-4">{fileName} — {formatBytes(blob.size)}</p>
+                <p className="text-muted-foreground text-sm mt-4">{fileName} - {formatBytes(blob.size)}</p>
               </div>
             ) : blob.isBinary ? (
               /* Binary file (non-image) */

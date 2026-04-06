@@ -20,13 +20,21 @@ import java.io.File;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.function.Consumer;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 /**
  * Workspace controller — streamlined Git client.
- * Two tabs: Diff and File Content. Single Sync button (fetch+pull).
- * Only Commit & Push action (no standalone commit).
+ *
+ * <p>Provides a two-tab view (Diff and File Content) plus a Sync button
+ * (fetch + pull) and a Commit &amp; Push action.
+ *
+ * <p>All background operations run on daemon threads and post results back
+ * to the JavaFX Application Thread via {@link Platform#runLater}.
  */
 public class WorkspaceController {
+
+    private static final Logger LOG = Logger.getLogger(WorkspaceController.class.getName());
 
     // ---- Toolbar -------------------------------------------------------
     @FXML private Label  repoNameLabel;
@@ -59,6 +67,7 @@ public class WorkspaceController {
     // ---- Internal state ------------------------------------------------
     private File     repoDir;
     private Timeline autoRefreshTimeline;
+    /** Guards against queuing multiple simultaneous refresh tasks. */
     private volatile boolean isRefreshing = false;
     private final Consumer<Object> refreshHandler = ignored -> refreshWorkspace();
 
@@ -66,6 +75,11 @@ public class WorkspaceController {
     //  Initialization
     // ====================================================================
 
+    /**
+     * Called by the JavaFX runtime after FXML injection.
+     * Sets up cell factories, selection listeners, auto-refresh timer,
+     * and the EventBus subscription.
+     */
     @FXML
     public void initialize() {
         repoDir = AppState.getInstance().getCurrentRepoDir();
@@ -116,19 +130,18 @@ public class WorkspaceController {
         autoRefreshTimeline.play();
     }
 
+    /**
+     * Lightweight periodic refresh — only updates the file list, not the diff view.
+     * Skipped if another refresh is already in progress.
+     */
     private void refreshFileList() {
         if (repoDir == null || isRefreshing) return;
         isRefreshing = true;
         GitCommandService git = GitCommandService.getInstance();
         runAsync(
-            () -> {
-                List<FileStatus> statuses = git.getStatus(repoDir);
-                return new Object[]{ statuses };
-            },
-            result -> {
+            () -> git.getStatus(repoDir),
+            statuses -> {
                 isRefreshing = false;
-                @SuppressWarnings("unchecked")
-                List<FileStatus> statuses = (List<FileStatus>) result[0];
                 filesListView.setItems(FXCollections.observableArrayList(statuses));
                 int n = statuses.size();
                 filesCountLabel.setText(n == 0 ? "FILES" : "FILES  " + n);
@@ -138,18 +151,15 @@ public class WorkspaceController {
         );
     }
 
+    /**
+     * Full workspace refresh — reloads the file list and updates the status bar.
+     */
     private void refreshWorkspace() {
         if (repoDir == null) return;
         GitCommandService git = GitCommandService.getInstance();
         runAsync(
-            () -> {
-                List<FileStatus>  statuses = git.getStatus(repoDir);
-                return new Object[]{ statuses };
-            },
-            result -> {
-                @SuppressWarnings("unchecked")
-                List<FileStatus>  statuses = (List<FileStatus>)  result[0];
-
+            () -> git.getStatus(repoDir),
+            statuses -> {
                 filesListView.setItems(FXCollections.observableArrayList(statuses));
                 int n = statuses.size();
                 filesCountLabel.setText(n == 0 ? "FILES" : "FILES  " + n);
@@ -171,12 +181,10 @@ public class WorkspaceController {
     private void loadDiff(FileStatus file) {
         runAsync(
             () -> {
-                GitCommandService git = GitCommandService.getInstance();
-                // For new/untracked files, show the full content as + lines
                 if (file.getX() == FileStatus.Code.UNTRACKED) {
                     return "(new file)";
                 }
-                return git.getDiffAgainstHead(repoDir, file.getPath());
+                return GitCommandService.getInstance().getDiffAgainstHead(repoDir, file.getPath());
             },
             this::renderDiff,
             err -> renderDiff("Error loading diff:\n" + err)
@@ -185,7 +193,11 @@ public class WorkspaceController {
 
     private void renderDiff(String raw) {
         List<String> lines = new ArrayList<>();
-        if (raw != null) for (String l : raw.split("\n")) lines.add(l);
+        if (raw != null) {
+            for (String l : raw.split("\n")) {
+                lines.add(l);
+            }
+        }
         diffListView.setItems(FXCollections.observableArrayList(lines));
     }
 
@@ -218,10 +230,22 @@ public class WorkspaceController {
     //  Commit & Push
     // ====================================================================
 
-    @FXML protected void onCommitAndPushClicked() {
+    /**
+     * Stages all changes, creates a commit with the message in
+     * {@link #commitMessageField}, then pushes to {@code origin/main}.
+     * Runs on a background thread; UI updates posted via {@link Platform#runLater}.
+     */
+    @FXML
+    protected void onCommitAndPushClicked() {
         String msg = commitMessageField.getText().trim();
-        if (msg.isEmpty()) { setCommitStatus("Enter a commit message.", true); return; }
-        if (filesListView.getItems().isEmpty()) { setCommitStatus("No changes to commit.", true); return; }
+        if (msg.isEmpty()) {
+            setCommitStatus("Enter a commit message.", true);
+            return;
+        }
+        if (filesListView.getItems().isEmpty()) {
+            setCommitStatus("No changes to commit.", true);
+            return;
+        }
         String authUrl = buildAuthUrl();
         setCommitStatus("Committing & pushing...", false);
         runAsync(
@@ -231,7 +255,11 @@ public class WorkspaceController {
                 git.push(repoDir, authUrl);
                 return null;
             },
-            r -> { commitMessageField.clear(); setCommitStatus("Committed & pushed.", false); refreshWorkspace(); },
+            r -> {
+                commitMessageField.clear();
+                setCommitStatus("Committed & pushed.", false);
+                refreshWorkspace();
+            },
             err -> setCommitStatus(err, true)
         );
     }
@@ -245,7 +273,12 @@ public class WorkspaceController {
     //  Sync (fetch + pull)
     // ====================================================================
 
-    @FXML protected void onSyncClicked() {
+    /**
+     * Fetches and pulls from {@code origin}.
+     * Runs on a background thread; UI updates posted via {@link Platform#runLater}.
+     */
+    @FXML
+    protected void onSyncClicked() {
         operationStatusLabel.setText("Syncing...");
         syncButton.setDisable(true);
         String authUrl = buildAuthUrl();
@@ -267,6 +300,12 @@ public class WorkspaceController {
         );
     }
 
+    /**
+     * Builds an authenticated remote URL using stored credentials.
+     * Returns {@code null} if credentials are unavailable.
+     *
+     * @return authenticated URL string, or {@code null}
+     */
     private String buildAuthUrl() {
         AppState state = AppState.getInstance();
         if (state.getCurrentUser() == null || state.getPassword() == null) return null;
@@ -282,7 +321,12 @@ public class WorkspaceController {
     //  Navigation
     // ====================================================================
 
-    @FXML protected void onBackClicked() {
+    /**
+     * Stops the auto-refresh timeline, unsubscribes from the EventBus,
+     * and navigates back to the CloneScreen.
+     */
+    @FXML
+    protected void onBackClicked() {
         if (autoRefreshTimeline != null) autoRefreshTimeline.stop();
         EventBus.getInstance().unsubscribe(EventBus.Event.WORKSPACE_REFRESH, refreshHandler);
         App.setRoot("CloneScreen");
@@ -293,31 +337,53 @@ public class WorkspaceController {
     // ====================================================================
 
     @FunctionalInterface
-    private interface ThrowingSupplier<T> { T get() throws Exception; }
+    private interface ThrowingSupplier<T> {
+        /** Computes a result, potentially throwing a checked exception. */
+        T get() throws Exception;
+    }
 
+    /**
+     * Runs {@code task} on a background thread.
+     * On success, invokes {@code onSuccess} on the JavaFX Application Thread.
+     * On any exception, invokes {@code onError} with the error message on the
+     * JavaFX Application Thread.
+     *
+     * @param <T>       the result type
+     * @param task      the background task
+     * @param onSuccess callback invoked with the task result on success
+     * @param onError   callback invoked with the error message on failure
+     */
     private <T> void runAsync(ThrowingSupplier<T> task,
                                Consumer<T> onSuccess,
                                Consumer<String> onError) {
-        new Thread(() -> {
+        Thread t = new Thread(() -> {
             try {
                 T result = task.get();
                 Platform.runLater(() -> onSuccess.accept(result));
             } catch (Exception e) {
+                LOG.log(Level.WARNING, "Background task failed", e);
                 String msg = e.getMessage() != null ? e.getMessage() : e.getClass().getSimpleName();
                 Platform.runLater(() -> onError.accept(msg));
             }
-        }).start();
+        });
+        t.setDaemon(true);
+        t.start();
     }
 
     // ====================================================================
     //  Cell renderers
     // ====================================================================
 
+    /** Renders diff lines with colour coding for additions, removals and hunks. */
     private static final class DiffLineCell extends ListCell<String> {
         @Override
         protected void updateItem(String item, boolean empty) {
             super.updateItem(item, empty);
-            if (empty || item == null) { setText(null); setStyle(null); return; }
+            if (empty || item == null) {
+                setText(null);
+                setStyle(null);
+                return;
+            }
             setText(item);
             if (item.startsWith("+") && !item.startsWith("+++")) {
                 setStyle("-fx-background-color:#0a2e1a;-fx-text-fill:#3fb950;"
@@ -349,7 +415,11 @@ public class WorkspaceController {
         @Override
         protected void updateItem(String item, boolean empty) {
             super.updateItem(item, empty);
-            if (empty || item == null) { setText(null); setStyle(null); return; }
+            if (empty || item == null) {
+                setText(null);
+                setStyle(null);
+                return;
+            }
             setText(item);
             setStyle("-fx-background-color:transparent;-fx-text-fill:#f8fafc;"
                    + "-fx-font-family:Consolas,'Courier New',monospace;-fx-font-size:12;"
@@ -357,11 +427,16 @@ public class WorkspaceController {
         }
     }
 
+    /** Renders a file status entry with a colour-coded status badge. */
     private static final class FileStatusCell extends ListCell<FileStatus> {
         @Override
         protected void updateItem(FileStatus item, boolean empty) {
             super.updateItem(item, empty);
-            if (empty || item == null) { setGraphic(null); setText(null); return; }
+            if (empty || item == null) {
+                setGraphic(null);
+                setText(null);
+                return;
+            }
 
             HBox row = new HBox(6);
             row.setAlignment(Pos.CENTER_LEFT);
@@ -406,8 +481,7 @@ public class WorkspaceController {
                 case MODIFIED  -> "#0ea5e9";
                 case ADDED     -> "#3fb950";
                 case DELETED   -> "#f43f5e";
-                case RENAMED   -> "#00f0ff";
-                case COPIED    -> "#00f0ff";
+                case RENAMED, COPIED -> "#00f0ff";
                 default        -> "#94a3b8";
             };
         }

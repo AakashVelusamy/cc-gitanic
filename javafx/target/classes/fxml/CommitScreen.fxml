@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<?import javafx.scene.layout.VBox?>
+<?import javafx.scene.layout.HBox?>
+<?import javafx.scene.control.Label?>
+<?import javafx.scene.control.TextField?>
+<?import javafx.scene.control.Button?>
+
+<VBox spacing="10" xmlns="http://javafx.com/javafx/17" xmlns:fx="http://javafx.com/fxml/1" fx:controller="com.gitanic.controllers.CommitController" style="-fx-padding: 20;">
+    <HBox spacing="10">
+        <Button text="← Back to Diff" onAction="#onBackClicked"/>
+        <Label text="Commit Changes" style="-fx-font-size: 18; -fx-font-weight: bold;"/>
+    </HBox>
+    
+    <Label text="Commit Message:"/>
+    <TextField fx:id="messageField"/>
+    
+    <Button text="Stage All &amp; Commit" onAction="#onCommitClicked" maxWidth="1.7976931348623157E308"/>
+    
+    <Label fx:id="statusLabel" wrapText="true"/>
+</VBox>

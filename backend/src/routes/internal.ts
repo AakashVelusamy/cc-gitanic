@@ -16,6 +16,7 @@
  */
 
 import { Router, Request, Response, NextFunction } from 'express';
+import crypto from 'crypto';
 import { AuthRepository } from '../modules/auth/auth.repository';
 import { RepoRepository } from '../modules/repos/repo.repository';
 import { DeploymentService } from '../modules/deployment/deployment.service';
@@ -26,10 +27,26 @@ const router = Router();
 // ── Secret guard middleware ───────────────────────────────────────────────────
 
 function internalSecretGuard(req: Request, res: Response, next: NextFunction): void {
-  const secret = process.env.INTERNAL_SECRET ?? 'change-me-internal-secret';
-  const provided = req.headers['x-gitanic-secret'];
+  const secret = process.env.INTERNAL_SECRET;
 
-  if (!provided || provided !== secret) {
+  // Fail securely — a missing secret must reject all requests, not use a predictable default
+  if (!secret) {
+    logger.error('[internal] INTERNAL_SECRET env var is not set — rejecting all requests');
+    res.status(500).json({ error: 'Server misconfiguration' });
+    return;
+  }
+
+  const provided = req.headers['x-gitanic-secret'];
+  const providedStr = Array.isArray(provided) ? provided[0] : provided ?? '';
+
+  // Timing-safe comparison prevents secret enumeration via response timing (S6432)
+  const secretBuf   = Buffer.from(secret,      'utf8');
+  const providedBuf = Buffer.from(providedStr, 'utf8');
+  const isValid =
+    secretBuf.length === providedBuf.length &&
+    crypto.timingSafeEqual(secretBuf, providedBuf);
+
+  if (!isValid) {
     logger.warn('[internal] Rejected request with invalid secret', {
       meta: { ip: req.ip, path: req.path },
     });

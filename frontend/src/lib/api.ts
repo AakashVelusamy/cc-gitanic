@@ -15,6 +15,15 @@ interface AuthMeResponse {
   username: string;
 }
 
+/**
+ * SECURITY NOTE (S5042 — Sensitive data in localStorage):
+ * The JWT is stored in localStorage for simplicity. This means any JavaScript
+ * running on the page (including from XSS) could read it.
+ * The preferred mitigation is httpOnly cookies, but that requires backend
+ * changes (Set-Cookie on login, cookie-based auth middleware on Railway).
+ * As a compensating control, the Content Security Policy and X-XSS-Protection
+ * headers are set in next.config.ts to reduce the XSS attack surface.
+ */
 export function getToken(): string | null {
   if (typeof window === 'undefined') return null;
   return localStorage.getItem('gitanic_token');

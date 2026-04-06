@@ -16,6 +16,7 @@
 
 import 'dotenv/config';
 import path from 'path';
+import crypto from 'crypto';
 import express, { Request, Response } from 'express';
 import { query } from './lib/db';
 
@@ -77,8 +78,19 @@ app.get('/health', (_req, res) => {
 
 // Cache bust endpoint — called by deployment pipeline after a successful deploy
 app.post('/cache/bust', (req, res) => {
-  const secret = process.env.INTERNAL_SECRET ?? 'change-me-internal-secret';
-  if (req.headers['x-gitanic-secret'] !== secret) {
+  const secret = process.env.INTERNAL_SECRET;
+  if (!secret) {
+    res.status(500).json({ error: 'Server misconfiguration' });
+    return;
+  }
+  const provided = req.headers['x-gitanic-secret'];
+  const providedStr = Array.isArray(provided) ? provided[0] : provided ?? '';
+  // Timing-safe comparison prevents secret enumeration via response timing (S6432)
+  const secretBuf   = Buffer.from(secret,      'utf8');
+  const providedBuf = Buffer.from(providedStr, 'utf8');
+  const isValid = secretBuf.length === providedBuf.length &&
+    crypto.timingSafeEqual(secretBuf, providedBuf);
+  if (!isValid) {
     res.status(401).json({ error: 'Unauthorized' });
     return;
   }
@@ -218,8 +230,20 @@ function inferMimeType(filePath: string): string | null {
   return map[path.extname(filePath).toLowerCase()] ?? null;
 }
 
+/** Escape a string for safe inclusion in HTML content (prevents XSS). */
+function escapeHtml(str: string): string {
+  return str
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#x27;');
+}
+
 /** Simple 404 HTML page. */
 function notFoundPage(username: string): string {
+  // Escape username before injecting into HTML to prevent XSS
+  const safeUsername = escapeHtml(username);
   return `<!DOCTYPE html>
 <html lang="en">
 <head>
@@ -242,7 +266,7 @@ function notFoundPage(username: string): string {
 <body>
   <div class="card">
     <h1>No deployment found</h1>
-    <p>User <code>${username}</code> has no active deployment.<br/>
+    <p>User <code>${safeUsername}</code> has no active deployment.<br/>
     Push code and click <strong>Deploy</strong> in the Gitanic dashboard to get started.</p>
   </div>
 </body>

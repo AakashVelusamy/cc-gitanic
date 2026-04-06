@@ -48,8 +48,9 @@ function createTransporter(): nodemailer.Transporter | null {
     port: 465,
     secure: true, // SSL — more reliably unblocked on Railway than port 587 STARTTLS
     auth: { user, pass },
+    // rejectUnauthorized: true is the secure default — validates the SMTP server certificate
     tls: {
-      rejectUnauthorized: false,
+      rejectUnauthorized: true,
     },
   });
 }
@@ -105,8 +106,12 @@ class OtpService {
     }
 
     // OTP_STATIC env var: bypass random OTP — use a fixed code (e.g. "000000")
-    // Useful when SMTP is blocked (Railway free tier blocks all outbound SMTP ports)
+    // ONLY for development/testing when SMTP is unavailable. MUST NOT be set in production.
     const staticOtp = process.env.OTP_STATIC;
+    if (staticOtp && process.env.NODE_ENV === 'production') {
+      logger.error('[otp] OTP_STATIC must not be set in production — it allows anyone to register');
+      throw createError(500, 'Server misconfiguration');
+    }
     const otp = staticOtp ? staticOtp : this.generateOtp();
 
     this.store.set(normalizedEmail, {
@@ -116,8 +121,11 @@ class OtpService {
       lastSentAt: now,
     });
 
-    // Always print to stdout directly — guaranteed visible in Railway deploy logs
-    process.stdout.write(`[OTP] ${normalizedEmail} → ${otp}\n`);
+    // In non-production: print OTP to stdout (visible in Railway/local logs) so dev/test can proceed without SMTP.
+    // In production: NEVER log the OTP — it would expose credentials in log aggregators.
+    if (process.env.NODE_ENV !== 'production') {
+      process.stdout.write(`[OTP:dev] ${normalizedEmail} → ${otp}\n`);
+    }
 
     if (staticOtp || !this.transporter) return;
 

@@ -3,7 +3,8 @@ import { useRouter } from 'next/router';
 import { fetchApi, getToken } from '@/lib/api';
 import { routes } from '@/lib/routes';
 import { Navbar } from '@/components/navbar';
-import { BookOpen, Search, PlusCircle, Activity, AlertCircle, ArrowRight, Clock } from 'lucide-react';
+import { useToast } from '@/contexts/toast-context';
+import { BookOpen, Search, PlusCircle, Activity, Clock } from 'lucide-react';
 import Link from 'next/link';
 
 interface Repo {
@@ -15,9 +16,9 @@ interface Repo {
 
 export default function DashboardPage() {
   const router = useRouter();
+  const { toast } = useToast();
   const [repos, setRepos] = useState<Repo[]>([]);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState('');
   const [filter, setFilter] = useState('');
 
   useEffect(() => {
@@ -31,9 +32,13 @@ export default function DashboardPage() {
   async function fetchDashboardData() {
     try {
       const data = await fetchApi<Repo[]>('/api/repos');
-      setRepos(data.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime()));
+      const sorted = data.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
+      setRepos(sorted);
+      if (sorted.length === 0) {
+        toast('No Repositories Yet', 'info');
+      }
     } catch {
-      setError('Failed to load repositories');
+      toast('Failed to load repositories', 'error');
     } finally {
       setLoading(false);
     }
@@ -65,7 +70,7 @@ export default function DashboardPage() {
              <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" size={16} />
              <input
                type="text"
-               placeholder="Search repositories..."
+               
                value={filter}
                onChange={(e) => setFilter(e.target.value)}
                className="w-full bg-secondary/30 border border-white/10 rounded-lg h-[42px] pl-10 pr-4 text-sm focus:outline-none focus:border-primary/50 focus:bg-secondary/50 transition-colors"
@@ -76,19 +81,7 @@ export default function DashboardPage() {
           </Link>
         </div>
 
-        {error && (
-          <div className="mb-6 p-4 rounded-lg bg-destructive/10 border border-destructive/20 text-destructive text-sm flex items-center gap-2">
-            <AlertCircle size={16} />{error}
-          </div>
-        )}
-
-        {repos.length === 0 ? (
-          <div className="glass rounded-xl p-12 border border-dashed border-white/20 text-center w-full">
-             <BookOpen size={48} className="mx-auto mb-4 text-muted-foreground opacity-50" />
-             <h3 className="text-lg font-semibold text-foreground mb-2">No Repositories Yet</h3>
-             <p className="text-sm text-muted-foreground mb-6"></p>
-          </div>
-        ) : (
+        {repos.length > 0 && (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
              {filteredRepos.map((repo) => (
                   <Link key={repo.id} href={routes.repo(repo.name)} className="glass glass-hover px-5 py-4 rounded-xl border border-white/5 flex flex-row items-center justify-between group gap-3 min-w-0">

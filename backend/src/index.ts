@@ -18,7 +18,16 @@ initLogSubscribers();
 const app = express();
 const PORT = parseInt(process.env.PORT ?? '3000', 10);
 
-app.use(cors());
+// CORS: restrict to known origins; credentials require explicit origin (not wildcard)
+const ALLOWED_ORIGINS = (process.env.ALLOWED_ORIGINS ?? '')
+  .split(',')
+  .map((o) => o.trim())
+  .filter(Boolean);
+
+app.use(cors({
+  origin: ALLOWED_ORIGINS.length > 0 ? ALLOWED_ORIGINS : false,
+  credentials: true,
+}));
 app.use(requestLogger);
 
 // Health check

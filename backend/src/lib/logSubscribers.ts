@@ -48,7 +48,8 @@ async function closeChannel(deploymentId: string): Promise<void> {
       // supabase.removeChannel(ch) crashes in Node 20 with "connToClose.close is not a function"
       // so we just unsubscribe to stop listening.
     } catch (err) {
-      // ignore
+      // Unsubscribe errors are non-critical; log at warn level (not silent swallow — S2486)
+      logger.warn(`[realtime] Failed to unsubscribe channel for deployment ${deploymentId}: ${String(err)}`);
     }
     realtimeChannels.delete(deploymentId);
   }

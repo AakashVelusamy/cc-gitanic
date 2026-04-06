@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { fetchApi } from '@/lib/api';
 import { Play } from 'lucide-react';
+import { useToast } from '@/contexts/toast-context';
 
 interface Props {
   repoName: string;
@@ -9,19 +10,19 @@ interface Props {
 
 export function DeployButton({ repoName, onSuccess }: Props) {
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState('');
+  const { toast } = useToast();
 
   const handleDeploy = async () => {
     setLoading(true);
-    setError('');
     try {
       const res = await fetchApi<{ deploymentId: string }>(`/api/repos/${repoName}/deploy`, {
         method: 'POST',
       });
       onSuccess(res.deploymentId);
+      toast('Deployment started successfully', 'success');
     } catch (err: unknown) {
       const e = err as { message?: string };
-      setError(e.message || 'Deploy failed');
+      toast(e.message || 'Deploy failed', 'error');
     } finally {
       setLoading(false);
     }
@@ -36,7 +37,6 @@ export function DeployButton({ repoName, onSuccess }: Props) {
       >
         <Play size={14} /> {loading ? 'Deploying...' : 'Deploy'}
       </button>
-      {error && <p className="text-small text-danger mt-2">{error}</p>}
     </div>
   );
 }

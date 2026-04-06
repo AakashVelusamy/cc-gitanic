@@ -7,6 +7,21 @@ export const config = {
   },
 };
 
+/** Safe username: lowercase alphanumeric, hyphens only, max 64 chars */
+const USERNAME_RE = /^[a-z0-9][a-z0-9-]{0,62}[a-z0-9]$|^[a-z0-9]$/;
+
+/** UUID v4 format for deployment IDs */
+const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+
+/** Reject path segments that attempt traversal or contain dangerous characters */
+function isSafePathSegment(segment: string): boolean {
+  if (segment === '..') return false;
+  if (segment === '.') return false;
+  if (segment.includes('\0')) return false;
+  if (/[/\\]/.test(segment)) return false;
+  return true;
+}
+
 function inferContentType(filePath: string): string {
   const ext = filePath.split('.').pop()?.toLowerCase();
   const map: Record<string, string> = {
@@ -31,24 +46,44 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
     const uname = Array.isArray(username) ? username[0] : username;
     const depId = Array.isArray(deploymentId) ? deploymentId[0] : deploymentId;
-    
-    // Parse the path array correctly
+
+    // --- Input validation (SSRF / path-traversal guards) ---
+    if (!uname || !USERNAME_RE.test(uname)) {
+      return res.status(400).json({ error: 'Invalid request' });
+    }
+    if (!depId || !UUID_RE.test(depId)) {
+      return res.status(400).json({ error: 'Invalid request' });
+    }
+
+    // Parse path segments and validate each one
     let pathArr: string[] = [];
     if (Array.isArray(path)) {
       pathArr = path;
     } else if (typeof path === 'string') {
       pathArr = [path];
     }
-    
+
+    for (const segment of pathArr) {
+      if (!isSafePathSegment(segment)) {
+        return res.status(400).json({ error: 'Invalid request' });
+      }
+    }
+
     const relativePath = pathArr.length === 0 ? 'index.html' : pathArr.join('/');
 
     const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+    if (!supabaseUrl) {
+      return res.status(500).json({ error: 'Internal server error' });
+    }
+
+    // Construct the upstream URL strictly from validated components only
     const targetUrl = `${supabaseUrl}/storage/v1/object/public/deployments/${uname}/${depId}/${relativePath}`;
 
     const supabaseRes = await fetch(targetUrl);
 
     if (!supabaseRes.ok) {
-      res.status(supabaseRes.status).send(`Failed to load ${relativePath}`);
+      // Do not echo back the relativePath to avoid information disclosure
+      res.status(supabaseRes.status).send('Asset not found');
       return;
     }
 
@@ -75,8 +110,8 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     res.setHeader('Cache-Control', 'public, max-age=60');
     res.send(Buffer.from(buffer));
 
-  } catch (error) {
-    console.error('Proxy Error:', error);
-    res.status(500).json({ error: 'Proxy failed' });
+  } catch {
+    // Do not expose internal error details
+    res.status(500).json({ error: 'Internal server error' });
   }
 }

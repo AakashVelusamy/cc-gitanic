@@ -52,7 +52,7 @@ const NPM_BUILD_TIMEOUT = 180_000;  // 180 s — framework build
  * Restricted environment for build child processes.
  * - PATH is limited to standard system directories (no user-local bins)
  * - HOME is /tmp (no access to Railway's home dir or its secrets)
- * - NODE_ENV=production ensures framework builds optimise output
+ * - NODE_ENV=production ensures framework builds optimize output
  * - No DATABASE_URL, JWT_SECRET, SUPABASE_SERVICE_ROLE_KEY, etc.
  *
  * Plan requirement: "sandboxed via child_process with no $HOME, $PATH restricted"
@@ -65,6 +65,31 @@ const SAFE_ENV: NodeJS.ProcessEnv = {
   // CI=true suppresses interactive prompts in npm/CRA/Vite
   CI:       'true',
 };
+
+/**
+ * Helper to run a command and stream its output to the deployment log.
+ */
+async function runCommand(cmd: string, args: string[], cwd: string, timeout: number, log: (msg: string) => Promise<void>) {
+  try {
+    const output = execFileSync(cmd, args, {
+      cwd,
+      stdio: 'pipe',
+      timeout,
+      env: SAFE_ENV,
+    });
+    if (output.length > 0) {
+      await log(output.toString('utf8').trim());
+    }
+  } catch (err: any) {
+    if (err.stdout && err.stdout.length > 0) {
+      await log(`[stdout]\n${err.stdout.toString('utf8').trim()}`);
+    }
+    if (err.stderr && err.stderr.length > 0) {
+      await log(`[stderr]\n${err.stderr.toString('utf8').trim()}`);
+    }
+    throw new Error(`Command failed: ${cmd} ${args.join(' ')}`);
+  }
+}
 
 // ── StaticStrategy ────────────────────────────────────────────────────────────
 
@@ -134,21 +159,11 @@ export const ReactStrategy: DeployStrategy = {
   async build(srcDir, log) {
     // ── npm ci ──────────────────────────────────────────────────────────────
     await log('[build:react] npm ci (timeout 120 s)');
-    execFileSync('npm', ['ci', '--prefer-offline'], {
-      cwd:     srcDir,
-      stdio:   'pipe',
-      timeout: NPM_CI_TIMEOUT,
-      env:     SAFE_ENV,
-    });
+    await runCommand('npm', ['ci', '--prefer-offline'], srcDir, NPM_CI_TIMEOUT, log);
 
     // ── npm run build ────────────────────────────────────────────────────────
     await log('[build:react] npm run build (timeout 180 s)');
-    execFileSync('npm', ['run', 'build'], {
-      cwd:     srcDir,
-      stdio:   'pipe',
-      timeout: NPM_BUILD_TIMEOUT,
-      env:     SAFE_ENV,
-    });
+    await runCommand('npm', ['run', 'build'], srcDir, NPM_BUILD_TIMEOUT, log);
 
     // ── Resolve output directory ─────────────────────────────────────────────
     // CRA outputs to build/; some setups output to dist/
@@ -197,21 +212,11 @@ export const ViteStrategy: DeployStrategy = {
   async build(srcDir, log) {
     // ── npm ci ──────────────────────────────────────────────────────────────
     await log('[build:vite] npm ci (timeout 120 s)');
-    execFileSync('npm', ['ci', '--prefer-offline'], {
-      cwd:     srcDir,
-      stdio:   'pipe',
-      timeout: NPM_CI_TIMEOUT,
-      env:     SAFE_ENV,
-    });
+    await runCommand('npm', ['ci', '--prefer-offline'], srcDir, NPM_CI_TIMEOUT, log);
 
     // ── vite build ───────────────────────────────────────────────────────────
     await log('[build:vite] vite build (timeout 180 s)');
-    execFileSync('npx', ['vite', 'build'], {
-      cwd:     srcDir,
-      stdio:   'pipe',
-      timeout: NPM_BUILD_TIMEOUT,
-      env:     SAFE_ENV,
-    });
+    await runCommand('npx', ['vite', 'build'], srcDir, NPM_BUILD_TIMEOUT, log);
 
     // ── Output directory ─────────────────────────────────────────────────────
     const distDir = path.join(srcDir, 'dist');

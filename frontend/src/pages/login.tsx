@@ -3,10 +3,12 @@ import { useRouter } from 'next/router';
 import { fetchApi, setToken } from '@/lib/api';
 import { routes } from '@/lib/routes';
 import { Navbar } from '@/components/navbar';
+import { useToast } from '@/contexts/toast-context';
 import Link from 'next/link';
 
 export default function LoginPage() {
   const router = useRouter();
+  const { toast } = useToast();
   const isLogin = router.query.mode !== 'signup';
 
   const [username, setUsername] = useState('');
@@ -18,7 +20,6 @@ export default function LoginPage() {
   const [otpSentAt, setOtpSentAt] = useState<number | null>(null);
   const [resendCooldown, setResendCooldown] = useState(0);
   const [step, setStep] = useState(1);
-  const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
 
   // 60s resend countdown, resets each time an OTP is sent
@@ -44,16 +45,14 @@ export default function LoginPage() {
     setPassword('');
     setConfirmPassword('');
     setEmail('');
-    setError('');
   }
 
   async function handleSendOtp() {
     if (!email.trim()) {
-      setError('Please enter an email address');
+      toast('Please enter an email address', 'error');
       return;
     }
     setLoading(true);
-    setError('');
     try {
       await fetchApi('/api/auth/request-otp', {
         method: 'POST',
@@ -62,7 +61,7 @@ export default function LoginPage() {
       setOtpSent(true);
       setOtpSentAt(Date.now());
     } catch (err: unknown) {
-      setError((err as Error).message || 'Failed to send OTP');
+      toast((err as Error).message || 'Failed to send OTP', 'error');
     } finally {
       setLoading(false);
     }
@@ -70,7 +69,6 @@ export default function LoginPage() {
 
   async function handleNext(e: React.SyntheticEvent) {
     e.preventDefault();
-    setError('');
 
     if (step === 1) {
       if (!otpSent) {
@@ -78,7 +76,7 @@ export default function LoginPage() {
         return;
       }
       if (!otp || otp.length !== 6) {
-        setError('Please enter the 6-digit verification code');
+        toast('Please enter the 6-digit verification code', 'error');
         return;
       }
       setStep(2);
@@ -87,7 +85,7 @@ export default function LoginPage() {
 
     if (step === 2) {
       if (!username.trim()) {
-        setError('Please enter a username');
+        toast('Please enter a username', 'error');
         return;
       }
       setStep(3);
@@ -96,10 +94,9 @@ export default function LoginPage() {
 
   async function handleSubmit(e: React.SyntheticEvent) {
     e.preventDefault();
-    setError('');
 
     if (!isLogin && password !== confirmPassword) {
-      setError('Passwords do not match');
+      toast('Passwords do not match', 'error');
       return;
     }
 
@@ -121,7 +118,7 @@ export default function LoginPage() {
       }
       router.push(routes.dashboard);
     } catch (err: unknown) {
-      setError((err as Error).message || 'An error occurred');
+      toast((err as Error).message || 'An error occurred', 'error');
     } finally {
       setLoading(false);
     }
@@ -167,7 +164,7 @@ export default function LoginPage() {
                         value={email}
                         onChange={(e) => setEmail(e.target.value)}
                         className={otpSent ? disabledInputClass : inputClass}
-                        placeholder="you@example.com"
+
                       />
                     </div>
                     <div>
@@ -183,7 +180,7 @@ export default function LoginPage() {
                         value={otp}
                         onChange={(e) => setOtp(e.target.value.replace(/\D/g, '').slice(0, 6))}
                         className={`${!otpSent ? disabledInputClass : inputClass} text-center text-xl tracking-[0.5em] font-mono`}
-                        placeholder="000000"
+
                       />
                     </div>
                   </>
@@ -204,9 +201,8 @@ export default function LoginPage() {
                         value={username}
                         onChange={(e) => setUsername(e.target.value)}
                         className={inputClass}
-                        placeholder="cool-developer"
+
                       />
-                      <p className="text-xs text-muted-foreground mt-1">Letters, numbers, and hyphens only</p>
                     </div>
                   </>
                 ) : (
@@ -223,7 +219,6 @@ export default function LoginPage() {
                         value={password}
                         onChange={(e) => setPassword(e.target.value)}
                         className={inputClass}
-                        placeholder="At least 8 characters"
                       />
                     </div>
                     <div>
@@ -268,12 +263,6 @@ export default function LoginPage() {
                     />
                   </div>
                 </>
-              )}
-
-              {error && (
-                <div className="p-3 rounded-lg bg-destructive/10 border border-destructive/30 text-destructive text-sm">
-                  {error}
-                </div>
               )}
 
               <button

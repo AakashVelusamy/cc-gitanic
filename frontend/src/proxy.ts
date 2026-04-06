@@ -77,7 +77,19 @@ async function resolveDeployment(username: string): Promise<CacheEntry | null> {
   return null;
 }
 
+function escapeHtml(str: string): string {
+  return str
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+}
+
 function notFoundResponse(username: string): NextResponse {
+  // Escape the username to prevent reflected XSS in the 404 page
+  const safeUsername = escapeHtml(username);
+  const safeRootDomain = escapeHtml(ROOT_DOMAIN);
   const html = `<!DOCTYPE html>
 <html lang="en">
 <head>
@@ -94,8 +106,8 @@ function notFoundResponse(username: string): NextResponse {
 <body>
   <div class="box">
     <h1>404</h1>
-    <p><strong>${username}</strong> has no active deployment yet.</p>
-    <p>Visit <a href="https://${ROOT_DOMAIN}">Gitanic</a> to create one.</p>
+    <p><strong>${safeUsername}</strong> has no active deployment yet.</p>
+    <p>Visit <a href="https://${safeRootDomain}">Gitanic</a> to create one.</p>
   </div>
 </body>
 </html>`;

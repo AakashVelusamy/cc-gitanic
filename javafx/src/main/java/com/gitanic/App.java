@@ -1,6 +1,5 @@
 package com.gitanic;
 
-import com.gitanic.AppState;
 import javafx.application.Application;
 import javafx.fxml.FXMLLoader;
 import javafx.scene.Parent;
@@ -10,8 +9,19 @@ import javafx.stage.Stage;
 
 import java.io.IOException;
 import java.net.URL;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
+/**
+ * JavaFX application entry point.
+ *
+ * <p>Responsible for loading FXML screens and managing the primary {@link Stage}.
+ * Navigation between screens is done via {@link #setRoot(String)} or
+ * {@link #setRootGetController(String)}.
+ */
 public class App extends Application {
+
+    private static final Logger LOG = Logger.getLogger(App.class.getName());
 
     private static Scene scene;
     private static Stage primaryStage;
@@ -31,7 +41,11 @@ public class App extends Application {
         }
 
         stage.setTitle("Gitanic Desktop");
-        stage.getIcons().add(new Image(App.class.getResourceAsStream("/assets/logo.png")));
+        try (var iconStream = App.class.getResourceAsStream("/assets/logo.png")) {
+            if (iconStream != null) {
+                stage.getIcons().add(new Image(iconStream));
+            }
+        }
         stage.setMinWidth(800);
         stage.setMinHeight(550);
         stage.setScene(scene);
@@ -39,19 +53,28 @@ public class App extends Application {
     }
 
     /**
-     * Navigate to a different screen by FXML name.
+     * Navigates to a different screen by FXML name.
+     * Must be called on the JavaFX Application Thread.
+     *
+     * @param fxml the FXML file base name (without path or extension)
      */
     public static void setRoot(String fxml) {
         try {
             scene.setRoot(loadFXML(fxml));
             primaryStage.sizeToScene();
         } catch (IOException e) {
-            e.printStackTrace();
+            LOG.log(Level.SEVERE, "Failed to load FXML screen: " + fxml, e);
         }
     }
 
     /**
-     * Navigate and return the controller for the newly loaded screen.
+     * Navigates to a different screen and returns the new screen's controller.
+     * Must be called on the JavaFX Application Thread.
+     *
+     * @param <T>  the controller type
+     * @param fxml the FXML file base name (without path or extension)
+     * @return the newly loaded controller
+     * @throws IOException if the FXML resource cannot be found or loaded
      */
     @SuppressWarnings("unchecked")
     public static <T> T setRootGetController(String fxml) throws IOException {
@@ -61,16 +84,28 @@ public class App extends Application {
         return loader.getController();
     }
 
-    private static Parent loadFXML(String fxml) throws IOException {
-        FXMLLoader loader = new FXMLLoader(App.class.getResource("/fxml/" + fxml + ".fxml"));
-        return loader.load();
-    }
-
+    /**
+     * Returns the primary application {@link Stage}.
+     *
+     * @return the primary stage
+     */
     public static Stage getPrimaryStage() {
         return primaryStage;
     }
 
+    /**
+     * Application entry point (delegated to JavaFX launcher).
+     *
+     * @param args command-line arguments (unused)
+     */
     public static void main(String[] args) {
         launch();
+    }
+
+    // ------------------------------------------------------------------ private
+
+    private static Parent loadFXML(String fxml) throws IOException {
+        FXMLLoader loader = new FXMLLoader(App.class.getResource("/fxml/" + fxml + ".fxml"));
+        return loader.load();
     }
 }

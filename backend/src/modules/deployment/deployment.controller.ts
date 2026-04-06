@@ -5,6 +5,7 @@
 
 import { Request, Response, NextFunction } from 'express';
 import { DeploymentService } from './deployment.service';
+import { deployQueue } from '../../lib/deployQueue';
 
 export const DeploymentController = {
   /**
@@ -99,7 +100,6 @@ export const DeploymentController = {
    * Returns current queue depth and running state (monitoring endpoint).
    */
   queueStatus(_req: Request, res: Response): void {
-    const { deployQueue } = require('../../lib/deployQueue') as typeof import('../../lib/deployQueue');
     res.status(200).json({
       depth: deployQueue.depth,
       isRunning: deployQueue.isRunning,

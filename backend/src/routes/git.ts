@@ -27,6 +27,10 @@ import { logger } from '../lib/logger';
 
 const router = Router();
 
+// Input validation regexes (S2076, S2083)
+const SAFE_USERNAME_RE = /^[a-zA-Z0-9][a-zA-Z0-9-]*[a-zA-Z0-9]$|^[a-zA-Z0-9]$/;
+const SAFE_REPO_RE     = /^[a-zA-Z0-9._-]{1,100}$/;
+
 // ── Auth guard on every git route ─────────────────────────────────────────────
 router.use(gitAuthMiddleware);
 
@@ -75,9 +79,9 @@ function buildCgiEnv(
     REMOTE_USER: username,
 
     // ── Passthrough — only safe subset of process env ────────────────────────
-    // PATH is required so git can find sub-commands, HOME for git config
+    // PATH is required so git can find sub-commands; HOME is /tmp (not Railway's home)
     PATH: process.env.PATH ?? '/usr/bin:/bin',
-    HOME: process.env.HOME ?? '/root',
+    HOME: '/tmp',
 
     // ── Context for post-receive hook (via env, not git-http-backend) ────────
     // These are passed through to the hook process environment
@@ -212,6 +216,13 @@ router.all('/:username/*', (req: Request, res: Response): void => {
   }
 
   const repoName   = wildcard.slice(0, dotGitIdx);           // "my-site"
+
+  // Validate username and repoName before using them in filesystem paths (S2083, S2076)
+  if (!SAFE_USERNAME_RE.test(username) || !SAFE_REPO_RE.test(repoName)) {
+    res.status(400).send('Invalid username or repository name');
+    return;
+  }
+
   const afterDotGit = wildcard.slice(dotGitIdx + 4);         // "/info/refs" or ""
   const pathInfo   = `/${repoName}.git${afterDotGit}`;       // "/my-site.git/info/refs"
 

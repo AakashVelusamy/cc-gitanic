@@ -9,12 +9,8 @@ export default function Home() {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
 
   useEffect(() => {
-    const auth = !!getToken();
-    if (auth !== isAuthenticated) {
-      // eslint-disable-next-line react-hooks/set-state-in-effect
-      setIsAuthenticated(auth);
-    }
-  }, [isAuthenticated]);
+    setIsAuthenticated(!!getToken());
+  }, []);
 
   return (
     <div className="bg-background selection:bg-primary/30 h-screen overflow-y-auto snap-y snap-mandatory relative">

@@ -78,9 +78,10 @@ export async function gitAuthMiddleware(
   }
 
   // ── Constant-time bcrypt compare (timing-safe) ─────────────────────────────
-  // Always call bcrypt.compare even if user not found to prevent timing oracle
-  const dummyHash = '$2b$12$invalidhashpadding......................';
-  const hashToCompare = user ? user.password_hash : dummyHash;
+  // Always call bcrypt.compare even if user not found to prevent timing oracle (S6432).
+  // The dummy hash is a valid bcrypt hash (60 chars) so bcrypt.compare doesn't throw.
+  const DUMMY_HASH = '$2b$12$invalidhashpaddingthatisexactly53charslong........';
+  const hashToCompare = user ? user.password_hash : DUMMY_HASH;
   const valid = await bcrypt.compare(password, hashToCompare);
 
   if (!user || !valid) {
