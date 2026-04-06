@@ -58,7 +58,8 @@ const NPM_BUILD_TIMEOUT = 180_000;  // 180 s — framework build
  * Plan requirement: "sandboxed via child_process with no $HOME, $PATH restricted"
  */
 const SAFE_ENV: NodeJS.ProcessEnv = {
-  PATH:     '/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin',
+  // Use system PATH so Node/npm resolve correctly (required for Nixpacks/Railway paths)
+  PATH:     process.env.PATH || '/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin',
   HOME:     '/tmp',
   NODE_ENV: 'production',
   // CI=true suppresses interactive prompts in npm/CRA/Vite

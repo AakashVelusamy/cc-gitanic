@@ -43,7 +43,13 @@ function getOrCreateChannel(deploymentId: string) {
 async function closeChannel(deploymentId: string): Promise<void> {
   const ch = realtimeChannels.get(deploymentId);
   if (ch) {
-    await supabase.removeChannel(ch).catch(() => undefined);
+    try {
+      await ch.unsubscribe();
+      // supabase.removeChannel(ch) crashes in Node 20 with "connToClose.close is not a function"
+      // so we just unsubscribe to stop listening.
+    } catch (err) {
+      // ignore
+    }
     realtimeChannels.delete(deploymentId);
   }
 }
