@@ -19,4 +19,7 @@ router.post('/login', AuthController.login);
 // GET /api/auth/me  (protected)
 router.get('/me', authMiddleware, AuthController.me);
 
+// PATCH /api/auth/me (protected)
+router.patch('/me', authMiddleware, AuthController.updateMe);
+
 export default router;

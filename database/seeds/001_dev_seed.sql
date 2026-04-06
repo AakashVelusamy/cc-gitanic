@@ -5,13 +5,14 @@
 -- =============================================================
 
 -- Dev user (password = "devpassword123" — bcrypt hash)
-INSERT INTO users (id, username, password_hash)
+INSERT INTO users (id, username, password_hash, email)
 VALUES (
     '00000000-0000-0000-0000-000000000001',
-    'dev-user',
-    '$2b$12$l7Od5Cw0D0lQOs37iPUdUOUacQA0Ch1RXQqCwC0gDdmYfk4swL0WO'
+    'AakashVelusamy',
+    '$2b$12$/QAUUygec0H.CSadvWIhZuDUhJceIQiFbpxIAN7/WSx4u5AluTrs2',
+    '23pt01@psgtech.ac.in'
 )
-ON CONFLICT (username) DO UPDATE SET password_hash = EXCLUDED.password_hash;
+ON CONFLICT (username) DO UPDATE SET password_hash = EXCLUDED.password_hash, email = EXCLUDED.email;
 
 -- Dev repository
 INSERT INTO repositories (id, name, owner_id)

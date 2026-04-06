@@ -1,0 +1,11 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(mkdir -p \"c:/admin/github/gitanic/frontend/src/pages/repos/[name]/tree\")",
+      "Bash(mkdir -p \"c:/admin/github/gitanic/frontend/src/pages/repos/[name]/blob\")",
+      "Bash(ls \"c:\\\\admin\\\\github\\\\gitanic\\\\frontend\\\\src\\\\pages\\\\repos\\\\[name]\\\\tree\"\" && ls \"c:admingithubgitanicfrontendsrcpagesrepos[name]blob\"\")",
+      "Bash(mvn clean:*)",
+      "Bash(npm run:*)"
+    ]
+  }
+}

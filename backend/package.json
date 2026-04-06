@@ -5,6 +5,7 @@
   "main": "index.js",
   "scripts": {
     "dev": "ts-node-dev --respawn --transpile-only src/index.ts",
+    "serve": "ts-node-dev --respawn --transpile-only src/serve.ts",
     "build": "tsc --project tsconfig.json",
     "start": "node dist/index.js",
     "test": "echo \"No tests yet\" && exit 0"

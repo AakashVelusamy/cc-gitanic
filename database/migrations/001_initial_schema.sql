@@ -15,6 +15,7 @@ CREATE TABLE IF NOT EXISTS users (
     id            UUID        PRIMARY KEY DEFAULT gen_random_uuid(),
     username      TEXT        NOT NULL UNIQUE,
     password_hash TEXT        NOT NULL,
+    email         TEXT,
     created_at    TIMESTAMPTZ NOT NULL DEFAULT now(),
 
     -- Enforce alphanumeric + hyphen only (no leading/trailing hyphen)
@@ -23,39 +24,12 @@ CREATE TABLE IF NOT EXISTS users (
                OR username ~ '^[a-zA-Z0-9]$')
 );
 
+CREATE UNIQUE INDEX IF NOT EXISTS uq_users_email ON users(email) WHERE email IS NOT NULL;
+
 COMMENT ON TABLE  users IS 'Registered Gitanic users.';
 COMMENT ON COLUMN users.username  IS 'URL-safe identifier; alphanumeric + hyphen, no leading/trailing hyphen.';
 COMMENT ON COLUMN users.password_hash IS 'bcrypt hash of the user''s password.';
-
-
--- =============================================================
--- TABLE: deployment_history
--- Append-only record of every deployment attempt.
--- Declared BEFORE repositories so the FK can be forward-resolved
--- via a deferred constraint.
--- =============================================================
-CREATE TABLE IF NOT EXISTS deployment_history (
-    id             UUID        PRIMARY KEY DEFAULT gen_random_uuid(),
-    repo_id        UUID        NOT NULL,   -- FK added after repositories is created
-    user_id        UUID        NOT NULL REFERENCES users(id) ON DELETE CASCADE,
-    commit_sha     TEXT,
-    commit_message TEXT,
-    status         TEXT        NOT NULL DEFAULT 'pending'
-                                   CHECK (status IN ('pending', 'building', 'success', 'failed')),
-    duration_ms    INTEGER,
-    storage_path   TEXT,               -- Supabase Storage path: deployments/{user}/{depId}
-    deployed_at    TIMESTAMPTZ NOT NULL DEFAULT now()
-);
-
-COMMENT ON TABLE  deployment_history IS 'Append-only deployment log. Records every pipeline run.';
-COMMENT ON COLUMN deployment_history.status       IS 'pending | building | success | failed';
-COMMENT ON COLUMN deployment_history.storage_path IS 'Supabase Storage prefix: deployments/{username}/{id}/';
-COMMENT ON COLUMN deployment_history.duration_ms  IS 'Wall-clock build duration in milliseconds.';
-
-
--- Indexes on deployment_history
-CREATE INDEX IF NOT EXISTS idx_deploy_user ON deployment_history (user_id);
-CREATE INDEX IF NOT EXISTS idx_deploy_repo ON deployment_history (repo_id);
+COMMENT ON COLUMN users.email IS 'Email address for user login and notifications.';
 
 
 -- =============================================================
@@ -81,11 +55,29 @@ COMMENT ON COLUMN repositories.active_deployment_id IS 'FK to the currently LIVE
 
 
 -- =============================================================
--- Add deferred FK: deployment_history.repo_id → repositories(id)
+-- TABLE: deployment_history
+-- Append-only record of every deployment attempt.
 -- =============================================================
-ALTER TABLE deployment_history
-    ADD CONSTRAINT fk_deploy_repo
-    FOREIGN KEY (repo_id) REFERENCES repositories(id) ON DELETE CASCADE;
+CREATE TABLE IF NOT EXISTS deployment_history (
+    id             UUID        PRIMARY KEY DEFAULT gen_random_uuid(),
+    repo_id        UUID        NOT NULL REFERENCES repositories(id) ON DELETE CASCADE,
+    user_id        UUID        NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    commit_sha     TEXT,
+    commit_message TEXT,
+    status         TEXT        NOT NULL DEFAULT 'pending'
+                                   CHECK (status IN ('pending', 'building', 'success', 'failed')),
+    duration_ms    INTEGER,
+    storage_path   TEXT,
+    deployed_at    TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+
+COMMENT ON TABLE  deployment_history IS 'Append-only deployment log. Records every pipeline run.';
+COMMENT ON COLUMN deployment_history.status       IS 'pending | building | success | failed';
+COMMENT ON COLUMN deployment_history.storage_path IS 'Supabase Storage prefix: deployments/{username}/{id}/';
+COMMENT ON COLUMN deployment_history.duration_ms  IS 'Wall-clock build duration in milliseconds.';
+
+CREATE INDEX IF NOT EXISTS idx_deploy_user ON deployment_history (user_id);
+CREATE INDEX IF NOT EXISTS idx_deploy_repo ON deployment_history (repo_id);
 
 
 -- =============================================================
@@ -94,17 +86,15 @@ ALTER TABLE deployment_history
 -- =============================================================
 CREATE TABLE IF NOT EXISTS logs (
     id            UUID        PRIMARY KEY DEFAULT gen_random_uuid(),
-    user_id       UUID        NOT NULL REFERENCES users(id)              ON DELETE CASCADE,
+    user_id       UUID        REFERENCES users(id)              ON DELETE SET NULL,
     repo_id       UUID        NOT NULL REFERENCES repositories(id)       ON DELETE CASCADE,
-    deployment_id UUID        NOT NULL REFERENCES deployment_history(id) ON DELETE CASCADE,
+    deployment_id UUID        REFERENCES deployment_history(id) ON DELETE SET NULL,
     log_text      TEXT        NOT NULL,
     created_at    TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 
 COMMENT ON TABLE logs IS 'Append-only streaming log lines emitted during deployment pipeline steps.';
 
-
--- Indexes on logs
 CREATE INDEX IF NOT EXISTS idx_logs_user       ON logs (user_id);
 CREATE INDEX IF NOT EXISTS idx_logs_repo       ON logs (repo_id);
 CREATE INDEX IF NOT EXISTS idx_logs_deployment ON logs (deployment_id);
@@ -120,15 +110,50 @@ ALTER TABLE repositories      ENABLE ROW LEVEL SECURITY;
 ALTER TABLE deployment_history ENABLE ROW LEVEL SECURITY;
 ALTER TABLE logs              ENABLE ROW LEVEL SECURITY;
 
--- users: each user can see only their own row
 CREATE POLICY "users_self_read"   ON users FOR SELECT USING (auth.uid() = id);
 CREATE POLICY "users_self_update" ON users FOR UPDATE USING (auth.uid() = id);
 
--- repositories: owner can CRUD their own repos
 CREATE POLICY "repos_owner_all"   ON repositories FOR ALL USING (auth.uid() = owner_id);
 
--- deployment_history: owner can read
 CREATE POLICY "deploys_owner_read" ON deployment_history FOR SELECT USING (auth.uid() = user_id);
 
--- logs: owner can read
 CREATE POLICY "logs_owner_read"    ON logs FOR SELECT USING (auth.uid() = user_id);
+
+
+-- =============================================================
+-- Deployment history immutability trigger
+-- =============================================================
+CREATE OR REPLACE FUNCTION deployment_history_is_immutable()
+RETURNS TRIGGER
+LANGUAGE plpgsql
+AS $$
+BEGIN
+    IF NEW.repo_id     <> OLD.repo_id
+    OR NEW.user_id     <> OLD.user_id
+    OR NEW.deployed_at <> OLD.deployed_at
+    THEN
+        RAISE EXCEPTION
+            'deployment_history: immutable fields (repo_id, user_id, deployed_at) cannot be changed.';
+    END IF;
+
+    RETURN NEW;
+END;
+$$;
+
+CREATE TRIGGER trg_deployment_history_immutable
+BEFORE UPDATE ON deployment_history
+FOR EACH ROW
+EXECUTE FUNCTION deployment_history_is_immutable();
+
+
+-- =============================================================
+-- Realtime configuration for logs
+-- =============================================================
+ALTER TABLE logs REPLICA IDENTITY FULL;
+
+DO $$
+BEGIN
+    IF EXISTS (SELECT 1 FROM pg_publication WHERE pubname = 'supabase_realtime') THEN
+        ALTER PUBLICATION supabase_realtime ADD TABLE logs;
+    END IF;
+END $$;

@@ -26,6 +26,10 @@ export const DeploymentController = {
       const repo = await RepoRepository.findByOwnerAndName(userId, repoName);
       if (!repo) { res.status(404).json({ error: `Repository "${repoName}" not found` }); return; }
 
+      // auto_deploy_enabled is set to true by the DB trigger
+      // (trg_auto_deploy_on_success) only after the first *successful* deployment.
+      // Setting it here before the pipeline runs would allow hook-triggered deploys
+      // to fire even when no successful deployment has ever completed.
       const result = await DeploymentService.enqueue(userId, repo.id);
 
       res.status(202).json({

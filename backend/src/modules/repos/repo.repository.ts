@@ -17,12 +17,27 @@ export interface RepoRow {
   created_at: string;
 }
 
+export interface RepoOwnerRow {
+  name: string;
+  username: string;
+}
+
 export interface CreateRepoInput {
   name: string;
   owner_id: string;
 }
 
 export const RepoRepository = {
+  /** List all repositories with owner usernames (used for startup reconcile). */
+  async findAllWithOwnerUsername(): Promise<RepoOwnerRow[]> {
+    return query<RepoOwnerRow>(
+      `SELECT r.name, u.username
+         FROM repositories r
+         JOIN users u ON u.id = r.owner_id
+        ORDER BY u.username ASC, r.name ASC`
+    );
+  },
+
   /** List all repos belonging to a user, newest first. */
   async findAllByOwner(ownerId: string): Promise<RepoRow[]> {
     return query<RepoRow>(
@@ -99,5 +114,14 @@ export const RepoRepository = {
       [id, ownerId]
     );
     return (result.rowCount ?? 0) > 0;
+  },
+
+  async enableAutoDeploy(id: string, ownerId: string): Promise<void> {
+    await query(
+      `UPDATE repositories
+          SET auto_deploy_enabled = true
+        WHERE id = $1 AND owner_id = $2`,
+      [id, ownerId]
+    );
   },
 };

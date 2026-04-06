@@ -6,7 +6,7 @@
  * a shared secret header + Railway's internal network where possible).
  *
  * POST /internal/deploy
- *   Called by post-receive hook when a push to main/master is detected.
+ *   Called by post-receive hook when a push to main is detected.
  *   Resolves the user + repo, then enqueues a deployment job.
  *
  * Security model:
@@ -59,9 +59,10 @@ router.post('/deploy', async (req: Request, res: Response, next: NextFunction): 
       return;
     }
 
-    // Only auto-deploy for pushes to main or master
-    if (branch !== 'main' && branch !== 'master') {
-      logger.info(`[internal/deploy] Ignored push to non-default branch "${branch}"`, {
+    // Only auto-deploy for pushes to the default branch (main or master)
+    const DEFAULT_BRANCHES = ['main', 'master'];
+    if (!DEFAULT_BRANCHES.includes(branch!)) {
+      logger.info(`[internal/deploy] Ignored push to branch "${branch}" — only main/master triggers deploy`, {
         meta: { username, repoName },
       });
       res.status(200).json({ message: `Branch "${branch}" ignored — only main/master triggers deploy` });
@@ -82,11 +83,17 @@ router.post('/deploy', async (req: Request, res: Response, next: NextFunction): 
       return;
     }
 
-    // Guard: only deploy if auto_deploy_enabled OR this is a hook-triggered push
-    // (first deploy will set auto_deploy_enabled via DB trigger on success)
+    // Guard: hook-triggered deploys only run after manual activation.
     if (!repo.auto_deploy_enabled) {
-      // Allow it anyway — the pipeline's DB trigger will flip the flag on first success
-      logger.info(`[internal/deploy] First-time deploy for ${username}/${repoName}`);
+      logger.info(`[internal/deploy] Skipped: auto_deploy disabled for ${username}/${repoName}`);
+      res.status(200).json({
+        message: 'Auto deploy disabled. Click Deploy in the UI to activate.',
+        username,
+        repo: repoName,
+        branch,
+        enqueued: false,
+      });
+      return;
     }
 
     // Enqueue deployment

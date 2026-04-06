@@ -18,6 +18,7 @@ const JWT_EXPIRY = '7d';
 
 // Alphanumeric + hyphen; matches DB CHECK constraint
 const USERNAME_RE = /^[a-zA-Z0-9][a-zA-Z0-9-]*[a-zA-Z0-9]$|^[a-zA-Z0-9]$/;
+const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
@@ -30,28 +31,40 @@ export interface LoginResult {
   token: string;
 }
 
+export interface MeResult {
+  id: string;
+  username: string;
+  email: string | null;
+}
+
+export interface UpdateProfileInput {
+  email?: string | null;
+}
+
 // ── Service ───────────────────────────────────────────────────────────────────
 
 export const AuthService = {
   /**
    * Register a new user.
-   * - Validates username format
+   * - Validates username + email format
    * - Checks uniqueness (catches PG unique-violation)
    * - Hashes password with bcrypt
    * - Persists user
    */
-  async register(username: string, password: string): Promise<RegisterResult> {
+  async register(username: string, password: string, email: string): Promise<RegisterResult> {
+    const normalizedUsername = username.toLowerCase();
+
     // ── Input validation ──────────────────────────────────────────────────────
-    if (!username || typeof username !== 'string') {
+    if (!normalizedUsername || typeof normalizedUsername !== 'string') {
       throw createError(400, 'username is required');
     }
-    if (!USERNAME_RE.test(username)) {
+    if (!USERNAME_RE.test(normalizedUsername)) {
       throw createError(
         400,
         'username must contain only alphanumeric characters and hyphens, and cannot start or end with a hyphen'
       );
     }
-    if (username.length > 39) {
+    if (normalizedUsername.length > 39) {
       throw createError(400, 'username must be 39 characters or fewer');
     }
     if (!password || typeof password !== 'string') {
@@ -60,11 +73,20 @@ export const AuthService = {
     if (password.length < 8) {
       throw createError(400, 'password must be at least 8 characters');
     }
+    if (!email || typeof email !== 'string') {
+      throw createError(400, 'email is required');
+    }
+    if (!EMAIL_RE.test(email.trim())) {
+      throw createError(400, 'email must be a valid email address');
+    }
+    if (email.length > 254) {
+      throw createError(400, 'email must be 254 characters or fewer');
+    }
 
     // ── Uniqueness pre-check (friendly error) ─────────────────────────────────
-    const existing = await AuthRepository.findByUsername(username);
+    const existing = await AuthRepository.findByUsername(normalizedUsername);
     if (existing) {
-      throw createError(409, `Username "${username}" is already taken`);
+      throw createError(409, `Username "${normalizedUsername}" is already taken`);
     }
 
     // ── Hash + persist ────────────────────────────────────────────────────────
@@ -72,12 +94,18 @@ export const AuthService = {
 
     let user: Awaited<ReturnType<typeof AuthRepository.create>>;
     try {
-      user = await AuthRepository.create({ username, password_hash });
+      user = await AuthRepository.create({
+        username: normalizedUsername,
+        password_hash,
+        email: email.trim().toLowerCase(),
+      });
     } catch (err: unknown) {
-      // Postgres unique violation code = 23505 (race condition safety net)
-      const pgErr = err as { code?: string };
+      const pgErr = err as { code?: string; constraint?: string };
       if (pgErr.code === '23505') {
-        throw createError(409, `Username "${username}" is already taken`);
+        if (pgErr.constraint?.includes('email')) {
+          throw createError(409, 'An account with that email already exists');
+        }
+        throw createError(409, `Username "${normalizedUsername}" is already taken`);
       }
       throw err;
     }
@@ -95,7 +123,6 @@ export const AuthService = {
 
     const user = await AuthRepository.findByUsername(username);
     if (!user) {
-      // Do not reveal whether the username exists
       throw createError(401, 'Invalid credentials');
     }
 
@@ -117,4 +144,49 @@ export const AuthService = {
 
     return { token };
   },
+
+  async me(userId: string): Promise<MeResult> {
+    const user = await AuthRepository.findById(userId);
+    if (!user) {
+      throw createError(404, 'User not found');
+    }
+
+    return {
+      id: user.id,
+      username: user.username,
+      email: user.email,
+    };
+  },
+
+  async updateProfile(userId: string, input: UpdateProfileInput): Promise<MeResult> {
+    const current = await this.me(userId);
+
+    let email: string | null = current.email;
+    if (input.email !== undefined) {
+      const trimmed = (input.email ?? '').trim().toLowerCase();
+      if (trimmed) {
+        if (!EMAIL_RE.test(trimmed)) {
+          throw createError(400, 'email must be a valid email address');
+        }
+        email = trimmed;
+      } else {
+        email = null;
+      }
+    }
+
+    const updated = await AuthRepository.updateProfile(userId, {
+      email,
+    });
+
+    if (!updated) {
+      throw createError(404, 'User not found');
+    }
+
+    return {
+      id: updated.id,
+      username: updated.username,
+      email: updated.email,
+    };
+  },
+
 };

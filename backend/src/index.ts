@@ -4,6 +4,7 @@ import { requestLogger } from './middleware/requestLogger';
 import { errorHandler }  from './middleware/errorHandler';
 import cors from 'cors';
 import { initLogSubscribers } from './lib/logSubscribers';
+import { reconcileReposOnDisk } from './modules/repos/repo.service';
 
 // ── Bootstrap observers (must run before any routes fire) ────────────────────
 initLogSubscribers();
@@ -30,7 +31,6 @@ import repoRouter     from './routes/repos';
 import deployRouter   from './routes/deploy';
 import gitRouter      from './routes/git';
 import internalRouter from './routes/internal';
-
 app.use('/api/auth',  authRouter);
 app.use('/api/repos', repoRouter);
 app.use('/api',       deployRouter);    // /api/repos/:repoName/deploy, /api/deployments/*
@@ -42,8 +42,21 @@ app.use('/internal',  internalRouter);  // /internal/deploy (hook → deploy tri
 // ── Global error handler (must be last) ───────────────────────────────────────
 app.use(errorHandler);
 
-app.listen(PORT, () => {
-  console.log(`[server] Gitanic backend listening on port ${PORT}`);
+async function startServer(): Promise<void> {
+  try {
+    await reconcileReposOnDisk();
+  } catch (err) {
+    console.warn('[server] Startup reconcile skipped:', err);
+  }
+
+  app.listen(PORT, () => {
+    console.log(`[server] Gitanic backend listening on port ${PORT}`);
+  });
+}
+
+startServer().catch((err) => {
+  console.error('[server] Failed to start backend', err);
+  process.exit(1);
 });
 
 export default app;

@@ -10,6 +10,7 @@ import { query } from '../../lib/db';
 export interface UserRow {
   id: string;
   username: string;
+  email: string | null;
   password_hash: string;
   created_at: string;
 }
@@ -17,17 +18,23 @@ export interface UserRow {
 export interface CreateUserInput {
   username: string;
   password_hash: string;
+  email: string;
+}
+
+export interface UpdateProfileInput {
+  email?: string | null;
 }
 
 export const AuthRepository = {
   /**
    * Find a user by username. Returns undefined if not found.
+   * Note: username lookup is case-sensitive.
    */
   async findByUsername(username: string): Promise<UserRow | undefined> {
     const rows = await query<UserRow>(
-      `SELECT id, username, password_hash, created_at
+      `SELECT id, username, email, password_hash, created_at
          FROM users
-        WHERE username = $1
+        WHERE LOWER(username) = LOWER($1)
         LIMIT 1`,
       [username]
     );
@@ -39,7 +46,7 @@ export const AuthRepository = {
    */
   async findById(id: string): Promise<UserRow | undefined> {
     const rows = await query<UserRow>(
-      `SELECT id, username, password_hash, created_at
+      `SELECT id, username, email, password_hash, created_at
          FROM users
         WHERE id = $1
         LIMIT 1`,
@@ -50,16 +57,26 @@ export const AuthRepository = {
 
   /**
    * Insert a new user row. Returns the created row.
-   * Throws a DB unique-violation error if username is taken.
+   * Throws a DB unique-violation error if username or email is taken.
    */
   async create(input: CreateUserInput): Promise<UserRow> {
     const rows = await query<UserRow>(
-      `INSERT INTO users (username, password_hash)
-       VALUES ($1, $2)
-       RETURNING id, username, password_hash, created_at`,
-      [input.username, input.password_hash]
+      `INSERT INTO users (username, password_hash, email)
+       VALUES ($1, $2, $3)
+       RETURNING id, username, email, password_hash, created_at`,
+      [input.username, input.password_hash, input.email]
     );
-    // INSERT … RETURNING always yields exactly one row
+    return rows[0];
+  },
+
+  async updateProfile(id: string, input: UpdateProfileInput): Promise<UserRow | undefined> {
+    const rows = await query<UserRow>(
+      `UPDATE users
+          SET email = $2
+        WHERE id = $1
+        RETURNING id, username, email, password_hash, created_at`,
+      [id, input.email]
+    );
     return rows[0];
   },
 };

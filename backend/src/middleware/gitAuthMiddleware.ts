@@ -90,7 +90,7 @@ export async function gitAuthMiddleware(
   }
 
   // ── URL ownership check ────────────────────────────────────────────────────
-  // The :username segment in the URL must match the authenticated user.
+  // The :username segment in the URL must match the authenticated user exactly.
   // This prevents user A from pushing to user B's repo.
   const urlUsername = req.params['username'] as string | undefined;
   if (urlUsername && urlUsername !== user.username) {

@@ -112,7 +112,7 @@ public class CloneController {
     private Node buildRepoCard(File dir) {
         GitCommandService git      = GitCommandService.getInstance();
         String            repoName  = dir.getName();
-        String            remoteUrl = git.getRemoteUrl(dir).trim();
+        String            remoteUrl = GitCommandService.stripCredentials(git.getRemoteUrl(dir).trim());
 
         HBox card = new HBox(12);
         card.getStyleClass().add("repo-card");
@@ -187,7 +187,13 @@ public class CloneController {
             try {
                 GitCommandService.getInstance().clone(authUrl, workspace, repoName);
 
+                // Clean remote URL — remove embedded credentials
                 File repoDir = new File(workspace, repoName);
+                String cleanUrl = GitCommandService.stripCredentials(authUrl);
+                try {
+                    GitCommandService.getInstance().run(repoDir, "remote", "set-url", "origin", cleanUrl);
+                } catch (Exception ignored) {}
+
                 state.setCurrentRepoDir(repoDir);
                 state.setOverrideCloneUrl(null);
 

@@ -41,3 +41,34 @@ export async function bustDeploymentCache(username: string): Promise<void> {
     logger.warn(`[cacheBust] Invalidation request error: ${String(err)}`);
   }
 }
+
+/**
+ * Bust the local serve server's (serve.ts) in-memory deployment resolution cache.
+ * The serve server runs on SERVE_PORT (default 4000) and maintains a 60s TTL Map
+ * from username → deploymentId. After a successful deploy we POST here so the
+ * new deploymentId is picked up immediately instead of waiting for the TTL.
+ */
+export async function bustLocalServeCache(username: string): Promise<void> {
+  const servePort = process.env.SERVE_PORT ?? '4000';
+  const secret = process.env.INTERNAL_SECRET ?? 'change-me-internal-secret';
+
+  try {
+    const res = await fetch(`http://localhost:${servePort}/cache/bust`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'x-gitanic-secret': secret,
+      },
+      body: JSON.stringify({ username }),
+      signal: AbortSignal.timeout(3_000),
+    });
+
+    if (!res.ok) {
+      logger.warn(`[cacheBust] Local serve cache bust failed: ${res.status}`);
+    } else {
+      logger.info(`[cacheBust] Local serve cache busted for user "${username}"`);
+    }
+  } catch (err) {
+    logger.warn(`[cacheBust] Local serve cache bust error: ${String(err)}`);
+  }
+}

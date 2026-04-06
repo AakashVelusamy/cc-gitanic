@@ -103,16 +103,23 @@ export const StorageService = {
    *      we rely on the caller passing successfulDepIds in creation order)
    *   4. Delete all objects whose prefix is NOT in the latest KEEP_DEPLOYMENTS
    *
-   * @param username         - repo owner
-   * @param recentDepIds     - ordered list (oldest → newest) of deployment IDs to keep track of
+   * @param username           - repo owner
+   * @param recentDepIds       - ordered list (newest → oldest) of successful deployment IDs
+   * @param activeDeploymentId - the current active_deployment_id (never deleted, even if outside keepSet)
    */
   async pruneOldDeployments(
-    username:      string,
-    recentDepIds:  string[]   // caller supplies from DB (ordered newest first)
+    username:            string,
+    recentDepIds:        string[],   // caller supplies from DB (ordered newest first)
+    activeDeploymentId?: string      // safety guard — never delete the live deployment
   ): Promise<void> {
     // Keep only the first KEEP_DEPLOYMENTS IDs (newest)
     const keepSet = new Set(recentDepIds.slice(0, KEEP_DEPLOYMENTS));
-    const toDelete = recentDepIds.slice(KEEP_DEPLOYMENTS);
+
+    // Defense-in-depth: always protect the active deployment, even if it somehow
+    // isn't in the top N (e.g. manual pointer reset, race condition).
+    if (activeDeploymentId) keepSet.add(activeDeploymentId);
+
+    const toDelete = recentDepIds.filter((id) => !keepSet.has(id));
 
     if (toDelete.length === 0) {
       logger.debug(`[storage] Prune: ${username} has ${recentDepIds.length} deployment(s) — no pruning needed`);

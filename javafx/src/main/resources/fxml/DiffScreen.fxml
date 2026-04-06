@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<?import javafx.scene.layout.VBox?>
+<?import javafx.scene.layout.HBox?>
+<?import javafx.scene.control.Label?>
+<?import javafx.scene.control.TextArea?>
+<?import javafx.scene.control.Button?>
+
+<VBox spacing="10" xmlns="http://javafx.com/javafx/17" xmlns:fx="http://javafx.com/fxml/1" fx:controller="com.gitanic.controllers.DiffController" style="-fx-padding: 20;">
+    <HBox spacing="10">
+        <Button text="← Repositories" onAction="#onBackClicked"/>
+        <Label text="Git Diff" style="-fx-font-size: 18; -fx-font-weight: bold;"/>
+    </HBox>
+    
+    <TextArea fx:id="diffArea" VBox.vgrow="ALWAYS" editable="false" style="-fx-font-family: monospace;"/>
+    
+    <HBox spacing="10" alignment="CENTER_RIGHT">
+        <Button text="Commit Changes" onAction="#onCommitClicked"/>
+        <Button text="Push / Pull" onAction="#onPushPullClicked"/>
+    </HBox>
+    <Label fx:id="statusLabel" textFill="RED"/>
+</VBox>

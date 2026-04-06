@@ -69,4 +69,59 @@ export const RepoController = {
       next(err);
     }
   },
+
+  /**
+   * GET /api/repos/:repoName/tree?ref=HEAD&path=
+   * 200: TreeEntry[]
+   */
+  async getTree(req: Request, res: Response, next: NextFunction): Promise<void> {
+    try {
+      const { username } = res.locals.user;
+      const repoName = req.params['repoName'] as string;
+      const ref = (req.query['ref'] as string | undefined) ?? 'HEAD';
+      const treePath = (req.query['path'] as string | undefined) ?? '';
+      const { RepoGitService } = await import('./repo.git.service');
+      const entries = RepoGitService.listTree(username, repoName, ref, treePath);
+      res.status(200).json(entries);
+    } catch (err) {
+      next(err);
+    }
+  },
+
+  /**
+   * GET /api/repos/:repoName/blob?ref=HEAD&path=src/index.html
+   * 200: BlobResult
+   */
+  async getBlob(req: Request, res: Response, next: NextFunction): Promise<void> {
+    try {
+      const { username } = res.locals.user;
+      const repoName = req.params['repoName'] as string;
+      const ref = (req.query['ref'] as string | undefined) ?? 'HEAD';
+      const filePath = (req.query['path'] as string | undefined) ?? '';
+      if (!filePath) { res.status(400).json({ error: 'path is required' }); return; }
+      const { RepoGitService } = await import('./repo.git.service');
+      const blob = RepoGitService.getBlob(username, repoName, ref, filePath);
+      res.status(200).json(blob);
+    } catch (err) {
+      next(err);
+    }
+  },
+
+  /**
+   * GET /api/repos/:repoName/commits?ref=HEAD&limit=20
+   * 200: CommitInfo[]
+   */
+  async getCommits(req: Request, res: Response, next: NextFunction): Promise<void> {
+    try {
+      const { username } = res.locals.user;
+      const repoName = req.params['repoName'] as string;
+      const ref = (req.query['ref'] as string | undefined) ?? 'HEAD';
+      const limit = Math.min(parseInt((req.query['limit'] as string | undefined) ?? '20', 10), 100);
+      const { RepoGitService } = await import('./repo.git.service');
+      const commits = RepoGitService.getCommits(username, repoName, ref, limit);
+      res.status(200).json(commits);
+    } catch (err) {
+      next(err);
+    }
+  },
 };

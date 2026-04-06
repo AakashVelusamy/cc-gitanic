@@ -46,6 +46,25 @@ export interface DeployStrategy {
 const NPM_CI_TIMEOUT    = 120_000;  // 120 s — dependency install
 const NPM_BUILD_TIMEOUT = 180_000;  // 180 s — framework build
 
+// ── Sandbox environment ───────────────────────────────────────────────────────
+
+/**
+ * Restricted environment for build child processes.
+ * - PATH is limited to standard system directories (no user-local bins)
+ * - HOME is /tmp (no access to Railway's home dir or its secrets)
+ * - NODE_ENV=production ensures framework builds optimise output
+ * - No DATABASE_URL, JWT_SECRET, SUPABASE_SERVICE_ROLE_KEY, etc.
+ *
+ * Plan requirement: "sandboxed via child_process with no $HOME, $PATH restricted"
+ */
+const SAFE_ENV: NodeJS.ProcessEnv = {
+  PATH:     '/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin',
+  HOME:     '/tmp',
+  NODE_ENV: 'production',
+  // CI=true suppresses interactive prompts in npm/CRA/Vite
+  CI:       'true',
+};
+
 // ── StaticStrategy ────────────────────────────────────────────────────────────
 
 /**
@@ -118,6 +137,7 @@ export const ReactStrategy: DeployStrategy = {
       cwd:     srcDir,
       stdio:   'pipe',
       timeout: NPM_CI_TIMEOUT,
+      env:     SAFE_ENV,
     });
 
     // ── npm run build ────────────────────────────────────────────────────────
@@ -126,6 +146,7 @@ export const ReactStrategy: DeployStrategy = {
       cwd:     srcDir,
       stdio:   'pipe',
       timeout: NPM_BUILD_TIMEOUT,
+      env:     SAFE_ENV,
     });
 
     // ── Resolve output directory ─────────────────────────────────────────────
@@ -179,6 +200,7 @@ export const ViteStrategy: DeployStrategy = {
       cwd:     srcDir,
       stdio:   'pipe',
       timeout: NPM_CI_TIMEOUT,
+      env:     SAFE_ENV,
     });
 
     // ── vite build ───────────────────────────────────────────────────────────
@@ -187,6 +209,7 @@ export const ViteStrategy: DeployStrategy = {
       cwd:     srcDir,
       stdio:   'pipe',
       timeout: NPM_BUILD_TIMEOUT,
+      env:     SAFE_ENV,
     });
 
     // ── Output directory ─────────────────────────────────────────────────────
@@ -222,16 +245,55 @@ export const STRATEGIES: DeployStrategy[] = [
 /**
  * Select the appropriate build strategy for the given source directory.
  * Throws 422 if no strategy matches.
+ *
+ * Gitanic only deploys static sites. Supported projects:
+ *   - Vite (React, Vue, Svelte, vanilla) → detects vite.config.*
+ *   - Create React App                   → detects react-scripts in package.json
+ *   - Static HTML                         → detects index.html at root
+ *
+ * Unsupported (intentionally rejected):
+ *   - Next.js, Nuxt, Remix, SvelteKit (SSR frameworks)
+ *   - Node/Express backends, Python/Django, Go servers
+ *   - Any project without a static build output
  */
 export function detectStrategy(srcDir: string): DeployStrategy {
   for (const strategy of STRATEGIES) {
     if (strategy.detect(srcDir)) return strategy;
   }
 
+  // Provide actionable feedback about what Gitanic supports
+  const hasPkgJson = fs.existsSync(path.join(srcDir, 'package.json'));
+  let hint = '';
+
+  if (hasPkgJson) {
+    try {
+      const pkg = JSON.parse(fs.readFileSync(path.join(srcDir, 'package.json'), 'utf8')) as {
+        dependencies?: Record<string, string>;
+        devDependencies?: Record<string, string>;
+      };
+      const allDeps = { ...(pkg.dependencies ?? {}), ...(pkg.devDependencies ?? {}) };
+
+      if ('next' in allDeps)
+        hint = ' Your project uses Next.js, which requires server-side rendering — Gitanic only supports static site output.';
+      else if ('nuxt' in allDeps)
+        hint = ' Your project uses Nuxt, which requires server-side rendering — Gitanic only supports static site output.';
+      else if ('remix' in allDeps || '@remix-run/react' in allDeps)
+        hint = ' Your project uses Remix, which requires a server runtime — Gitanic only supports static site output.';
+      else if ('express' in allDeps || 'fastify' in allDeps || 'koa' in allDeps)
+        hint = ' Your project appears to be a backend server — Gitanic only deploys static sites (HTML/CSS/JS).';
+      else
+        hint = ' If your project builds static output, add a vite.config.ts, use react-scripts, or place an index.html at the root.';
+    } catch {
+      hint = ' package.json exists but could not be parsed.';
+    }
+  } else {
+    hint = ' Add an index.html at the repository root for static sites, or a vite.config.ts / react-scripts setup for framework builds.';
+  }
+
   throw Object.assign(
     new Error(
-      'Cannot detect build strategy: no vite.config.*, react-scripts in package.json, ' +
-      'or index.html found in the repository root.'
+      'Cannot detect build strategy: no vite.config.*, react-scripts dependency, ' +
+      `or index.html found in the repository root.${hint}`
     ),
     { statusCode: 422 }
   );

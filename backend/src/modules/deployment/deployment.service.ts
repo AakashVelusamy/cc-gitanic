@@ -32,7 +32,7 @@ import { logger }                                from '../../lib/logger';
 import { createError }                           from '../../middleware/errorHandler';
 import { AuthRepository }                        from '../auth/auth.repository';
 import { detectStrategy }                        from './strategies';
-import { bustDeploymentCache }                   from '../../lib/cacheBust';
+import { bustDeploymentCache, bustLocalServeCache } from '../../lib/cacheBust';
 
 // ── Constants ─────────────────────────────────────────────────────────────────
 
@@ -214,6 +214,11 @@ async function runPipeline(
     // ── Step 11: bust Vercel edge cache so new deployment is live immediately ──
     bustDeploymentCache(username).catch(() =>
       logger.warn('[pipeline] Cache bust fire-and-forget failed (non-critical)')
+    );
+
+    // ── Step 11b: bust local serve server's in-memory deployment cache ────────
+    bustLocalServeCache(username).catch(() =>
+      logger.warn('[pipeline] Local serve cache bust failed (non-critical)')
     );
 
   } catch (pipelineErr) {

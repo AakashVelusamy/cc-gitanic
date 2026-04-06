@@ -46,7 +46,7 @@ const INTERNAL_BASE_URL = process.env.INTERNAL_BASE_URL ?? 'http://localhost:300
  *
  * The hook:
  *   1. Reads stdin (oldSha newSha refname) from git
- *   2. Detects if the push is to refs/heads/main (or master)
+ *   2. Detects if the push is to refs/heads/main
  *   3. POSTs to /internal/deploy with the repo + user identifiers
  *      using curl (always available on Railway / Alpine Linux)
  */
@@ -110,7 +110,7 @@ export const RepoFactory = {
 
     try {
       // Step 1 — git init --bare into temp dir
-      execFileSync('git', ['init', '--bare', tmpPath], {
+      execFileSync('git', ['init', '--bare', '--initial-branch=main', tmpPath], {
         stdio: 'pipe',
         timeout: 15_000,
       });
@@ -125,6 +125,10 @@ export const RepoFactory = {
       // Step 3 — atomic rename to final path
       //   fs.renameSync is a single syscall (rename(2)) — atomic on POSIX
       //   when src and dst are on the same filesystem.
+      // Defensively clean up any orphaned directory with the exact same name
+      if (fs.existsSync(finalPath)) {
+        fs.rmSync(finalPath, { recursive: true, force: true });
+      }
       fs.renameSync(tmpPath, finalPath);
 
       logger.info(`[RepoFactory] Bare repo created at ${finalPath}`, {
@@ -193,38 +197,41 @@ export const RepoService = {
     repoName: string
   ): Promise<CreateRepoResult> {
 
+    const normalizedRepoName = repoName.toLowerCase();
+    const normalizedUsername = username.toLowerCase();
+
     // ── Validate ───────────────────────────────────────────────────────────────
-    if (!repoName || !REPO_NAME_RE.test(repoName)) {
+    if (!normalizedRepoName || !REPO_NAME_RE.test(normalizedRepoName)) {
       throw createError(
         400,
         'Repository name must be 1–100 characters and contain only letters, numbers, hyphens, underscores, or dots'
       );
     }
-    if (repoName.startsWith('.') || repoName.endsWith('.')) {
+    if (normalizedRepoName.startsWith('.') || normalizedRepoName.endsWith('.')) {
       throw createError(400, 'Repository name cannot start or end with a dot');
     }
 
     // ── Uniqueness pre-check ──────────────────────────────────────────────────
-    const existing = await RepoRepository.findByOwnerAndName(userId, repoName);
+    const existing = await RepoRepository.findByOwnerAndName(userId, normalizedRepoName);
     if (existing) {
-      throw createError(409, `Repository "${repoName}" already exists`);
+      throw createError(409, `Repository "${normalizedRepoName}" already exists`);
     }
 
     // ── Phase A: DB row ───────────────────────────────────────────────────────
     let row: RepoRow;
     try {
-      row = await RepoRepository.create({ name: repoName, owner_id: userId });
+      row = await RepoRepository.create({ name: normalizedRepoName, owner_id: userId });
     } catch (err: unknown) {
       const pgErr = err as { code?: string };
       if (pgErr.code === '23505') {
-        throw createError(409, `Repository "${repoName}" already exists`);
+        throw createError(409, `Repository "${normalizedRepoName}" already exists`);
       }
       throw err;
     }
 
     // ── Phase B: Filesystem (atomic) ──────────────────────────────────────────
     try {
-      RepoFactory.init(username, repoName);
+      RepoFactory.init(normalizedUsername, normalizedRepoName);
     } catch (err) {
       logger.error('[RepoService] Filesystem init failed — rolling back DB row', {
         userId,
@@ -235,7 +242,7 @@ export const RepoService = {
       throw createError(500, 'Failed to initialise git repository on server');
     }
 
-    return { ...row, git_url: buildGitUrl(username, repoName) };
+    return { ...row, git_url: buildGitUrl(normalizedUsername, normalizedRepoName) };
   },
 
   /** List all repos for the authenticated user. */
@@ -276,6 +283,42 @@ export const RepoService = {
     }
   },
 };
+
+/**
+ * Reconcile DB repositories with filesystem bare repos.
+ *
+ * This is primarily useful in local development where seed SQL may insert
+ * repository rows directly without running RepositoryFactory.
+ */
+export async function reconcileReposOnDisk(): Promise<void> {
+  const defaultSync = process.env.NODE_ENV === 'production' ? 'false' : 'true';
+  const shouldSync = (process.env.SYNC_REPOS_ON_STARTUP ?? defaultSync).toLowerCase() === 'true';
+
+  if (!shouldSync) {
+    return;
+  }
+
+  const repos = await RepoRepository.findAllWithOwnerUsername();
+  let created = 0;
+
+  for (const repo of repos) {
+    if (RepoFactory.exists(repo.username, repo.name)) {
+      continue;
+    }
+
+    try {
+      RepoFactory.init(repo.username, repo.name);
+      created += 1;
+      logger.info(`[RepoBootstrap] Created missing bare repo for ${repo.username}/${repo.name}`);
+    } catch (err) {
+      logger.error(`[RepoBootstrap] Failed to create bare repo for ${repo.username}/${repo.name}: ${String(err)}`);
+    }
+  }
+
+  logger.info('[RepoBootstrap] Repository reconcile complete', {
+    meta: { scanned: repos.length, created },
+  });
+}
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 

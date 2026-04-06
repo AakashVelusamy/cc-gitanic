@@ -5,6 +5,7 @@ import javafx.application.Application;
 import javafx.fxml.FXMLLoader;
 import javafx.scene.Parent;
 import javafx.scene.Scene;
+import javafx.scene.image.Image;
 import javafx.stage.Stage;
 
 import java.io.IOException;
@@ -30,6 +31,7 @@ public class App extends Application {
         }
 
         stage.setTitle("Gitanic Desktop");
+        stage.getIcons().add(new Image(App.class.getResourceAsStream("/assets/logo.png")));
         stage.setMinWidth(800);
         stage.setMinHeight(550);
         stage.setScene(scene);

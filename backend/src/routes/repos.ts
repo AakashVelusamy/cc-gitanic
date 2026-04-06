@@ -24,4 +24,13 @@ router.get('/:repoName', RepoController.getOne);
 // DELETE /api/repos/:repoName  → delete a repo
 router.delete('/:repoName', RepoController.remove);
 
+// GET /api/repos/:repoName/tree   → list tree entries
+router.get('/:repoName/tree', RepoController.getTree);
+
+// GET /api/repos/:repoName/blob   → get file content
+router.get('/:repoName/blob', RepoController.getBlob);
+
+// GET /api/repos/:repoName/commits → list commits
+router.get('/:repoName/commits', RepoController.getCommits);
+
 export default router;
