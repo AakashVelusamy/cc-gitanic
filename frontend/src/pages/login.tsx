@@ -128,7 +128,7 @@ export default function LoginPage() {
   }
 
   const inputClass =
-    'w-full bg-secondary/50 border border-white/10 rounded-xl py-2.5 px-4 text-foreground focus:outline-none focus:border-primary/50 focus:ring-1 focus:ring-primary/50 focus:bg-primary/10 transition-all';
+    'w-full h-11 bg-secondary/50 border border-white/10 rounded-xl px-4 text-foreground focus:outline-none focus:border-primary/50 focus:ring-1 focus:ring-primary/50 focus:bg-primary/10 transition-all';
   const disabledInputClass = `${inputClass} opacity-50 cursor-not-allowed`;
 
   return (
@@ -191,7 +191,7 @@ export default function LoginPage() {
                         disabled={!otpSent}
                         value={otp}
                         onChange={(e) => setOtp(e.target.value.replace(/\D/g, '').slice(0, 6))}
-                        className={`${!otpSent ? disabledInputClass : inputClass} text-center text-2xl tracking-[0.5em] font-mono`}
+                        className={`${!otpSent ? disabledInputClass : inputClass} text-center text-xl tracking-[0.5em] font-mono`}
                         placeholder="000000"
                       />
                       {otpSent && (
