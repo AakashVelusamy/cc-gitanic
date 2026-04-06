@@ -318,7 +318,9 @@ public final class GitCommandService {
             String currentRemote = getRemoteUrl(repoDir);
             try {
                 runSilent(repoDir, "remote", "set-url", "origin", authUrl);
-                return run(repoDir, "push");
+                // --set-upstream origin HEAD: works for both first push (no tracking branch)
+                // and subsequent pushes; HEAD pushes whatever branch is currently checked out
+                return run(repoDir, "push", "--set-upstream", "origin", "HEAD");
             } finally {
                 if (!currentRemote.isBlank()) {
                     String cleanUrl = stripCredentials(authUrl);
@@ -326,7 +328,7 @@ public final class GitCommandService {
                 }
             }
         }
-        return run(repoDir, "push");
+        return run(repoDir, "push", "--set-upstream", "origin", "HEAD");
     }
 
     // ================================================================

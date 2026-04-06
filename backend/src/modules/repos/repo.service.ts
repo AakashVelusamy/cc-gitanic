@@ -324,5 +324,7 @@ export async function reconcileReposOnDisk(): Promise<void> {
 
 function buildGitUrl(username: string, repoName: string): string {
   const host = process.env.GIT_HOST ?? 'localhost:3000';
-  return `http://${host}/git/${username}/${repoName}.git`;
+  // Use https for non-localhost hosts — Railway redirects http→https which strips credentials
+  const scheme = host.startsWith('localhost') || host.startsWith('127.') ? 'http' : 'https';
+  return `${scheme}://${host}/git/${username}/${repoName}.git`;
 }
