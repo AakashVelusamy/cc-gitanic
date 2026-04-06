@@ -45,12 +45,10 @@ function createTransporter(): nodemailer.Transporter | null {
 
   return nodemailer.createTransport({
     host: 'smtp.gmail.com',
-    port: 587,
-    secure: false, // upgrade later with STARTTLS
-    requireTLS: true,
+    port: 465,
+    secure: true, // SSL — more reliably unblocked on Railway than port 587 STARTTLS
     auth: { user, pass },
     tls: {
-      // Do not fail on Railway outbound unauth cert
       rejectUnauthorized: false,
     },
   });
@@ -96,10 +94,6 @@ class OtpService {
    * Enforces a per-email cooldown to prevent spam.
    */
   async sendOtp(email: string): Promise<void> {
-    if (!this.transporter) {
-      throw createError(500, 'Email service is not configured (SMTP_USER/SMTP_PASS missing)');
-    }
-
     const normalizedEmail = email.trim().toLowerCase();
     const now = Date.now();
 
@@ -119,6 +113,12 @@ class OtpService {
       attempts: 0,
       lastSentAt: now,
     });
+
+    // SMTP not configured — log OTP to console so it's visible in Railway logs
+    if (!this.transporter) {
+      logger.warn(`[otp] SMTP not configured. OTP for ${normalizedEmail} is: ${otp} (check Railway logs)`);
+      return;
+    }
 
     try {
       await this.transporter.sendMail({

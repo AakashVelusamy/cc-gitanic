@@ -75,31 +75,49 @@ public final class AppState {
 
     /**
      * Build an authenticated git URL for remote operations.
-     * Format: http://username:password@host:port/git/owner/repo.git
+     * Format: https://username:password@host/git/owner/repo.git
+     * Upgrades http:// to https:// for non-localhost hosts to avoid
+     * redirect-induced credential stripping by git.
      */
     public String buildAuthUrl(String ownerUsername, String repoName) {
         String user = currentUser != null ? currentUser.getUsername() : ownerUsername;
         String pass = password != null ? encodeCredential(password) : "";
         int schemeEnd = gitBaseUrl.indexOf("://") + 3;
-        String scheme  = gitBaseUrl.substring(0, schemeEnd);
+        String scheme   = gitBaseUrl.substring(0, schemeEnd);
         String hostRest = gitBaseUrl.substring(schemeEnd);
+        scheme = upgradeScheme(scheme, hostRest);
         return scheme + user + ":" + pass + "@" + hostRest + "/" + ownerUsername + "/" + repoName + ".git";
     }
 
     /**
      * Build authenticated URL from a raw git URL (e.g. pasted by user).
      * If URL already contains @, return as-is. Otherwise inject credentials.
+     * Upgrades http:// to https:// for non-localhost hosts to avoid
+     * redirect-induced credential stripping by git.
      */
     public String injectCredentials(String rawUrl) {
         if (rawUrl == null || rawUrl.contains("@")) return rawUrl;
         if (currentUser == null || password == null) return rawUrl;
         int schemeEnd = rawUrl.indexOf("://");
         if (schemeEnd < 0) return rawUrl;
-        String scheme   = rawUrl.substring(0, schemeEnd + 3);
-        String rest     = rawUrl.substring(schemeEnd + 3);
-        String user     = encodeCredential(currentUser.getUsername());
-        String pass     = encodeCredential(password);
+        String scheme = rawUrl.substring(0, schemeEnd + 3);
+        String rest   = rawUrl.substring(schemeEnd + 3);
+        String user   = encodeCredential(currentUser.getUsername());
+        String pass   = encodeCredential(password);
+        scheme = upgradeScheme(scheme, rest);
         return scheme + user + ":" + pass + "@" + rest;
+    }
+
+    /**
+     * Upgrades http:// to https:// unless the host is localhost or 127.0.0.1.
+     * Git strips Authorization headers when following HTTP→HTTPS redirects,
+     * so we must use the correct scheme from the start.
+     */
+    private String upgradeScheme(String scheme, String hostAndRest) {
+        if (!"http://".equals(scheme)) return scheme;
+        String host = hostAndRest.split("[/:?#]")[0];
+        if ("localhost".equals(host) || "127.0.0.1".equals(host)) return scheme;
+        return "https://";
     }
 
     private String encodeCredential(String s) {
