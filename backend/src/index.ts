@@ -1,4 +1,4 @@
-import 'dotenv/config';
+﻿import 'dotenv/config';
 import express from 'express';
 import { requestLogger } from './middleware/requestLogger';
 import { errorHandler }  from './middleware/errorHandler';
@@ -6,57 +6,52 @@ import cors from 'cors';
 import { initLogSubscribers } from './lib/logSubscribers';
 import { reconcileReposOnDisk } from './modules/repos/repo.service';
 
-// ── Bootstrap observers (must run before any routes fire) ────────────────────
-initLogSubscribers();
-
-
-
-const app = express();
-const PORT = parseInt(process.env.PORT ?? '3000', 10);
-
-// ── Core middleware ────────────────────────────────────────────────────────────
-app.use(cors());
-app.use(express.json());
-app.use(express.urlencoded({ extended: false }));
-app.use(requestLogger);
-
-// ── Health check ───────────────────────────────────────────────────────────────
-app.get('/health', (_req, res) => {
-  res.status(200).json({ status: 'ok', ts: new Date().toISOString() });
-});
-
-// ── Route mounts ──────────────────────────────────────────────────────────────
 import authRouter     from './routes/auth';
 import repoRouter     from './routes/repos';
 import deployRouter   from './routes/deploy';
 import gitRouter      from './routes/git';
 import internalRouter from './routes/internal';
-app.use('/api/auth',  authRouter);
-app.use('/api/repos', repoRouter);
-app.use('/api',       deployRouter);    // /api/repos/:repoName/deploy, /api/deployments/*
-app.use('/git',       gitRouter);       // /git/:username/:repo.git/*
-app.use('/internal',  internalRouter);  // /internal/deploy (hook → deploy trigger)
 
+// Bootstrap observers (must run before any routes fire)
+initLogSubscribers();
 
+const app = express();
+const PORT = parseInt(process.env.PORT ?? '3000', 10);
 
-// ── Global error handler (must be last) ───────────────────────────────────────
-app.use(errorHandler);
+app.use(cors());
+app.use(requestLogger);
 
-async function startServer(): Promise<void> {
-  try {
-    await reconcileReposOnDisk();
-  } catch (err) {
-    console.warn('[server] Startup reconcile skipped:', err);
-  }
-
-  app.listen(PORT, () => {
-    console.log(`[server] Gitanic backend listening on port ${PORT}`);
-  });
-}
-
-startServer().catch((err) => {
-  console.error('[server] Failed to start backend', err);
-  process.exit(1);
+// Health check
+app.get('/health', (_req, res) => {
+  res.status(200).json({ status: 'ok', ts: new Date().toISOString() });
 });
 
-export default app;
+// IMPORTANT: Mount /git BEFORE body parsers! git-http-backend needs raw streaming bodies.
+app.use('/git', gitRouter);
+
+// Now apply body parsers for the rest of the API
+app.use(express.json());
+app.use(express.urlencoded({ extended: false }));
+
+// Route mounts
+app.use('/api/auth',  authRouter);
+app.use('/api/repos', repoRouter);
+app.use('/api',       deployRouter);
+app.use('/internal',  internalRouter);
+
+// Error Handler
+app.use(errorHandler);
+
+// Server Startup
+app.listen(PORT, async () => {
+  console.log(`[HTTP] Server listening on port ${PORT}`);
+  const shouldSync = process.env.SYNC_REPOS_ON_STARTUP !== 'false';
+  if (shouldSync) {
+    console.log('[System] SYNC_REPOS_ON_STARTUP=true -> Reconciling repos...');
+    await reconcileReposOnDisk().catch(err => {
+      console.error('[System] Repo sync failed:', err);
+    });
+  } else {
+    console.log('[System] SYNC_REPOS_ON_STARTUP=false -> Skipping sync.');
+  }
+});
