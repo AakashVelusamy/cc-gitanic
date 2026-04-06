@@ -169,15 +169,6 @@ export default function LoginPage() {
                         className={otpSent ? disabledInputClass : inputClass}
                         placeholder="you@example.com"
                       />
-                      {otpSent && (
-                        <button
-                          type="button"
-                          onClick={() => { setOtpSent(false); setOtp(''); }}
-                          className="text-xs text-primary hover:text-accent mt-1 transition-colors"
-                        >
-                          Change email
-                        </button>
-                      )}
                     </div>
                     <div>
                       <label className="block text-sm font-medium text-foreground mb-1" htmlFor="otp">Verification Code</label>
@@ -194,23 +185,6 @@ export default function LoginPage() {
                         className={`${!otpSent ? disabledInputClass : inputClass} text-center text-xl tracking-[0.5em] font-mono`}
                         placeholder="000000"
                       />
-                      {otpSent && (
-                        <div className="flex items-center justify-between mt-1">
-                          <p className="text-xs text-muted-foreground">Check your email for the 6-digit code</p>
-                          {resendCooldown > 0 ? (
-                            <span className="text-xs text-muted-foreground">Resend in {resendCooldown}s</span>
-                          ) : (
-                            <button
-                              type="button"
-                              onClick={handleSendOtp}
-                              disabled={loading}
-                              className="text-xs text-primary hover:text-accent transition-colors disabled:opacity-50"
-                            >
-                              Resend
-                            </button>
-                          )}
-                        </div>
-                      )}
                     </div>
                   </>
                 ) : step === 2 ? (
@@ -327,24 +301,6 @@ export default function LoginPage() {
                 )}
               </button>
             </form>
-
-            <div className="mt-6 text-center text-sm text-muted-foreground">
-              {isLogin ? (
-                <>
-                  Don&apos;t have an account?{' '}
-                  <Link href={routes.signup} onClick={resetForm} className="text-primary hover:text-accent font-medium transition-colors">
-                    Sign up
-                  </Link>
-                </>
-              ) : (
-                <>
-                  Already have an account?{' '}
-                  <Link href={routes.login} onClick={resetForm} className="text-primary hover:text-accent font-medium transition-colors">
-                    Sign in
-                  </Link>
-                </>
-              )}
-            </div>
           </div>
         </div>
       </div>
