@@ -199,7 +199,7 @@ export default function RepositoryPage() {
               <div className="flex flex-row items-center gap-3 shrink-0">
                 {repo.active_deployment_id ? (
                   <a
-                    href={`https://${username}.${process.env.NEXT_PUBLIC_ROOT_DOMAIN || 'gitanic.vercel.app'}`}
+                    href={`/api/live/${username}/${repo.active_deployment_id}/`}
                     target="_blank"
                     rel="noopener noreferrer"
                     className="btn-primary flex items-center justify-center gap-2 shadow-lg shadow-primary/20 h-[42px] px-4 w-full sm:w-auto"
