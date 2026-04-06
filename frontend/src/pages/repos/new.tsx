@@ -70,13 +70,13 @@ export default function NewRepositoryPage() {
         <div className="flex justify-center pt-0">
           <div className="w-full max-w-2xl">
 
-          {error && (
-            <div className="mb-6 sm:mb-8 p-3 sm:p-4 rounded-xl bg-destructive/10 border border-destructive/30 text-destructive text-sm flex items-center gap-2 sm:gap-3">
-              <AlertCircle size={16} className="sm:size-20 shrink-0" /> <span>{error}</span>
-            </div>
-          )}
+          <div className="glass rounded-2xl p-6 sm:p-8 shadow-2xl">
+            {error && (
+              <div className="mb-6 sm:mb-8 p-3 sm:p-4 rounded-xl bg-destructive/10 border border-destructive/30 text-destructive text-sm flex items-center gap-2 sm:gap-3">
+                <AlertCircle size={16} className="sm:size-5 shrink-0" /> <span className="break-words w-full">{error}</span>
+              </div>
+            )}
 
-          <div className="glass rounded-2xl p-6 sm:p-8">
             <form onSubmit={handleSubmit} className="space-y-6 sm:space-y-8">
               <div>
                 <label className="block text-sm font-medium text-foreground mb-2" htmlFor="repo-name">

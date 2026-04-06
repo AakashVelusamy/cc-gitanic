@@ -239,8 +239,7 @@ export const RepoService = {
         meta: { error: String(err) },
       });
       await RepoRepository.delete(row.id, userId).catch(() => undefined);
-      throw createError(500, 'Failed to initialise git repository on server');
-    }
+        throw createError(500, `Failed to initialise git repository on server: ${String(err)}`);
 
     return { ...row, git_url: buildGitUrl(normalizedUsername, normalizedRepoName) };
   },
