@@ -78,7 +78,7 @@ export default function LoginPage() {
 
     if (step === 1) {
       if (!otpSent) {
-        await handleSendOtp();
+        setError('Please send a verification code to your email first');
         return;
       }
       if (!otp || otp.length !== 6) {
@@ -216,38 +216,48 @@ export default function LoginPage() {
                       className={otpSent ? disabledInputClass : inputClass}
                       placeholder="you@example.com"
                     />
-                    {otpSent && (
-                      <button
-                        type="button"
-                        onClick={() => { setOtpSent(false); setOtp(''); }}
-                        className="text-xs text-primary hover:text-accent mt-1 transition-colors"
-                      >
-                        Change email
-                      </button>
-                    )}
+                    <div className="mt-1">
+                      {!otpSent ? (
+                        <button
+                          type="button"
+                          onClick={handleSendOtp}
+                          disabled={loading || !email.trim()}
+                          className="text-xs text-primary hover:text-accent transition-colors disabled:opacity-50"
+                        >
+                          {loading ? 'Sending…' : 'Send verification code'}
+                        </button>
+                      ) : (
+                        <button
+                          type="button"
+                          onClick={() => { setOtpSent(false); setOtp(''); }}
+                          className="text-xs text-primary hover:text-accent transition-colors"
+                        >
+                          Change email
+                        </button>
+                      )}
+                    </div>
                   </div>
-                  {otpSent && (
-                    <div>
-                      <label className="block text-sm font-medium text-foreground mb-1" htmlFor="otp">Verification Code</label>
-                      <input
-                        id="otp"
-                        type="text"
-                        inputMode="numeric"
-                        pattern="[0-9]{6}"
-                        maxLength={6}
-                        required
-                        autoComplete="one-time-code"
-                        value={otp}
-                        onChange={(e) => {
-                          // Only allow digits
-                          const val = e.target.value.replace(/\D/g, '').slice(0, 6);
-                          setOtp(val);
-                        }}
-                        className={`${inputClass} text-center text-2xl tracking-[0.5em] font-mono`}
-                        placeholder="000000"
-                      />
+                  <div>
+                    <label className="block text-sm font-medium text-foreground mb-1" htmlFor="otp">Verification Code</label>
+                    <input
+                      id="otp"
+                      type="text"
+                      inputMode="numeric"
+                      pattern="[0-9]{6}"
+                      maxLength={6}
+                      autoComplete="one-time-code"
+                      disabled={!otpSent}
+                      value={otp}
+                      onChange={(e) => {
+                        const val = e.target.value.replace(/\D/g, '').slice(0, 6);
+                        setOtp(val);
+                      }}
+                      className={`${!otpSent ? disabledInputClass : inputClass} text-center text-2xl tracking-[0.5em] font-mono`}
+                      placeholder="000000"
+                    />
+                    {otpSent && (
                       <div className="flex items-center justify-between mt-1">
-                        <p className="text-xs text-muted-foreground">Check your email for the 6-digit code</p>
+                        <p className="text-xs text-muted-foreground">Enter the 6-digit code sent to your email</p>
                         {resendCooldown > 0 ? (
                           <span className="text-xs text-muted-foreground">Resend in {resendCooldown}s</span>
                         ) : (
@@ -257,12 +267,12 @@ export default function LoginPage() {
                             disabled={loading}
                             className="text-xs text-primary hover:text-accent transition-colors disabled:opacity-50"
                           >
-                            Resend code
+                            Resend
                           </button>
                         )}
                       </div>
-                    </div>
-                  )}
+                    )}
+                  </div>
                 </>
               ) : step === 2 ? (
                 /* ── Signup Step 2: Username ─────────────────────────── */
@@ -346,10 +356,8 @@ export default function LoginPage() {
                     <div className="w-5 h-5 border-2 border-background/20 border-t-background rounded-full animate-spin"></div>
                   ) : isLogin ? (
                     'Sign In'
-                  ) : step === 1 ? (
-                    otpSent ? 'Verify & Continue' : 'Send Verification Code'
-                  ) : step === 2 ? (
-                    'Continue'
+                  ) : step < 3 ? (
+                    'Next'
                   ) : (
                     'Create Account'
                   )}
