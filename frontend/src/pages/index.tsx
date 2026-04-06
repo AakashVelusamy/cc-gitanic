@@ -9,7 +9,8 @@ export default function Home() {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
 
   useEffect(() => {
-    setIsAuthenticated(!!getToken());
+    const initAuth = () => setIsAuthenticated(!!getToken());
+    initAuth();
   }, []);
 
   return (
