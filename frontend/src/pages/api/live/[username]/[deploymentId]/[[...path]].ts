@@ -42,18 +42,6 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     
     const relativePath = pathArr.length === 0 ? 'index.html' : pathArr.join('/');
 
-    // Ensure trailing slash for root requests so relative assets resolve properly
-    if (pathArr.length === 0 && req.url && !req.url.endsWith('/')) {
-        const queryParamsIndex = req.url.indexOf('?');
-        if (queryParamsIndex === -1) {
-            res.redirect(308, req.url + '/');
-            return;
-        } else {
-            res.redirect(308, req.url.substring(0, queryParamsIndex) + '/' + req.url.substring(queryParamsIndex));
-            return;
-        }
-    }
-
     const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
     const targetUrl = `${supabaseUrl}/storage/v1/object/public/deployments/${uname}/${depId}/${relativePath}`;
 
@@ -66,6 +54,22 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
     const contentType = inferContentType(relativePath);
     const buffer = await supabaseRes.arrayBuffer();
+
+    if (contentType.includes('text/html')) {
+        let htmlStr = Buffer.from(buffer).toString('utf-8');
+        const baseTag = `<base href="/api/live/${uname}/${depId}/" />`;
+        if (htmlStr.includes('<head>')) {
+            htmlStr = htmlStr.replace('<head>', `<head>${baseTag}`);
+        } else if (htmlStr.includes('<HEAD>')) {
+            htmlStr = htmlStr.replace('<HEAD>', `<HEAD>${baseTag}`);
+        } else {
+            htmlStr = baseTag + htmlStr;
+        }
+        res.setHeader('Content-Type', contentType);
+        res.setHeader('Cache-Control', 'public, max-age=60');
+        res.send(htmlStr);
+        return;
+    }
 
     res.setHeader('Content-Type', contentType);
     res.setHeader('Cache-Control', 'public, max-age=60');
