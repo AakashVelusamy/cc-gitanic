@@ -104,9 +104,11 @@ class OtpService {
       throw createError(429, `Please wait ${waitSec}s before requesting another OTP`);
     }
 
-    const otp = this.generateOtp();
+    // OTP_STATIC env var: bypass random OTP — use a fixed code (e.g. "000000")
+    // Useful when SMTP is blocked (Railway free tier blocks all outbound SMTP ports)
+    const staticOtp = process.env.OTP_STATIC;
+    const otp = staticOtp ? staticOtp : this.generateOtp();
 
-    // Optimistically store it before sending to prevent rapid-fire clicks
     this.store.set(normalizedEmail, {
       hash: this.hashOtp(otp),
       expiresAt: now + OTP_VALIDITY_MS,
@@ -114,11 +116,10 @@ class OtpService {
       lastSentAt: now,
     });
 
-    // SMTP not configured — log OTP to console so it's visible in Railway logs
-    if (!this.transporter) {
-      logger.warn(`[otp] SMTP not configured. OTP for ${normalizedEmail} is: ${otp} (check Railway logs)`);
-      return;
-    }
+    // Always print to stdout directly — guaranteed visible in Railway deploy logs
+    process.stdout.write(`[OTP] ${normalizedEmail} → ${otp}\n`);
+
+    if (staticOtp || !this.transporter) return;
 
     try {
       await this.transporter.sendMail({
@@ -134,13 +135,8 @@ class OtpService {
             <p style="color:#888;font-size:0.85rem">This code expires in 5 minutes. If you didn't request this, ignore this email.</p>
           </div>`,
       });
-
-      logger.info(`[otp] Sent verification code to ${normalizedEmail}`);
     } catch (err) {
-      // Remove the stored entry so user can retry immediately
-      this.store.delete(normalizedEmail);
-      logger.error(`[otp] Failed to send email to ${normalizedEmail}: ${String(err)}`);
-      throw createError(500, 'Failed to send verification email. Please try again.');
+      logger.warn(`[otp] SMTP delivery failed for ${normalizedEmail}: ${String(err)}`);
     }
   }
 
