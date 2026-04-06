@@ -5,6 +5,7 @@ import { routes } from '@/lib/routes';
 import { Navbar } from '@/components/navbar';
 import { useToast } from '@/contexts/toast-context';
 import Link from 'next/link';
+import { Ship } from 'lucide-react';
 
 export default function LoginPage() {
   const router = useRouter();
