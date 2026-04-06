@@ -1,3 +1,4 @@
-﻿[providers.node]
+﻿providers = ["node"]
+
 [phases.setup]
 aptPkgs = ["...", "git"]
