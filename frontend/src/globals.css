@@ -1,0 +1,91 @@
+@import "tailwindcss";
+
+@theme {
+  --color-background: #040914;
+  --color-foreground: #f8fafc;
+  --color-card: #0b1528;
+  --color-card-foreground: #f8fafc;
+  --color-popover: #040914;
+  --color-popover-foreground: #f8fafc;
+  --color-primary: #00f0ff;
+  --color-primary-foreground: #040914;
+  --color-secondary: #172a4f;
+  --color-secondary-foreground: #f8fafc;
+  --color-muted: #172a4f;
+  --color-muted-foreground: #94a3b8;
+  --color-accent: #0ea5e9;
+  --color-accent-foreground: #f8fafc;
+  --color-destructive: #f43f5e;
+  --color-destructive-foreground: #f8fafc;
+  --color-border: #1e3a8a;
+  --color-input: #172a4f;
+  --color-ring: #00f0ff;
+  --radius: 0.5rem;
+}
+
+@layer base {
+  * {
+    border-color: var(--color-border);
+    outline-color: var(--color-ring);
+    -ms-overflow-style: none; /* IE and Edge */
+    scrollbar-width: none; /* Firefox */
+  }
+  
+  *::-webkit-scrollbar {
+    display: none; /* Chrome, Safari and Opera */
+  }
+
+  body {
+    background-color: var(--color-background);
+    color: var(--color-foreground);
+    background-image: radial-gradient(circle at 50% auto, rgba(0, 240, 255, 0.08) 0%, transparent 60%);
+    background-attachment: fixed;
+    font-family: ui-sans-serif, system-ui, sans-serif;
+    padding-bottom: 4.5rem; /* Ensure content remains visible above the fixed island footer */
+  }
+}
+
+@layer utilities {
+  .glass {
+    background-color: rgba(11, 21, 40, 0.6);
+    backdrop-filter: blur(12px);
+    border: 1px solid var(--color-border);
+    box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
+  }
+  .glass-hover {
+    transition: all 0.3s ease;
+  }
+  .glass-hover:hover {
+    background-color: rgba(11, 21, 40, 0.8);
+    border-color: rgba(0, 240, 255, 0.5);
+  }
+  .gradient-text {
+    background-clip: text;
+    -webkit-background-clip: text;
+    color: transparent;
+    background-image: linear-gradient(to right, var(--color-primary), var(--color-accent));
+  }
+  .btn-primary {
+    background-color: var(--color-primary);
+    color: var(--color-primary-foreground);
+    font-weight: 500;
+    padding: 0.5rem 1rem;
+    border-radius: var(--radius);
+    transition: all 0.2s;
+  }
+  .btn-primary:hover {
+    opacity: 0.9;
+    box-shadow: 0 0 15px rgba(0, 240, 255, 0.4);
+  }
+  .btn-secondary {
+    background-color: var(--color-secondary);
+    color: var(--color-secondary-foreground);
+    font-weight: 500;
+    padding: 0.5rem 1rem;
+    border-radius: var(--radius);
+    transition: all 0.2s;
+  }
+  .btn-secondary:hover {
+    background-color: var(--color-border);
+  }
+}
