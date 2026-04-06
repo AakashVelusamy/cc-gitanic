@@ -16,8 +16,8 @@ public final class AppState {
     private static AppState instance;
 
     // --- Auth / Network ---
-    private String apiBaseUrl  = "http://localhost:3000/api";
-    private String gitBaseUrl  = "http://localhost:3000/git";
+    private String apiBaseUrl  = "https://gitanic.up.railway.app/api";
+    private String gitBaseUrl  = "https://gitanic.up.railway.app/git";
     private User   currentUser;
     private String password;        // kept in-memory for git HTTP Basic Auth
 
@@ -152,7 +152,7 @@ public final class AppState {
         String username = prefs.get("username", "");
         String token    = prefs.get("token",    "");
         String pwd      = prefs.get("password", "");
-        String apiUrl   = prefs.get("apiUrl",   "http://localhost:3000/api");
+        String apiUrl   = prefs.get("apiUrl",   "https://gitanic.up.railway.app/api");
         if (username.isEmpty() || token.isEmpty()) return false;
         setApiBaseUrl(apiUrl);
         currentUser = new User(username, token);
