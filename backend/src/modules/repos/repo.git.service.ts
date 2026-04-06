@@ -2,8 +2,8 @@
  * repo.git.service.ts — Read git objects (tree, blob, log) from bare repos
  */
 
-import { execFileSync } from 'child_process';
-import path from 'path';
+import { execFileSync } from 'node:child_process';
+import path from 'node:path';
 import { createError } from '../../middleware/errorHandler';
 
 const REPOS_ROOT = process.env.REPOS_ROOT ?? '/repos';

@@ -11,7 +11,7 @@
  * Architecture: FIFO Queue Pattern + Observer (EventEmitter) + Singleton
  */
 
-import { EventEmitter } from 'events';
+import { EventEmitter } from 'node:events';
 import { logger } from './logger';
 
 // ── Types ─────────────────────────────────────────────────────────────────────

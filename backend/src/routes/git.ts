@@ -20,8 +20,8 @@
  */
 
 import { Router, Request, Response } from 'express';
-import { spawn } from 'child_process';
-import path from 'path';
+import { spawn } from 'node:child_process';
+import path from 'node:path';
 import { gitAuthMiddleware } from '../middleware/gitAuthMiddleware';
 import { logger } from '../lib/logger';
 
@@ -181,8 +181,8 @@ class CgiResponseParser {
 
       if (key === 'status') {
         // CGI Status header: "200 OK" — extract numeric code
-        const code = parseInt(value, 10);
-        if (!isNaN(code)) {
+        const code = Number.parseInt(value, 10);
+        if (!Number.isNaN(code)) {
           this.res.status(code);
           statusSet = true;
         }

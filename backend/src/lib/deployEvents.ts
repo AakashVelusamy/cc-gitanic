@@ -15,7 +15,7 @@
  * Architecture: Observer Pattern + Singleton EventEmitter
  */
 
-import { EventEmitter } from 'events';
+import { EventEmitter } from 'node:events';
 
 // ── Event payload types ───────────────────────────────────────────────────────
 

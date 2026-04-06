@@ -19,7 +19,7 @@ const JWT_EXPIRY = '7d';
 
 // Alphanumeric + hyphen; matches DB CHECK constraint
 const USERNAME_RE = /^[a-zA-Z0-9][a-zA-Z0-9-]*[a-zA-Z0-9]$|^[a-zA-Z0-9]$/;
-const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+const EMAIL_RE = /^[a-zA-Z0-9.!#$%&'*+/=?^_`{|}~-]+@[a-zA-Z0-9-]+(?:\.[a-zA-Z0-9-]+)*$/;
 
 // ── JWT helper ───────────────────────────────────────────────────────────────
 

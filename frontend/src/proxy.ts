@@ -47,7 +47,7 @@ export async function proxy(req: NextRequest) {
 // -- Helpers -----------------------------------------------------------------
 
 function extractSubdomain(hostname: string, rootDomain: string): string | null {
-  const host = hostname.replace(/:\d+$/, '');
+  const host = hostname.replaceAll(/:\d+$/, '');
   if (host === rootDomain || host === `www.${rootDomain}`) return null;
   if (host.endsWith(`.${rootDomain}`)) {
     const sub = host.slice(0, host.length - rootDomain.length - 1);
@@ -79,11 +79,11 @@ async function resolveDeployment(username: string): Promise<CacheEntry | null> {
 
 function escapeHtml(str: string): string {
   return str
-    .replace(/&/g, '&amp;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;')
-    .replace(/"/g, '&quot;')
-    .replace(/'/g, '&#39;');
+    .replaceAll(/&/g, '&amp;')
+    .replaceAll(/</g, '&lt;')
+    .replaceAll(/>/g, '&gt;')
+    .replaceAll(/"/g, '&quot;')
+    .replaceAll(/'/g, '&#39;');
 }
 
 function notFoundResponse(username: string): NextResponse {

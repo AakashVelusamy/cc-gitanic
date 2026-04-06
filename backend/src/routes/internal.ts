@@ -16,7 +16,7 @@
  */
 
 import { Router, Request, Response, NextFunction } from 'express';
-import crypto from 'crypto';
+import crypto from 'node:crypto';
 import { AuthRepository } from '../modules/auth/auth.repository';
 import { RepoRepository } from '../modules/repos/repo.repository';
 import { DeploymentService } from '../modules/deployment/deployment.service';

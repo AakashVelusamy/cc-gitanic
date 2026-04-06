@@ -16,7 +16,7 @@ import internalRouter from './routes/internal';
 initLogSubscribers();
 
 const app = express();
-const PORT = parseInt(process.env.PORT ?? '3000', 10);
+const PORT = Number.parseInt(process.env.PORT ?? '3000', 10);
 
 // CORS: restrict to known origins; credentials require explicit origin (not wildcard)
 const ALLOWED_ORIGINS = (process.env.ALLOWED_ORIGINS ?? '')

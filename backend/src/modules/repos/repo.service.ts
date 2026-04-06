@@ -14,10 +14,10 @@
  * Architecture: Service Layer + Factory Pattern
  */
 
-import path from 'path';
-import fs from 'fs';
-import { execFileSync } from 'child_process';
-import crypto from 'crypto';
+import path from 'node:path';
+import fs from 'node:fs';
+import { execFileSync } from 'node:child_process';
+import crypto from 'node:crypto';
 import { RepoRepository, RepoRow } from './repo.repository';
 import { createError } from '../../middleware/errorHandler';
 import { logger } from '../../lib/logger';
@@ -191,6 +191,7 @@ export const RepoFactory = {
    * Called during DELETE /api/repos/:name after DB row is deleted.
    */
   destroy(username: string, repoName: string): void {
+    if (!/^[a-zA-Z0-9-]+$/.test(username) || !/^[a-zA-Z0-9-]+$/.test(repoName)) return;
     const repoPath = RepoFactory.repoPath(username, repoName);
     if (!fs.existsSync(repoPath)) return; // already gone
     fs.rmSync(repoPath, { recursive: true, force: true });

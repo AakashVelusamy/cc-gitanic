@@ -15,9 +15,9 @@
  *   npm build → 180 000 ms
  */
 
-import path         from 'path';
-import fs           from 'fs';
-import { execFileSync } from 'child_process';
+import path         from 'node:path';
+import fs           from 'node:fs';
+import { execFileSync } from 'node:child_process';
 
 // ── Interface ─────────────────────────────────────────────────────────────────
 

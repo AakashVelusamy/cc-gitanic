@@ -20,8 +20,8 @@
  * Architecture: Service Layer (wraps Supabase Storage SDK)
  */
 
-import path from 'path';
-import fs   from 'fs';
+import path from 'node:path';
+import fs   from 'node:fs';
 import { supabase, DEPLOYMENTS_BUCKET, deploymentStoragePath } from './supabase';
 import { logger } from './logger';
 

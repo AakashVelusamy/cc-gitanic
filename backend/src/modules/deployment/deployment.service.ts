@@ -19,9 +19,9 @@
  * Architecture: Service Layer + Strategy Pattern + Observer + FIFO Queue
  */
 
-import path       from 'path';
-import fs         from 'fs';
-import { execFileSync } from 'child_process';
+import path       from 'node:path';
+import fs         from 'node:fs';
+import { execFileSync } from 'node:child_process';
 import { DeploymentRepository, LogRepository, DeploymentRow, LogRow }   from './deployment.repository';
 import { RepoRepository }                        from '../repos/repo.repository';
 import { RepoFactory }                           from '../repos/repo.service';

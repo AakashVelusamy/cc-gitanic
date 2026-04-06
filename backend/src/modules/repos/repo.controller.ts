@@ -116,7 +116,7 @@ export const RepoController = {
       const { username } = res.locals.user;
       const repoName = req.params['repoName'] as string;
       const ref = (req.query['ref'] as string | undefined) ?? 'HEAD';
-      const limit = Math.min(parseInt((req.query['limit'] as string | undefined) ?? '20', 10), 100);
+      const limit = Math.min(Number.parseInt((req.query['limit'] as string | undefined) ?? '20', 10), 100);
       const { RepoGitService } = await import('./repo.git.service');
       const commits = RepoGitService.getCommits(username, repoName, ref, limit);
       res.status(200).json(commits);

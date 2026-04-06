@@ -15,14 +15,14 @@
  */
 
 import 'dotenv/config';
-import path from 'path';
-import crypto from 'crypto';
+import path from 'node:path';
+import crypto from 'node:crypto';
 import express, { Request, Response } from 'express';
 import { query } from './lib/db';
 
 // ── Configuration ────────────────────────────────────────────────────────────
 
-const PORT         = parseInt(process.env.SERVE_PORT ?? '4000', 10);
+const PORT         = Number.parseInt(process.env.SERVE_PORT ?? '4000', 10);
 const SUPABASE_URL = process.env.SUPABASE_URL!;
 const BUCKET       = 'deployments';
 
@@ -97,7 +97,7 @@ app.post('/cache/bust', (req, res) => {
   const { username } = req.body as { username?: string };
   if (username) {
     cache.delete(username);
-    console.log(`[serve] Cache busted for user "${username}"`);
+    console.log(`[serve] Cache busted for user "${username.replace(/[\r\n]/g, '')}"`);
     res.json({ ok: true, username });
   } else {
     // Bust everything
@@ -138,8 +138,9 @@ async function handleSiteRequest(req: Request, res: Response): Promise<void> {
     }
 
     // Build Supabase Storage public URL
+    const safePath = filePath.replace(/\.\./g, '');
     const storageUrl =
-      `${SUPABASE_URL}/storage/v1/object/public/${BUCKET}/${username}/${deploymentId}/${filePath}`;
+      `${SUPABASE_URL}/storage/v1/object/public/${BUCKET}/${encodeURIComponent(username)}/${encodeURIComponent(deploymentId)}/${safePath}`;
 
     // Proxy the response from Supabase Storage
     const upstream = await fetch(storageUrl);
@@ -148,7 +149,7 @@ async function handleSiteRequest(req: Request, res: Response): Promise<void> {
       // If the specific file wasn't found, try SPA fallback (index.html)
       if (upstream.status === 404 || upstream.status === 400) {
         const fallbackUrl =
-          `${SUPABASE_URL}/storage/v1/object/public/${BUCKET}/${username}/${deploymentId}/index.html`;
+          `${SUPABASE_URL}/storage/v1/object/public/${BUCKET}/${encodeURIComponent(username)}/${encodeURIComponent(deploymentId)}/index.html`;
         const fallback = await fetch(fallbackUrl);
 
         if (fallback.ok) {

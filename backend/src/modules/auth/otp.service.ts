@@ -11,7 +11,7 @@
  * Architecture: Singleton (in-memory Map store)
  */
 
-import crypto from 'crypto';
+import crypto from 'node:crypto';
 import nodemailer from 'nodemailer';
 import { createError } from '../../middleware/errorHandler';
 import { logger } from '../../lib/logger';
