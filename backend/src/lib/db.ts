@@ -17,8 +17,9 @@ if (!process.env.DATABASE_URL) {
 const poolConfig: PoolConfig = {
   connectionString: process.env.DATABASE_URL,
   // SSL is required for Supabase (Railway outbound) in production
+  // rejectUnauthorized is false because Supabase pooler can use self-signed certs
   ssl: process.env.NODE_ENV === 'production'
-    ? { rejectUnauthorized: true }
+    ? { rejectUnauthorized: false }
     : false,
   // Connection pool tuning
   max: 10,          // max simultaneous clients
