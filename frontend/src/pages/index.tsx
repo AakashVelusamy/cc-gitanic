@@ -30,7 +30,7 @@ export default function Home() {
             </h1>
 
             <p className="text-xl md:text-3xl text-muted-foreground mb-12 font-light leading-relaxed max-w-2xl mx-auto">
-              A Simple Platform For Your Git Repositories And Static Sites.
+              A Simple Platform To Store and Deploy Your Repositories.
             </p>
 
             <Link href={isAuthenticated ? routes.dashboard : routes.login} className="btn-primary text-xl px-10 py-5 inline-flex items-center justify-center gap-3 rounded-full hover:scale-105 transition-all shadow-[0_0_30px_rgba(0,240,255,0.2)] group w-full sm:w-auto">
@@ -55,7 +55,7 @@ export default function Home() {
             <p className="text-2xl md:text-3xl text-muted-foreground font-light leading-relaxed">
               Create Repositories. <br className="sm:hidden" />
               Clone Them Locally. <br />
-              Push Code Using Standard Git.
+              Push Code Using Gitanic Desktop.
             </p>
           </div>
         </section>
@@ -71,7 +71,7 @@ export default function Home() {
             </h2>
             <p className="text-2xl md:text-3xl text-muted-foreground font-light leading-relaxed">
               Build Without The Hassle. <br />
-              Every Push To Main Deploys Automatically.
+              Every Push To Deploys Automatically.
             </p>
           </div>
         </section>
