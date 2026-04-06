@@ -60,10 +60,14 @@ export const AuthService = {
     if (!email || typeof email !== 'string') {
       throw createError(400, 'email is required');
     }
-    if (!EMAIL_RE.test(email.trim())) {
+    const normalizedEmail = email.trim().toLowerCase();
+    if (!EMAIL_RE.test(normalizedEmail)) {
       throw createError(400, 'email must be a valid email address');
     }
-    await otpService.sendOtp(email.trim().toLowerCase());
+    
+    // In production Railway/Vercel, we need to ensure this doesn't block the HTTP response
+    // if the SMTP server is slow, but we still want to catch immediate configuration errors.
+    await otpService.sendOtp(normalizedEmail);
   },
 
   /**

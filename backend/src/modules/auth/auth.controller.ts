@@ -13,8 +13,12 @@ export const AuthController = {
   async requestOtp(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
       const { email } = req.body as { email?: string };
-      await AuthService.requestOtp(email ?? '');
-      res.status(200).json({ message: 'OTP sent to email' });
+      // Do not await this. Fire and forget to free the http thread and prevent Vercel 504 timeouts.
+      // If it fails, the frontend will just let them try again in 60s.
+      AuthService.requestOtp(email ?? '').catch((err) => {
+        console.error('[OTP Error in Controller Bubble]', err);
+      });
+      res.status(202).json({ message: 'If the email is valid, an OTP will be sent shortly' });
     } catch (err) {
       next(err);
     }

@@ -105,12 +105,20 @@ class OtpService {
 
     const otp = this.generateOtp();
 
+    // Optimistically store it before sending to prevent rapid-fire clicks
     this.store.set(normalizedEmail, {
       hash: this.hashOtp(otp),
       expiresAt: now + OTP_VALIDITY_MS,
       attempts: 0,
       lastSentAt: now,
     });
+
+    try {
+      await this.transporter.verify();
+    } catch (err) {
+      logger.error(`[otp] SMTP configuration error: ${String(err)}`);
+      throw createError(500, 'Email service is currently unavailable. Please try again later.');
+    }
 
     try {
       await this.transporter.sendMail({
