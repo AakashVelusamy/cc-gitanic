@@ -247,14 +247,14 @@ export default function RepositoryPage() {
           </div>
 
           <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 w-full xl:w-auto shrink-0 flex-wrap">
-              <div className="flex-1 sm:min-w-[320px]">
+              <div className="flex-1 sm:min-w-[320px] min-w-0 w-full">
                 <button
                   className="w-full bg-background border border-primary/20 rounded-lg h-[42px] px-3 flex justify-between items-center gap-3 hover:border-primary transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50 cursor-pointer text-left"
                   onClick={handleCopyCloneUrl}
                 >
-                  <div className="flex-1 flex items-center gap-2 overflow-hidden">
+                  <div className="flex-1 flex items-center gap-2 min-w-0 overflow-hidden">
                     <Terminal size={14} className="text-primary shrink-0"/>
-                    <code className="text-xs text-primary font-mono whitespace-nowrap block truncate w-full" title={repo.git_url}>
+                    <code className="text-xs text-primary font-mono whitespace-nowrap block truncate min-w-0 w-full" title={repo.git_url}>
                       {repo.git_url}
                     </code>
                   </div>

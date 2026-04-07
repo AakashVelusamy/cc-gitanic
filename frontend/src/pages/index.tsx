@@ -129,8 +129,8 @@ export default function Home() {
         {/* GRADIENT CARDS */}
         <section id="features" className="relative flex flex-col items-center justify-center h-auto md:h-[calc(100vh-114px)] min-h-0 md:min-h-[calc(100vh-114px)] py-16 md:py-8 w-full px-4 overflow-hidden md:snap-start md:snap-always shrink-0">
           <BGPattern variant="grid" mask="fade-edges" size={32} fill="rgba(255,255,255,0.07)" />
-          <div className="relative max-w-6xl mx-auto text-center mb-12">
-            <h2 className="text-4xl md:text-6xl font-bold glow-text mb-4">How It Works ?</h2>
+          <div className="relative max-w-6xl mx-auto text-center mb-6 md:mb-4 lg:mb-12">
+            <h2 className="text-4xl md:text-6xl font-bold glow-text mb-2">How It Works ?</h2>
             
           </div>
           {/* Mobile: stack */}
@@ -138,11 +138,11 @@ export default function Home() {
             {cards.map((c) => <GradientCard key={c.title} {...c} />)}
           </div>
           {/* Tablet: 2 top row, 1 centered bottom */}
-          <div className="hidden md:flex lg:hidden flex-col items-center gap-0 w-full">
-            <div className="flex justify-center">
+          <div className="hidden md:flex lg:hidden flex-col items-center gap-0 w-full mt-[-20px]">
+            <div className="flex justify-center scale-95 origin-top">
               {cards.slice(0, 2).map((c) => <GradientCard key={c.title} {...c} />)}
             </div>
-            <div className="flex justify-center">
+            <div className="flex justify-center -mt-12 scale-95 origin-top">
               <GradientCard {...cards[2]} />
             </div>
           </div>

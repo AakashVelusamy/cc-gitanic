@@ -12,10 +12,10 @@ export default function App({ Component, pageProps }: AppProps) {
       <Head>
         <link rel="icon" href="/logo.png" />
       </Head>
-      <div className="flex flex-col min-h-screen md:h-screen md:max-h-screen md:overflow-hidden bg-background">
+      <div className="flex flex-col h-[100dvh] overflow-hidden bg-background">
         <BGPattern variant="grid" size={40} className="fixed inset-0 z-0 opacity-40 pointer-events-none" fill="rgba(255,255,255,0.06)" />
         <Navbar />
-        <main id="main-scroll-container" className="flex-1 flex flex-col relative w-full md:h-[calc(100vh-114px)] md:overflow-y-auto md:snap-y md:snap-mandatory scroll-smooth z-10">
+        <main id="main-scroll-container" className="flex-1 flex flex-col relative w-full overflow-y-auto md:snap-y md:snap-mandatory scroll-smooth z-10">
           <Component {...pageProps} />
         </main>
         <Footer />
