@@ -178,13 +178,13 @@ while read oldsha newsha refname; do
 
   for file in $FILES; do
     case "$file" in
-      *node_modules/*|*__pycache__/*|*.env|*/.env|*.env.*|*.log)
+      *node_modules/*|*bower_components/*|*__pycache__/*|*.py[cod]|*$py.class|*.env|*/.env|*.env.*|*.log|*-debug.log*|*-error.log*|*.DS_Store|*/.DS_Store|*Thumbs.db|*.idea/*|*.vscode/*|*.suo|*.ntvs*|*.njsproj|*.sln|*.sw?|*dist/*|*build/*|*out/*|*.next/*|*.nuxt/*|*.cache/*|*coverage/*|*.nyc_output/*|*.pem|*.key|*.p12|*.pfx|*.sqlite|package-lock.json|yarn.lock|pnpm-lock.yaml)
         echo "================================================================" >&2
         echo " ERROR: Push rejected by Gitanic" >&2
         echo "================================================================" >&2
         echo " Forbidden file detected: $file" >&2
         echo "" >&2
-        echo " dependencies, caches, and secret .env files are not accepted." >&2
+        echo " Build outputs, dependencies, IDE config, and secrets are not accepted." >&2
         echo " Please add them to your .gitignore and remove them from git." >&2
         echo "================================================================" >&2
         exit 1

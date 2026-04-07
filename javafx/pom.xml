@@ -12,6 +12,7 @@
         <maven.compiler.source>17</maven.compiler.source>
         <maven.compiler.target>17</maven.compiler.target>
         <javafx.version>17.0.6</javafx.version>
+        <project.root.dir>${project.basedir}/..</project.root.dir>
     </properties>
 
     <dependencies>
@@ -73,7 +74,7 @@
                         <goals><goal>launch4j</goal></goals>
                         <configuration>
                             <headerType>gui</headerType>
-                            <outfile>${project.basedir}/../gitanic.exe</outfile>
+                            <outfile>${project.root.dir}/gitanic.exe</outfile>
                             <jar>${project.build.directory}/${project.artifactId}-${project.version}-fat.jar</jar>
                             <errTitle>Gitanic Error</errTitle>
                             <classPath>

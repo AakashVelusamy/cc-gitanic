@@ -378,10 +378,16 @@ public final class GitCommandService {
         
         StringBuilder append = new StringBuilder();
         if (!content.contains("node_modules")) append.append("node_modules/\n");
-        if (!content.contains("__pycache__"))  append.append("__pycache__/\n");
+        if (!content.contains("bower_components")) append.append("bower_components/\n");
+        if (!content.contains("__pycache__"))  append.append("__pycache__/\n*.py[cod]\n*$py.class\n");
         if (!content.contains(".env"))         append.append(".env\n.env.*\n");
-        if (!content.contains("*.log"))        append.append("*.log\n");
-        if (!content.contains(".DS_Store"))    append.append(".DS_Store\n");
+        if (!content.contains("*.log"))        append.append("*.log\n*-debug.log*\n*-error.log*\n");
+        if (!content.contains(".DS_Store"))    append.append(".DS_Store\nThumbs.db\n");
+        if (!content.contains(".idea"))        append.append(".idea/\n.vscode/\n*.suo\n*.ntvs*\n*.njsproj\n*.sln\n*.sw?\n");
+        if (!content.contains("dist"))         append.append("dist/\nbuild/\nout/\n.next/\n.nuxt/\n.cache/\n");
+        if (!content.contains("coverage"))     append.append("coverage/\n.nyc_output/\n");
+        if (!content.contains(".pem"))         append.append("*.pem\n*.key\n*.p12\n*.pfx\n");
+        if (!content.contains("package-lock.json")) append.append("package-lock.json\nyarn.lock\npnpm-lock.yaml\n");
         
         if (append.length() > 0) {
             String prefix = (content.isEmpty() || content.endsWith("\n")) ? "" : "\n";
