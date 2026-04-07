@@ -225,45 +225,53 @@ export default function RepositoryPage() {
                 </button>
               </div>
 
-              <div className="flex flex-row items-center gap-3 shrink-0">
-                {repo.active_deployment_id && (
-                  <a
-                    href={`/api/live/${username}/${repo.active_deployment_id}/`}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="btn-primary flex items-center justify-center gap-2 shadow-lg shadow-primary/20 h-[42px] px-4 w-full sm:w-auto shrink-0"
-                  >
-                    <ExternalLink size={16} />
-                    View Live
-                  </a>
+              <div className="grid grid-cols-2 sm:flex sm:flex-row items-center gap-3 shrink-0 w-full sm:w-auto">
+                {repo.active_deployment_id ? (
+                  <>
+                    <a
+                      href={`/api/live/${username}/${repo.active_deployment_id}/`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="btn-primary flex items-center justify-center gap-2 shadow-lg shadow-primary/20 h-[42px] px-4 w-full sm:w-auto shrink-0"
+                    >
+                      <ExternalLink size={16} />
+                      View Live
+                    </a>
+                    <button
+                      onClick={handleUndeploy}
+                      disabled={undeploying}
+                      className="bg-destructive/10 text-destructive hover:bg-destructive hover:text-destructive-foreground transition-colors px-4 rounded-lg flex items-center justify-center gap-2 text-sm font-medium border border-destructive/20 hover:border-destructive shadow-lg h-[42px] w-full sm:w-auto shrink-0"
+                    >
+                      {undeploying ? <div className="w-4 h-4 border-2 border-t-current rounded-full animate-spin border-destructive-foreground/20"></div> : <PowerOff size={16} />}
+                      Undeploy
+                    </button>
+                    <button 
+                      onClick={handleDelete} 
+                      className="col-span-2 sm:col-span-1 bg-destructive/10 text-destructive hover:bg-destructive hover:text-destructive-foreground transition-colors px-4 rounded-lg flex items-center justify-center gap-2 text-sm font-medium border border-destructive/20 hover:border-destructive shadow-lg h-[42px] w-full sm:w-auto shrink-0"
+                    >
+                      <Trash2 size={16} />
+                      Delete
+                    </button>
+                  </>
+                ) : (
+                  <>
+                    <button
+                      onClick={handleDeploy}
+                      disabled={deploying}
+                      className="btn-primary flex items-center justify-center gap-2 shadow-lg shadow-primary/20 h-[42px] px-4 w-full sm:w-auto shrink-0"
+                    >
+                      {deploying ? <div className="w-4 h-4 border-2 border-t-current rounded-full animate-spin border-background/20"></div> : <Rocket size={16} />}
+                      Deploy
+                    </button>
+                    <button 
+                      onClick={handleDelete} 
+                      className="bg-destructive/10 text-destructive hover:bg-destructive hover:text-destructive-foreground transition-colors px-4 rounded-lg flex items-center justify-center gap-2 text-sm font-medium border border-destructive/20 hover:border-destructive shadow-lg h-[42px] w-full sm:w-auto shrink-0"
+                    >
+                      <Trash2 size={16} />
+                      Delete
+                    </button>
+                  </>
                 )}
-
-                <button
-                  onClick={handleDeploy}
-                  disabled={deploying}
-                  className={`flex items-center justify-center gap-2 h-[42px] px-4 w-full sm:w-auto shrink-0 ${repo.active_deployment_id ? 'bg-secondary/40 hover:bg-secondary border border-white/10 text-foreground rounded-lg' : 'btn-primary shadow-lg shadow-primary/20'}`}
-                >
-                  {deploying ? <div className={`w-4 h-4 border-2 border-t-current rounded-full animate-spin ${repo.active_deployment_id ? 'border-foreground/20' : 'border-background/20'}`}></div> : <Rocket size={16} />}
-                  Deploy
-                </button>
-
-                {repo.active_deployment_id && (
-                  <button
-                    onClick={handleUndeploy}
-                    disabled={undeploying}
-                    className="bg-destructive/10 text-destructive hover:bg-destructive hover:text-destructive-foreground transition-colors px-4 rounded-lg flex items-center justify-center gap-2 text-sm font-medium border border-destructive/20 hover:border-destructive shadow-lg h-[42px] w-full sm:w-auto shrink-0"
-                  >
-                    {undeploying ? <div className="w-4 h-4 border-2 border-t-current rounded-full animate-spin border-destructive-foreground/20"></div> : <PowerOff size={16} />}
-                    Undeploy
-                  </button>
-                )}
-                <button 
-                  onClick={handleDelete} 
-                  className="bg-destructive/10 text-destructive hover:bg-destructive hover:text-destructive-foreground transition-colors px-4 rounded-lg flex items-center justify-center gap-2 text-sm font-medium border border-destructive/20 hover:border-destructive shadow-lg h-[42px] w-full sm:w-auto"
-                >
-                  <Trash2 size={16} />
-                  Delete
-                </button>
               </div>
           </div>
         </div>

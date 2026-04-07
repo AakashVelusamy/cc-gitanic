@@ -159,9 +159,9 @@ export const ReactStrategy: DeployStrategy = {
   },
 
   async build(srcDir, log) {
-    // ── npm ci ──────────────────────────────────────────────────────────────
-    await log('[build:react] npm ci (timeout 120 s)');
-      await runCommand('npm', ['ci', '--prefer-offline', '--include=dev'], srcDir, NPM_CI_TIMEOUT, log);
+    // ── npm install ─────────────────────────────────────────────────────────
+    await log('[build:react] npm install (timeout 120 s)');
+    await runCommand('npm', ['install', '--no-audit', '--no-fund', '--no-package-lock'], srcDir, NPM_CI_TIMEOUT, log);
 
     // ── npm run build ────────────────────────────────────────────────────────
     await log('[build:react] npm run build (timeout 180 s)');
@@ -212,9 +212,9 @@ export const ViteStrategy: DeployStrategy = {
   },
 
   async build(srcDir, log) {
-    // ── npm ci ──────────────────────────────────────────────────────────────
-    await log('[build:vite] npm ci (timeout 120 s)');
-      await runCommand('npm', ['ci', '--prefer-offline', '--include=dev'], srcDir, NPM_CI_TIMEOUT, log);
+    // ── npm install ─────────────────────────────────────────────────────────
+    await log('[build:vite] npm install (timeout 120 s)');
+    await runCommand('npm', ['install', '--no-audit', '--no-fund', '--no-package-lock'], srcDir, NPM_CI_TIMEOUT, log);
 
     // ── vite build ───────────────────────────────────────────────────────────
     await log('[build:vite] vite build (timeout 180 s)');

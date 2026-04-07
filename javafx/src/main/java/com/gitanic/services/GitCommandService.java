@@ -366,6 +366,33 @@ public final class GitCommandService {
     // ================================================================
 
     /**
+     * Ensures that common generated/secret files are ignored.
+     * Prevents users from accidentally committing node_modules, etc.
+     */
+    private void ensureGitignore(File repoDir) throws IOException {
+        File gitignore = new File(repoDir, ".gitignore");
+        String content = "";
+        if (gitignore.exists()) {
+            content = Files.readString(gitignore.toPath(), StandardCharsets.UTF_8);
+        }
+        
+        StringBuilder append = new StringBuilder();
+        if (!content.contains("node_modules")) append.append("node_modules/\n");
+        if (!content.contains("__pycache__"))  append.append("__pycache__/\n");
+        if (!content.contains(".env"))         append.append(".env\n.env.*\n");
+        if (!content.contains("*.log"))        append.append("*.log\n");
+        if (!content.contains(".DS_Store"))    append.append(".DS_Store\n");
+        
+        if (append.length() > 0) {
+            String prefix = (content.isEmpty() || content.endsWith("\n")) ? "" : "\n";
+            Files.writeString(gitignore.toPath(), prefix + append.toString(), 
+                    StandardCharsets.UTF_8, 
+                    java.nio.file.StandardOpenOption.CREATE, 
+                    java.nio.file.StandardOpenOption.APPEND);
+        }
+    }
+
+    /**
      * Stages a single file.
      *
      * @param repoDir the repository directory
@@ -377,6 +404,7 @@ public final class GitCommandService {
     public void stageFile(File repoDir, String path)
             throws IOException, InterruptedException, GitException {
         validateFilePath(repoDir, path);
+        ensureGitignore(repoDir);
         run(repoDir, "add", "--", path);
     }
 
@@ -389,6 +417,7 @@ public final class GitCommandService {
      * @throws GitException         if git exits non-zero
      */
     public void stageAll(File repoDir) throws IOException, InterruptedException, GitException {
+        ensureGitignore(repoDir);
         run(repoDir, "add", ".");
     }
 

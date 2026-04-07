@@ -155,12 +155,46 @@ export const RepoFactory = {
           timeout: 5_000,
         });
 
-      // Step 2  install post-receive hook
+      // Step 2  install hooks
       const hooksDir   = path.join(tmpPath, 'hooks');
-      const hookPath   = path.join(hooksDir, 'post-receive');
-      const hookScript = buildPostReceiveHook(username, repoName);
+      const postHookPath   = path.join(hooksDir, 'post-receive');
+      const postHookScript = buildPostReceiveHook(username, repoName);
+      fs.writeFileSync(postHookPath, postHookScript, { encoding: 'utf8', mode: 0o755 });
 
-      fs.writeFileSync(hookPath, hookScript, { encoding: 'utf8', mode: 0o755 });
+      const preHookPath   = path.join(hooksDir, 'pre-receive');
+      const preHookScript = `#!/bin/sh
+# pre-receive hook to block forbidden directories
+while read oldsha newsha refname; do
+  # Check if it's a delete branch operation
+  if [ "$newsha" = "0000000000000000000000000000000000000000" ]; then
+    continue
+  fi
+
+  if [ "$oldsha" = "0000000000000000000000000000000000000000" ]; then
+    FILES=$(git ls-tree -r --name-only "$newsha")
+  else
+    FILES=$(git diff-tree -r --name-only --no-commit-id "$oldsha" "$newsha")
+  fi
+
+  for file in $FILES; do
+    case "$file" in
+      *node_modules/*|*__pycache__/*|*.env|*/.env|*.env.*|*.log)
+        echo "================================================================" >&2
+        echo " ERROR: Push rejected by Gitanic" >&2
+        echo "================================================================" >&2
+        echo " Forbidden file detected: $file" >&2
+        echo "" >&2
+        echo " dependencies, caches, and secret .env files are not accepted." >&2
+        echo " Please add them to your .gitignore and remove them from git." >&2
+        echo "================================================================" >&2
+        exit 1
+        ;;
+    esac
+  done
+done
+exit 0
+`;
+      fs.writeFileSync(preHookPath, preHookScript, { encoding: 'utf8', mode: 0o755 });
 
       // Step 3  atomic rename to final path
       //   fs.renameSync is a single syscall (rename(2))  atomic on POSIX
