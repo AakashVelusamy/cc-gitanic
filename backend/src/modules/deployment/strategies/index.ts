@@ -43,8 +43,8 @@ export interface DeployStrategy {
 
 // ── Timeouts (ms) ─────────────────────────────────────────────────────────────
 
-const NPM_CI_TIMEOUT    = 120_000;  // 120 s — dependency install
-const NPM_BUILD_TIMEOUT = 180_000;  // 180 s — framework build
+const NPM_CI_TIMEOUT    = 300_000;  // 300 s — dependency install (increased for Railway)
+const NPM_BUILD_TIMEOUT = 300_000;  // 300 s — framework build (increased for Railway)
 
 // ── Sandbox environment ───────────────────────────────────────────────────────
 
@@ -75,6 +75,7 @@ async function runCommand(cmd: string, args: string[], cwd: string, timeout: num
       cwd,
       stdio: 'pipe',
       timeout,
+      maxBuffer: 20 * 1024 * 1024, // 20 MB buffer prevents ENOBUFS crash on verbose builds
       env: (cmd === 'npm' && (args.includes('ci') || args.includes('install')))
         ? { ...SAFE_ENV, NODE_ENV: 'development' }
         : SAFE_ENV,
@@ -169,11 +170,11 @@ export const ReactStrategy: DeployStrategy = {
     }
 
     // ── npm install ─────────────────────────────────────────────────────────
-    await log('[build:react] npm install (timeout 120 s)');
-    await runCommand('npm', ['install', '--no-audit', '--no-fund', '--no-package-lock'], srcDir, NPM_CI_TIMEOUT, log);
+    await log('[build:react] npm install (timeout 300 s)');
+    await runCommand('npm', ['install', '--no-audit', '--no-fund', '--no-package-lock', '--force', '--include=dev'], srcDir, NPM_CI_TIMEOUT, log);
 
     // ── npm run build ────────────────────────────────────────────────────────
-    await log('[build:react] npm run build (timeout 180 s)');
+    await log('[build:react] npm run build (timeout 300 s)');
     await runCommand('npm', ['run', 'build'], srcDir, NPM_BUILD_TIMEOUT, log);
 
     // ── Resolve output directory ─────────────────────────────────────────────
@@ -231,11 +232,11 @@ export const ViteStrategy: DeployStrategy = {
     }
 
     // ── npm install ─────────────────────────────────────────────────────────
-    await log('[build:vite] npm install (timeout 120 s)');
-    await runCommand('npm', ['install', '--no-audit', '--no-fund', '--no-package-lock'], srcDir, NPM_CI_TIMEOUT, log);
+    await log('[build:vite] npm install (timeout 300 s)');
+    await runCommand('npm', ['install', '--no-audit', '--no-fund', '--no-package-lock', '--force', '--include=dev'], srcDir, NPM_CI_TIMEOUT, log);
 
     // ── vite build ───────────────────────────────────────────────────────────
-    await log('[build:vite] vite build (timeout 180 s)');
+    await log('[build:vite] vite build (timeout 300 s)');
     await runCommand('npx', ['vite', 'build'], srcDir, NPM_BUILD_TIMEOUT, log);
 
     // ── Output directory ─────────────────────────────────────────────────────
