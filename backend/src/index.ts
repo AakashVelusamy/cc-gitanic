@@ -18,15 +18,9 @@ initLogSubscribers();
 const app = express();
 const PORT = Number.parseInt(process.env.PORT ?? '3000', 10);
 
-// CORS: restrict to known origins; credentials require explicit origin (not wildcard)
-// Uncomment when ready strictly:
-// const ALLOWED_ORIGINS = (process.env.ALLOWED_ORIGINS ?? '')
-//   .split(',')
-//   .map((o) => o.trim())
-//   .filter(Boolean);
-
+// CORS: restrict to frontend origin; credentials require explicit origin (not wildcard)
 app.use(cors({
-  origin: true, // Allow all origins for now during development
+  origin: process.env.FRONTEND_URL || '',
   credentials: true,
 }));
 app.use(requestLogger);

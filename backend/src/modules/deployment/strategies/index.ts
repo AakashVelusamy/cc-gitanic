@@ -159,6 +159,15 @@ export const ReactStrategy: DeployStrategy = {
   },
 
   async build(srcDir, log) {
+    // ── pre-install cleanup ──────────────────────────────────────────────────
+    const lockfiles = ['package-lock.json', 'npm-shrinkwrap.json', 'yarn.lock', 'pnpm-lock.yaml', 'node_modules'];
+    for (const file of lockfiles) {
+      const filePath = path.join(srcDir, file);
+      if (fs.existsSync(filePath)) {
+        fs.rmSync(filePath, { recursive: true, force: true });
+      }
+    }
+
     // ── npm install ─────────────────────────────────────────────────────────
     await log('[build:react] npm install (timeout 120 s)');
     await runCommand('npm', ['install', '--no-audit', '--no-fund', '--no-package-lock'], srcDir, NPM_CI_TIMEOUT, log);
@@ -212,6 +221,15 @@ export const ViteStrategy: DeployStrategy = {
   },
 
   async build(srcDir, log) {
+    // ── pre-install cleanup ──────────────────────────────────────────────────
+    const lockfiles = ['package-lock.json', 'npm-shrinkwrap.json', 'yarn.lock', 'pnpm-lock.yaml', 'node_modules'];
+    for (const file of lockfiles) {
+      const filePath = path.join(srcDir, file);
+      if (fs.existsSync(filePath)) {
+        fs.rmSync(filePath, { recursive: true, force: true });
+      }
+    }
+
     // ── npm install ─────────────────────────────────────────────────────────
     await log('[build:vite] npm install (timeout 120 s)');
     await runCommand('npm', ['install', '--no-audit', '--no-fund', '--no-package-lock'], srcDir, NPM_CI_TIMEOUT, log);
