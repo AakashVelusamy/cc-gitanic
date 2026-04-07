@@ -10,9 +10,5 @@ export const routes = {
       : `/repos/${encodeURIComponent(repoName)}`,
   repoBlob: (repoName: string, path: string) =>
     `/repos/${encodeURIComponent(repoName)}/blob/${path}`,
-  deploymentLogs: (repoName: string, deploymentId: string) =>
-    `/repos/${encodeURIComponent(repoName)}/deployments/${encodeURIComponent(deploymentId)}`,
-  deployments: (repoName: string) =>
-    `/repos/${encodeURIComponent(repoName)}/deployments`,
   newRepo: '/repos/new',
 } as const;

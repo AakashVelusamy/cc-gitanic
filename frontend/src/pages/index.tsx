@@ -39,6 +39,7 @@ export default function Home() {
   const [isMounted, setIsMounted] = React.useState(false);
 
   React.useEffect(() => {
+    setIsMounted(true);
   }, []);
 
   const isAuthenticated = isMounted ? !!getToken() : false;
@@ -127,7 +128,7 @@ export default function Home() {
 
         {/* GRADIENT CARDS */}
         <section id="features" className="relative flex flex-col items-center justify-center h-auto md:h-[calc(100vh-114px)] min-h-0 md:min-h-[calc(100vh-114px)] py-16 md:py-8 w-full px-4 overflow-hidden md:snap-start md:snap-always shrink-0">
-          <BGPattern variant="grid" mask="fade-edges" size={40} fill="rgba(255,255,255,0.04)" />
+          <BGPattern variant="grid" mask="fade-edges" size={32} fill="rgba(255,255,255,0.07)" />
           <div className="relative max-w-6xl mx-auto text-center mb-12">
             <h2 className="text-4xl md:text-6xl font-bold glow-text mb-4">How It Works ?</h2>
             
@@ -154,6 +155,7 @@ export default function Home() {
 
         {/* SCROLL ANIMATION */}
         <section className="relative md:snap-start md:snap-always h-auto md:h-[calc(100vh-114px)] min-h-0 md:min-h-[calc(100vh-114px)] py-16 md:py-0 w-full flex flex-col md:flex-row items-center justify-center shrink-0 overflow-hidden">
+          <BGPattern variant="grid" mask="fade-edges" size={32} fill="rgba(255,255,255,0.05)" />
           <ContainerScroll
             titleComponent={
               <div className="relative z-20 mb-4 md:mb-6 w-full">
@@ -176,7 +178,7 @@ export default function Home() {
 
         {/* CTA */}
         <section className="relative flex flex-col items-center justify-center h-auto md:h-[calc(100vh-114px)] min-h-0 md:min-h-[calc(100vh-114px)] py-16 md:py-8 w-full px-4 overflow-hidden md:snap-start md:snap-always shrink-0">
-          <BGPattern variant="dots" mask="fade-edges" size={24} fill="rgba(255,255,255,0.08)" />
+          <BGPattern variant="grid" mask="fade-edges" size={32} fill="rgba(255,255,255,0.08)" />
           <div className="relative max-w-3xl mx-auto text-center">
             <h2 className="text-4xl md:text-6xl font-black mb-6 md:mb-8 glow-text">Ready To Ship ?</h2>
             <Link

@@ -8,6 +8,7 @@ import { FileText, ChevronRight, Folder, Copy, Check, Download, ArrowLeft, Image
 import Link from 'next/link';
 import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter';
 import { vscDarkPlus } from 'react-syntax-highlighter/dist/cjs/styles/prism';
+import { BGPattern } from '@/components/ui/bg-pattern';
 
 interface BlobResult {
   content: string;
@@ -127,7 +128,8 @@ export default function BlobPage() {
   // Loading state
   if (loading) {
     return (
-      <div className="min-h-[calc(100vh-4.5rem)] bg-background flex flex-col">
+      <div className="min-h-[calc(100vh-4.5rem)] bg-background relative overflow-hidden flex flex-col">
+        <BGPattern variant="grid" mask="fade-edges" size={32} fill="rgba(255,255,255,0.05)" />
         <div className="flex justify-center items-center h-[50vh]">
           <Ship className="animate-bounce text-primary opacity-50" size={48} />
         </div>
@@ -146,7 +148,8 @@ export default function BlobPage() {
   const lineCount = !blob.isBinary ? blob.content.split('\n').length : 0;
 
   return (
-    <div className="min-h-[calc(100vh-4.5rem)] bg-background flex flex-col">
+    <div className="min-h-[calc(100vh-4.5rem)] bg-background relative overflow-hidden flex flex-col">
+      <BGPattern variant="grid" mask="fade-edges" size={32} fill="rgba(255,255,255,0.05)" />
 
       <main className="flex-1 w-full max-w-[1600px] mx-auto px-4 sm:px-6 lg:px-8 mt-6 pb-6">
         {/* Back link */}

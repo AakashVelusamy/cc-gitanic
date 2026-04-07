@@ -4,7 +4,9 @@ import { fetchApi, getToken } from '@/lib/api';
 import { routes } from '@/lib/routes';
 import { useToast } from '@/contexts/toast-context';
 import { BookOpen, Search, PlusCircle, Ship, Clock } from 'lucide-react';
+import { detectLanguage, LanguageBadge, TreeEntry } from '@/components/file-browser';
 import Link from 'next/link';
+import { BGPattern } from '@/components/ui/bg-pattern';
 
 interface Repo {
   id: string;
@@ -18,6 +20,7 @@ export default function DashboardPage() {
   const router = useRouter();
   const { toast } = useToast();
   const [repos, setRepos] = useState<Repo[]>([]);
+  const [repoLanguages, setRepoLanguages] = useState<Record<string, string>>({});
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState('');
   const [, setTick] = useState(0);
@@ -41,6 +44,19 @@ export default function DashboardPage() {
       setRepos(sorted);
       if (sorted.length === 0) {
         toast('No Repositories Yet', 'info');
+      } else {
+        // Fetch languages in parallel
+        Promise.all(sorted.map(async (repo) => {
+           try {
+              const tree = await fetchApi<TreeEntry[]>(`/api/repos/${repo.name}/tree?ref=HEAD&path=`);
+              const lang = detectLanguage(tree);
+              if (lang) {
+                 setRepoLanguages(prev => ({...prev, [repo.id]: lang}));
+              }
+           } catch {
+              // ignore
+           }
+        }));
       }
     } catch {
       toast('Failed to load repositories', 'error');
@@ -56,7 +72,8 @@ export default function DashboardPage() {
 
   if (loading) {
     return (
-      <div className="flex-1 bg-background flex flex-col">
+      <div className="flex-1 bg-background relative overflow-hidden flex flex-col">
+        <BGPattern variant="grid" mask="fade-edges" size={32} fill="rgba(255,255,255,0.05)" />
         <div className="flex-1 flex items-center justify-center">
             <Ship className="animate-bounce text-primary opacity-50" size={32} />
         </div>
@@ -65,7 +82,8 @@ export default function DashboardPage() {
   }
 
   return (
-    <div className="flex-1 bg-background flex flex-col">
+    <div className="flex-1 bg-background relative overflow-hidden flex flex-col">
+      <BGPattern variant="grid" mask="fade-edges" size={32} fill="rgba(255,255,255,0.05)" />
       <div className="flex-1 w-full max-w-[1600px] mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <div className="flex flex-col sm:flex-row items-center justify-between gap-4 mb-6">
           <div className="relative w-full md:w-[calc((100%-1rem)/2)] lg:w-[calc((100%-3rem)/4)] shrink-0">
@@ -86,15 +104,22 @@ export default function DashboardPage() {
         {repos.length > 0 && (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
              {filteredRepos.map((repo) => (
-                  <Link key={repo.id} href={routes.repo(repo.name)} className="glass glass-hover px-5 py-4 rounded-xl border border-white/5 flex flex-row items-center justify-between group gap-3 min-w-0">
-                      <div className="flex items-center gap-2 font-semibold text-foreground group-hover:text-primary transition-colors pr-2 min-w-0"> 
-                         <BookOpen size={16} className="text-muted-foreground group-hover:text-primary shrink-0" />
-                         <span className="truncate">{repo.name}</span>     
+                  <Link key={repo.id} href={routes.repo(repo.name)} className="glass glass-hover px-5 py-4 rounded-xl border border-white/5 flex flex-col justify-between group gap-3 min-w-0">
+                      <div className="flex items-center gap-2 font-semibold text-foreground group-hover:text-primary transition-colors pr-2 min-w-0 w-full justify-between"> 
+                         <div className="flex items-center gap-2 min-w-0">
+                           <BookOpen size={16} className="text-muted-foreground group-hover:text-primary shrink-0" />
+                           <span className="truncate">{repo.name}</span>     
+                         </div>
                          <span className={`w-2.5 h-2.5 rounded-full shrink-0 ${repo.auto_deploy_enabled ? 'bg-emerald-400' : 'bg-muted-foreground/50'}`}></span>
                       </div>
-                      <div className="flex items-center gap-2 text-xs text-muted-foreground shrink-0">
-                         <Clock size={12} />
-                         <span className="whitespace-nowrap">{timeAgo(repo.updated_at || repo.created_at)}</span>
+                      <div className="flex items-center justify-between mt-1">
+                         <div className="flex items-center gap-2 text-xs text-muted-foreground shrink-0">
+                            <Clock size={12} />
+                            <span className="whitespace-nowrap">{timeAgo(repo.updated_at || repo.created_at)}</span>
+                         </div>
+                         {repoLanguages[repo.id] && (
+                            <LanguageBadge language={repoLanguages[repo.id]} size="sm" />
+                         )}
                       </div>
                   </Link>
              ))}

@@ -3,11 +3,12 @@ import { useRouter } from 'next/router';
 import { fetchApi, getCanonicalUsername, getToken, getTokenPayload } from '@/lib/api';
 import { routes } from '@/lib/routes';
 import { useToast } from '@/contexts/toast-context';
-import { FileBrowser, TreeEntry } from '@/components/file-browser';
+import { FileBrowser, TreeEntry, detectLanguage } from '@/components/file-browser';
 import { MarkdownContent } from '@/components/markdown-content';
 import { BookOpen, Terminal, Trash2, Copy, Check, ExternalLink, Ship, PowerOff } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
 import Link from 'next/link';
+import { BGPattern } from '@/components/ui/bg-pattern';
 
 interface RepoData {
   id: string;
@@ -44,6 +45,7 @@ export default function RepositoryTreePage() {
   const [activeDeploymentTask, setActiveDeploymentTask] = useState<string | null>(null);
   const { toast } = useToast();
   const [copied, setCopied] = useState(false);
+  const [language, setLanguage] = useState<string | null>(null);
 
   const loadRepoData = useCallback(async (name: string, path: string = '') => {
     try {
@@ -53,6 +55,16 @@ export default function RepositoryTreePage() {
       try {
         const tree = await fetchApi<TreeEntry[]>(`/api/repos/${name}/tree?ref=HEAD&path=${path}`);
         setEntries(tree);
+
+        // Language detection based on root entries
+        if (path === '') {
+          setLanguage(detectLanguage(tree));
+        } else {
+          // If we are deep navigating directly, fetch root to detect language
+          fetchApi<TreeEntry[]>(`/api/repos/${name}/tree?ref=HEAD&path=`).then(rootTree => {
+             setLanguage(detectLanguage(rootTree));
+          }).catch(console.error);
+        }
 
         const rm = tree.find((e) => e.name.toLowerCase() === 'readme.md');
         if (rm) {
@@ -181,7 +193,8 @@ export default function RepositoryTreePage() {
 
   if (loading) {
     return (
-      <div className="flex-1 bg-background flex flex-col items-center justify-center">
+      <div className="flex-1 bg-background relative overflow-hidden flex flex-col items-center justify-center">
+        <BGPattern variant="grid" mask="fade-edges" size={32} fill="rgba(255,255,255,0.05)" />
         <Ship className="animate-bounce text-primary opacity-50" size={32} />
       </div>
     );
@@ -190,7 +203,8 @@ export default function RepositoryTreePage() {
   if (!repo) return null;
 
   return (
-    <div className="flex-1 flex flex-col bg-background pb-6">
+    <div className="flex-1 flex flex-col bg-background relative overflow-hidden pb-6">
+      <BGPattern variant="grid" mask="fade-edges" size={32} fill="rgba(255,255,255,0.05)" />
       {/* Repo Header */}
       <div className="bg-background border-b border-white/5 py-8 mb-8 z-40 backdrop-blur-3xl">
         <div className="max-w-[1600px] mx-auto px-4 sm:px-6 lg:px-8 flex flex-col xl:flex-row xl:items-center justify-between gap-6">
@@ -286,6 +300,7 @@ export default function RepositoryTreePage() {
              entries={entries} 
              currentPath={currentPath}
              commits={commits}
+             language={language}
              onFolderDoubleClick={(path) => {
                const route = path ? routes.repoTree(repoName, path) : routes.repo(repoName);
                router.push(route);
