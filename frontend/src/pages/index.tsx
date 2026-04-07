@@ -1,7 +1,7 @@
 import React from 'react';
 import { routes } from '@/lib/routes';
 import Link from 'next/link';
-import { ArrowDown, Code2, Rocket, Zap, ArrowRight } from 'lucide-react';
+import { ArrowDown, Code2, Rocket, Ship, Zap, ArrowRight } from 'lucide-react';
 import { getToken } from '@/lib/api';
 import { useEffect, useState } from 'react';
 import { motion } from 'framer-motion';
@@ -167,8 +167,8 @@ export default function Home() {
             }
           >
             <div className="flex flex-col items-center justify-center gap-4 text-muted-foreground">
-              <Rocket size={80} className="text-white/40" />
-              <p className="text-sm font-mono uppercase tracking-widest">Preview Coming Soon</p>
+              <Ship size={80} className="text-white/40" />
+              <p className="text-sm font-mono uppercase tracking-widest"></p>
             </div>
           </ContainerScroll>
         <hr className="absolute bottom-0 border-t border-white/10 w-full z-30 m-0" />

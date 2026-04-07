@@ -10,13 +10,18 @@ export function Navbar() {
   const router = useRouter();
   const [username, setUsername] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
+  const [isLoggedIn, setIsLoggedIn] = useState(false);
 
   useEffect(() => {
     let cancelled = false;
     void (async () => {
       try {
-        if (!getToken()) {
+        const token = getToken();
+        setIsLoggedIn(!!token);
+        
+        if (!token) {
           setUsername(null);
+          setLoading(false);
           return;
         }
 
@@ -38,10 +43,12 @@ export function Navbar() {
     return () => {
       cancelled = true;
     };
-  }, []);
+  }, [router.asPath]);
 
   const handleLogout = () => {
     clearToken();
+    setUsername(null);
+    setIsLoggedIn(false);
     router.push(routes.login);
   };
 
@@ -51,7 +58,7 @@ export function Navbar() {
         <div className="flex justify-between items-center h-16">
           {/* Logo & Brand */}
           <div className="flex items-center gap-3">
-            <Link href={routes.dashboard} className="flex items-center gap-2 group">
+            <Link href={isLoggedIn ? routes.dashboard : routes.home} className="flex items-center gap-2 group">
               <div className="w-8 h-8 flex items-center justify-center group-hover:drop-shadow-[0_0_10px_rgba(0,240,255,0.8)] transition-all duration-300">
                 <Image
                   src="/logo.png"

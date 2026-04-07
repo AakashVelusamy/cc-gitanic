@@ -2,7 +2,6 @@ import { useEffect, useState, useCallback } from 'react';
 import { useRouter } from 'next/router';
 import { fetchApi, getToken } from '@/lib/api';
 import { routes } from '@/lib/routes';
-import { Navbar } from '@/components/navbar';
 import { useToast } from '@/contexts/toast-context';
 import { MarkdownContent } from '@/components/markdown-content';
 import { FileText, ChevronRight, Folder, Copy, Check, Download, ArrowLeft, Image as ImageIcon, FileCode, Binary, Ship } from 'lucide-react';
@@ -129,7 +128,6 @@ export default function BlobPage() {
   if (loading) {
     return (
       <div className="min-h-[calc(100vh-4.5rem)] bg-background flex flex-col">
-        <Navbar />
         <div className="flex justify-center items-center h-[50vh]">
           <Ship className="animate-bounce text-primary opacity-50" size={48} />
         </div>
@@ -149,7 +147,6 @@ export default function BlobPage() {
 
   return (
     <div className="min-h-[calc(100vh-4.5rem)] bg-background flex flex-col">
-      <Navbar />
 
       <main className="flex-1 w-full max-w-[1600px] mx-auto px-4 sm:px-6 lg:px-8 mt-6 pb-6">
         {/* Back link */}

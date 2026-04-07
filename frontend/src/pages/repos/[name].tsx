@@ -287,8 +287,8 @@ export default function RepositoryPage() {
              currentPath={currentPath}
              commits={commits}
              onFolderDoubleClick={(path) => {
-               setCurrentPath(path);
-               loadRepoData(repo.name, path);
+               const route = path ? routes.repoTree(name, path) : routes.repo(name);
+               router.push(route);
              }}
            />
 
