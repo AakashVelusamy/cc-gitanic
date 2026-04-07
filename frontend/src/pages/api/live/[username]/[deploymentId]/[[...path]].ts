@@ -92,7 +92,13 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
     if (contentType.includes('text/html')) {
         let htmlStr = Buffer.from(buffer).toString('utf-8');
-        const baseTag = `<base href="/api/live/${uname}/${depId}/" />`;
+        const basePath = `/api/live/${uname}/${depId}`;
+        const baseTag = `<base href="${basePath}/" />`;
+        
+        // Rewrite absolute asset paths to point to the proxy base path
+        htmlStr = htmlStr.replace(/(src|href)="\/([^"]+)"/g, `$1="${basePath}/$2"`);
+        htmlStr = htmlStr.replace(/(src|href)='\/([^']+)'/g, `$1='${basePath}/$2'`);
+
         if (htmlStr.includes('<head>')) {
             htmlStr = htmlStr.replace('<head>', `<head>${baseTag}`);
         } else if (htmlStr.includes('<HEAD>')) {

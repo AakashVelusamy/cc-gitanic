@@ -130,8 +130,8 @@ export default function BlobPage() {
     return (
       <div className="min-h-[calc(100vh-4.5rem)] bg-background relative overflow-hidden flex flex-col">
         <BGPattern variant="grid" mask="fade-edges" size={32} fill="rgba(255,255,255,0.05)" />
-        <div className="flex justify-center items-center h-[50vh]">
-          <Ship className="animate-bounce text-primary opacity-50" size={48} />
+        <div className="flex-1 flex items-center justify-center">
+          <Ship className="animate-bounce text-primary opacity-50" size={32} />
         </div>
       </div>
     );
