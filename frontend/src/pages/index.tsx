@@ -14,7 +14,7 @@ export default function Home() {
   }, []);
 
   return (
-    <div className="bg-background selection:bg-primary/30 h-screen overflow-y-auto snap-y snap-mandatory relative">
+    <div className="bg-background selection:bg-primary/30 h-screen overflow-y-auto overflow-x-hidden snap-y snap-mandatory relative">
       <div className="sticky top-0 z-50">
         <Navbar />
       </div>

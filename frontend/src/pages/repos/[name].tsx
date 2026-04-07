@@ -6,7 +6,8 @@ import { Navbar } from '@/components/navbar';
 import { useToast } from '@/contexts/toast-context';
 import { FileBrowser, TreeEntry } from '@/components/file-browser';
 import { MarkdownContent } from '@/components/markdown-content';
-import { BookOpen, ShieldAlert, Terminal, Trash2, Rocket, Copy, Check, ExternalLink, Ship } from 'lucide-react';
+import { BookOpen, ShieldAlert, Terminal, Trash2, Rocket, Copy, Check, ExternalLink, Ship, PowerOff } from 'lucide-react';
+import { supabase } from '@/lib/supabase';
 import Link from 'next/link';
 
 interface RepoData {
@@ -38,6 +39,8 @@ export default function RepositoryPage() {
   const [loading, setLoading] = useState(true);
   const [username, setUsername] = useState('');
   const [deploying, setDeploying] = useState(false);
+  const [undeploying, setUndeploying] = useState(false);
+  const [activeDeploymentTask, setActiveDeploymentTask] = useState<string | null>(null);
   const { toast } = useToast();
   const [copied, setCopied] = useState(false);
 
@@ -102,26 +105,59 @@ export default function RepositoryPage() {
     })();
   }, [name, router, loadRepoData]);
 
-  async function handleDeploy() {
+    async function handleDeploy() {
     setDeploying(true);
     try {
-      await fetchApi<{ id: string }>(`/api/repos/${name}/deploy`, {
+      const res = await fetchApi<{ deploymentId: string }>(`/api/repos/${name}/deploy`, {
         method: 'POST',
       });
-      // Deployment is enqueued, just reset state and let it build in the background
-      setTimeout(() => {
-        setDeploying(false);
-        // Refresh repo data after enough time to let it finish (optional)
-        loadRepoData(name);
-      }, 3000);
-      toast('Deployment started successfully', 'success');
+      toast('Deployment enqueued...', 'info');
+      setActiveDeploymentTask(res.deploymentId);
     } catch (err: unknown) {
       toast((err as Error).message || 'Something went wrong with the deployment', 'error');
       setDeploying(false);
     }
   }
 
-  async function handleDelete() {
+  async function handleUndeploy() {
+    if (!confirm('This will take your site offline. Are you sure?')) return;
+    setUndeploying(true);
+    try {
+      await fetchApi(`/api/repos/${name}/deploy`, { method: 'DELETE' });
+      toast('Site undeployed successfully', 'success');
+      loadRepoData(name);
+    } catch (err: unknown) {
+      toast((err as Error).message || 'Failed to undeploy', 'error');
+    } finally {
+      setUndeploying(false);
+    }
+  }
+
+  useEffect(() => {
+    if (!activeDeploymentTask) return;
+    const channel = supabase.channel(`deployment:${activeDeploymentTask}`);
+    
+    channel.on('broadcast', { event: '*' }, (payload) => {
+        const { event, payload: data } = payload;
+        switch(event) {
+           case 'deploy:start': toast('Deployment started', 'info'); break;
+           case 'deploy:step': toast(`Step: ${data.message}`, 'info'); break;
+           case 'deploy:success': 
+             toast('Deployment completed successfully!', 'success');
+             setDeploying(false);
+             setActiveDeploymentTask(null);
+             loadRepoData(name);
+             break;
+           case 'deploy:failed':
+             toast(`Deployment failed: ${data.message || data.error}`, 'error');
+             setDeploying(false);
+             setActiveDeploymentTask(null);
+             break;
+        }
+    }).subscribe();
+
+    return () => { supabase.removeChannel(channel); };
+  }, [activeDeploymentTask, name, loadRepoData, toast]);async function handleDelete() {
     if (!confirm('This will permanently delete this repository and all its deployments. Are you sure?')) return;
     try {
       await fetchApi(`/api/repos/${name}`, { method: 'DELETE' });
@@ -141,7 +177,7 @@ export default function RepositoryPage() {
 
   if (loading) {
     return (
-     <div className="min-h-[calc(100vh-4.5rem)] bg-background flex flex-col"><Navbar /><div className="flex justify-center items-center h-[50vh]"><div className="w-12 h-12 border-4 border-primary/20 border-t-primary rounded-full animate-spin"></div></div></div>
+     <div className="min-h-[calc(100vh-4.5rem)] bg-background flex flex-col"><Navbar /><div className="flex justify-center items-center h-[50vh]"><Ship className="animate-bounce text-primary opacity-50" size={32} /></div></div>
     );
   }
 
@@ -154,7 +190,7 @@ export default function RepositoryPage() {
       <Navbar />
 
       {/* Repo Header */}
-      <div className="bg-background border-b border-white/5 py-8 mb-8 sticky top-[80px] z-40 backdrop-blur-3xl">
+      <div className="bg-background border-b border-white/5 py-8 mb-8 z-40 backdrop-blur-3xl">
         <div className="max-w-[1600px] mx-auto px-4 sm:px-6 lg:px-8 flex flex-col xl:flex-row xl:items-center justify-between gap-6">
           <div className="flex items-center gap-3">
              <div className="w-12 h-12 bg-primary/10 rounded-xl flex items-center justify-center text-primary shadow-[0_0_15px_rgba(0,240,255,0.2)] border border-primary/20 shrink-0">
@@ -190,20 +226,35 @@ export default function RepositoryPage() {
               </div>
 
               <div className="flex flex-row items-center gap-3 shrink-0">
-                {repo.active_deployment_id ? (
+                {repo.active_deployment_id && (
                   <a
                     href={`/api/live/${username}/${repo.active_deployment_id}/`}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="btn-primary flex items-center justify-center gap-2 shadow-lg shadow-primary/20 h-[42px] px-4 w-full sm:w-auto"
+                    className="btn-primary flex items-center justify-center gap-2 shadow-lg shadow-primary/20 h-[42px] px-4 w-full sm:w-auto shrink-0"
                   >
                     <ExternalLink size={16} />
                     View Live
                   </a>
-                ) : (
-                  <button onClick={handleDeploy} disabled={deploying} className="btn-primary flex items-center justify-center gap-2 shadow-lg shadow-primary/20 h-[42px] px-4 w-full sm:w-auto">
-                    {deploying ? <div className="w-4 h-4 border-2 border-background/20 border-t-background rounded-full animate-spin"></div> : <Rocket size={16} />}
-                    Deploy
+                )}
+
+                <button
+                  onClick={handleDeploy}
+                  disabled={deploying}
+                  className={`flex items-center justify-center gap-2 h-[42px] px-4 w-full sm:w-auto shrink-0 ${repo.active_deployment_id ? 'bg-secondary/40 hover:bg-secondary border border-white/10 text-foreground rounded-lg' : 'btn-primary shadow-lg shadow-primary/20'}`}
+                >
+                  {deploying ? <div className={`w-4 h-4 border-2 border-t-current rounded-full animate-spin ${repo.active_deployment_id ? 'border-foreground/20' : 'border-background/20'}`}></div> : <Rocket size={16} />}
+                  Deploy
+                </button>
+
+                {repo.active_deployment_id && (
+                  <button
+                    onClick={handleUndeploy}
+                    disabled={undeploying}
+                    className="bg-destructive/10 text-destructive hover:bg-destructive hover:text-destructive-foreground transition-colors px-4 rounded-lg flex items-center justify-center gap-2 text-sm font-medium border border-destructive/20 hover:border-destructive shadow-lg h-[42px] w-full sm:w-auto shrink-0"
+                  >
+                    {undeploying ? <div className="w-4 h-4 border-2 border-t-current rounded-full animate-spin border-destructive-foreground/20"></div> : <PowerOff size={16} />}
+                    Undeploy
                   </button>
                 )}
                 <button 

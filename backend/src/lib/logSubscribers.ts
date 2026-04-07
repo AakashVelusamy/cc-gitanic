@@ -64,11 +64,7 @@ async function broadcast(
 ): Promise<void> {
   try {
     const ch = getOrCreateChannel(deploymentId);
-    await ch.send({
-      type:    'broadcast',
-      event,
-      payload: { deploymentId, ...payload },
-    });
+    await ch.httpSend(event, { deploymentId, ...payload });
   } catch (err) {
     // Realtime broadcast is best-effort — never block the pipeline
     logger.warn(`[realtime] Broadcast "${event}" failed: ${String(err)}`);

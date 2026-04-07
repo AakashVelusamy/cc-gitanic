@@ -69,7 +69,7 @@ export function FileBrowser({ repoName, entries, currentPath = '', ref = 'HEAD',
 
   return (
     <div className="glass rounded-xl overflow-hidden mb-6 border border-white/5 shadow-lg">
-      <div className="bg-secondary/40 px-4 py-3 border-b border-white/5 flex items-center justify-between shadow-inner">
+      <div className="bg-secondary/40 px-4 py-3 border-b border-white/5 flex flex-col md:flex-row md:items-center justify-between shadow-inner gap-3">
         <div className="flex items-center flex-wrap gap-1 text-sm min-w-0">
           {onFolderDoubleClick ? (
             <button onClick={() => onFolderDoubleClick('')} className="font-semibold text-primary hover:text-accent transition-colors flex items-center gap-2 shrink-0 cursor-pointer bg-transparent border-none p-0 outline-none">
@@ -103,7 +103,7 @@ export function FileBrowser({ repoName, entries, currentPath = '', ref = 'HEAD',
             );
           })}
           {commits && commits.length > 0 && (
-             <div className="ml-3 border-l border-white/10 pl-3 flex items-center truncate">
+             <div className="md:ml-3 md:border-l border-white/10 md:pl-3 flex items-center min-w-0 mt-2 md:mt-0 flex-1 truncate">
                <span className="text-xs text-muted-foreground truncate" title={commits[0].message}>
                  {commits[0].message}
                </span>
@@ -111,7 +111,7 @@ export function FileBrowser({ repoName, entries, currentPath = '', ref = 'HEAD',
           )}
         </div>
         {commits && commits.length > 0 && (
-          <div className="flex items-center gap-1.5 text-xs text-muted-foreground ml-4 shrink-0 px-3 py-1 bg-background/50 rounded-full border border-white/5">
+          <div className="flex items-center gap-1.5 text-xs text-muted-foreground w-fit shrink-0 px-3 py-1 bg-background/50 rounded-full border border-white/5 self-end md:self-auto">
              <Clock size={12} className="text-muted-foreground/70" />
              <span className="font-medium">{commits.length} commit{commits.length !== 1 ? 's' : ''}</span>
           </div>
@@ -120,7 +120,7 @@ export function FileBrowser({ repoName, entries, currentPath = '', ref = 'HEAD',
 
       {/* Table */}
       <div className="overflow-x-auto">
-        <table className="w-full text-left border-collapse min-w-[500px]">
+        <table className="w-full text-left border-collapse">
           <tbody>
             {/* Parent directory link */}
             {currentPath && (

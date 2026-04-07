@@ -14,6 +14,9 @@ router.use(authMiddleware);
 // POST /api/repos/:repoName/deploy          → enqueue deployment
 router.post('/repos/:repoName/deploy', DeploymentController.enqueue);
 
+// DELETE /api/repos/:repoName/deploy          → undeploy active site
+router.delete('/repos/:repoName/deploy', DeploymentController.undeploy);
+
 // GET  /api/repos/:repoName/deployments     → list deployments for repo
 router.get('/repos/:repoName/deployments', DeploymentController.list);
 

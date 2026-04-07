@@ -5,13 +5,15 @@ import { routes } from '@/lib/routes';
 import { Navbar } from '@/components/navbar';
 import { useToast } from '@/contexts/toast-context';
 import Link from 'next/link';
-import { Ship } from 'lucide-react';
+import { Ship, Eye, EyeOff } from 'lucide-react';
 
 export default function LoginPage() {
   const router = useRouter();
   const { toast } = useToast();
   const isLogin = router.query.mode !== 'signup';
 
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
@@ -211,28 +213,48 @@ export default function LoginPage() {
                   <>
                     <div>
                       <label className="block text-sm font-medium text-foreground mb-1" htmlFor="signup-password">Password</label>
-                      <input
-                        id="signup-password"
-                        type="password"
-                        required
-                        autoComplete="new-password"
-                        minLength={8}
-                        value={password}
-                        onChange={(e) => setPassword(e.target.value)}
-                        className={inputClass}
-                      />
+                      <div className="relative">
+                        <input
+                          id="signup-password"
+                          type={showPassword ? "text" : "password"}
+                          required
+                          autoComplete="new-password"
+                          minLength={8}
+                          value={password}
+                          onChange={(e) => setPassword(e.target.value)}
+                          className={inputClass}
+                          style={{ paddingRight: "3rem" }}
+                        />
+                        <button
+                          type="button"
+                          onClick={() => setShowPassword(!showPassword)}
+                          className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                        >
+                          {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                        </button>
+                      </div>
                     </div>
                     <div>
                       <label className="block text-sm font-medium text-foreground mb-1" htmlFor="confirm-password">Confirm Password</label>
-                      <input
-                        id="confirm-password"
-                        type="password"
-                        required
-                        autoComplete="new-password"
-                        value={confirmPassword}
-                        onChange={(e) => setConfirmPassword(e.target.value)}
-                        className={inputClass}
-                      />
+                      <div className="relative">
+                        <input
+                          id="confirm-password"
+                          type={showConfirmPassword ? "text" : "password"}
+                          required
+                          autoComplete="new-password"
+                          value={confirmPassword}
+                          onChange={(e) => setConfirmPassword(e.target.value)}
+                          className={inputClass}
+                          style={{ paddingRight: "3rem" }}
+                        />
+                        <button
+                          type="button"
+                          onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                          className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                        >
+                          {showConfirmPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                        </button>
+                      </div>
                     </div>
                   </>
                 )
@@ -253,15 +275,25 @@ export default function LoginPage() {
                   </div>
                   <div>
                     <label className="block text-sm font-medium text-foreground mb-1" htmlFor="login-password">Password</label>
-                    <input
-                      id="login-password"
-                      type="password"
-                      required
-                      autoComplete="current-password"
-                      value={password}
-                      onChange={(e) => setPassword(e.target.value)}
-                      className={inputClass}
-                    />
+                    <div className="relative">
+                      <input
+                        id="login-password"
+                        type={showPassword ? "text" : "password"}
+                        required
+                        autoComplete="current-password"
+                        value={password}
+                        onChange={(e) => setPassword(e.target.value)}
+                        className={inputClass}
+                        style={{ paddingRight: "3rem" }}
+                      />
+                      <button
+                        type="button"
+                        onClick={() => setShowPassword(!showPassword)}
+                        className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                      >
+                        {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                      </button>
+                    </div>
                   </div>
                 </>
               )}

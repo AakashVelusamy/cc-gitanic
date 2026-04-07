@@ -105,4 +105,32 @@ export const DeploymentController = {
       isRunning: deployQueue.isRunning,
     });
   },
+
+  /**
+   * DELETE /api/repos/:repoName/deploy
+   * Undeploys the active deployment and disables auto-deploy.
+   */
+  async undeploy(req: Request, res: Response, next: NextFunction): Promise<void> {
+    try {
+      const { sub: userId, username } = res.locals.user;
+      const repoName = req.params['repoName'] as string;
+
+      const { RepoRepository } = await import('../repos/repo.repository');
+      const repo = await RepoRepository.findByOwnerAndName(userId, repoName);
+      if (!repo) { res.status(404).json({ error: `Repository "${repoName}" not found` }); return; }
+
+      const { query } = await import('../../lib/db');
+      await query(
+        'UPDATE repositories SET active_deployment_id = NULL, auto_deploy_enabled = false WHERE id = $1',
+        [repo.id]
+      );
+
+      const { bustLocalServeCache } = await import('../../lib/cacheBust');
+      await bustLocalServeCache(username);
+
+      res.status(200).json({ message: 'Undeployed successfully' });
+    } catch (err) {
+      next(err);
+    }
+  },
 };
