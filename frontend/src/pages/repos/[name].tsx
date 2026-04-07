@@ -141,17 +141,36 @@ export default function RepositoryPage() {
     
     channel.on('broadcast', { event: '*' }, (payload) => {
         const { event, payload: data } = payload;
+        const prefix = repo?.active_deployment_id ? 'Redeployment' : 'Deployment';
+        
         switch(event) {
-           case 'deploy:start': toast('Deployment started', 'info'); break;
-           case 'deploy:step': toast(`Step: ${data.message}`, 'info'); break;
+           case 'deploy:start': toast(`${prefix} - Started`, 'info'); break;
+           case 'deploy:step': {
+             const msg = data.message.toLowerCase();
+             let uiMessage = '';
+             
+             if (msg.includes('strategy selected')) uiMessage = 'Strategized';
+             else if (msg.includes('running vite build') || msg.includes('npm run build') || msg.includes('build:')) uiMessage = 'Building';
+             else if (msg.includes('compiled successfully') || msg.includes('built in') || msg.includes('output directory:')) uiMessage = 'Built';
+             else if (msg.includes('workspace removed') || msg.includes('cleanup')) uiMessage = 'Cleaned';
+             else if (msg.includes('uploading')) uiMessage = 'Uploading';
+             else if (msg.includes('upload complete')) uiMessage = 'Uploaded';
+             else if (msg.includes('transferring')) uiMessage = 'Transferring';
+             else if (msg.includes('transferred')) uiMessage = 'Transferred';
+
+             if (uiMessage) {
+               toast(`${prefix} - ${uiMessage}`, 'info');
+             }
+             break;
+           }
            case 'deploy:success': 
-             toast('Deployment completed successfully!', 'success');
+             toast(`${prefix} - Done!`, 'success');
              setDeploying(false);
              setActiveDeploymentTask(null);
              loadRepoData(name);
              break;
            case 'deploy:failed':
-             toast(`Deployment failed: ${data.message || data.error}`, 'error');
+             toast(`${prefix} - Failed: ${data.message || data.error}`, 'error');
              setDeploying(false);
              setActiveDeploymentTask(null);
              break;
@@ -159,7 +178,22 @@ export default function RepositoryPage() {
     }).subscribe();
 
     return () => { supabase.removeChannel(channel); };
-  }, [activeDeploymentTask, name, loadRepoData, toast]);async function handleDelete() {
+  }, [activeDeploymentTask, name, loadRepoData, toast, repo?.active_deployment_id]);
+
+  useEffect(() => {
+    if (!repo?.id) return;
+    const channel = supabase.channel(`auto-deploy-${repo.id}`)
+      .on(
+        'postgres_changes',
+        { event: 'INSERT', schema: 'public', table: 'deployments', filter: `repository_id=eq.${repo.id}` },
+        (payload) => {
+          setActiveDeploymentTask(payload.new.id);
+          setDeploying(true);
+        }
+      )
+      .subscribe();
+    return () => { supabase.removeChannel(channel); };
+  }, [repo?.id]);async function handleDelete() {
     if (!confirm('This will permanently delete this repository and all its deployments. Are you sure?')) return;
     try {
       await fetchApi(`/api/repos/${name}`, { method: 'DELETE' });
@@ -191,7 +225,7 @@ export default function RepositoryPage() {
   }
 
   return (
-    <div className="flex-1 flex flex-col bg-background relative overflow-hidden pb-6">
+    <div className="flex-1 flex flex-col bg-background relative overflow-x-hidden pb-12 sm:pb-20">
       <BGPattern variant="grid" mask="fade-edges" size={32} fill="rgba(255,255,255,0.05)" />
 
       {/* Repo Header */}
@@ -212,7 +246,7 @@ export default function RepositoryPage() {
              </div>
           </div>
 
-          <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 w-full xl:w-auto shrink-0">
+          <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 w-full xl:w-auto shrink-0 flex-wrap">
               <div className="flex-1 sm:min-w-[320px]">
                 <button
                   className="w-full bg-background border border-primary/20 rounded-lg h-[42px] px-3 flex justify-between items-center gap-3 hover:border-primary transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50 cursor-pointer text-left"
@@ -230,32 +264,40 @@ export default function RepositoryPage() {
                 </button>
               </div>
 
-              <div className="grid grid-cols-2 sm:flex sm:flex-row items-center gap-3 shrink-0 w-full sm:w-auto">
+              <div className="grid grid-cols-2 lg:flex lg:flex-row items-center gap-3 shrink-0 w-full lg:w-auto flex-wrap">
                 {repo.active_deployment_id ? (
                   <>
                     <a
                       href={`/api/live/${username}/${repo.active_deployment_id}/`}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="btn-primary flex items-center justify-center gap-2 shadow-lg shadow-primary/20 h-[42px] px-4 w-full sm:w-auto shrink-0"
+                      className="btn-primary flex items-center justify-center gap-2 shadow-lg shadow-primary/20 h-[42px] px-4 w-full lg:w-auto shrink-0 overflow-hidden text-sm"
                     >
-                      <ExternalLink size={16} />
-                      View Live
+                      <ExternalLink size={16} className="shrink-0" />
+                      <span className="truncate">View Live</span>
                     </a>
+                    <button
+                      onClick={handleDeploy}
+                      disabled={deploying}
+                      className="btn-primary flex items-center justify-center gap-2 shadow-lg shadow-primary/20 h-[42px] px-4 w-full lg:w-auto shrink-0 overflow-hidden text-sm"
+                    >
+                      <Ship className={`shrink-0 ${deploying ? "animate-bounce" : ""}`} size={16} />
+                      <span className="truncate">{deploying ? "Deploying" : "Redeploy"}</span>
+                    </button>
                     <button
                       onClick={handleUndeploy}
                       disabled={undeploying}
-                      className="bg-destructive/10 text-destructive hover:bg-destructive hover:text-destructive-foreground transition-colors px-4 rounded-lg flex items-center justify-center gap-2 text-sm font-medium border border-destructive/20 hover:border-destructive shadow-lg h-[42px] w-full sm:w-auto shrink-0"
+                      className="bg-destructive/10 text-destructive hover:bg-destructive hover:text-destructive-foreground transition-colors px-4 rounded-lg flex items-center justify-center gap-2 text-sm font-medium border border-destructive/20 hover:border-destructive shadow-lg h-[42px] w-full lg:w-auto shrink-0 overflow-hidden"
                     >
-                      {undeploying ? <Ship className="animate-bounce" size={16} /> : <PowerOff size={16} />}
-                      Undeploy
+                      {undeploying ? <Ship className="animate-bounce shrink-0" size={16} /> : <PowerOff size={16} className="shrink-0" />}
+                      <span className="truncate">Undeploy</span>
                     </button>
                     <button 
                       onClick={handleDelete} 
-                      className="col-span-2 sm:col-span-1 bg-destructive/10 text-destructive hover:bg-destructive hover:text-destructive-foreground transition-colors px-4 rounded-lg flex items-center justify-center gap-2 text-sm font-medium border border-destructive/20 hover:border-destructive shadow-lg h-[42px] w-full sm:w-auto shrink-0"
+                      className="bg-destructive/10 text-destructive hover:bg-destructive hover:text-destructive-foreground transition-colors px-4 rounded-lg flex items-center justify-center gap-2 text-sm font-medium border border-destructive/20 hover:border-destructive shadow-lg h-[42px] w-full lg:w-auto shrink-0 overflow-hidden"
                     >
-                      <Trash2 size={16} />
-                      Delete
+                      <Trash2 size={16} className="shrink-0" />
+                      <span className="truncate">Delete</span>
                     </button>
                   </>
                 ) : (
@@ -263,14 +305,14 @@ export default function RepositoryPage() {
                     <button
                       onClick={handleDeploy}
                       disabled={deploying}
-                      className="btn-primary flex items-center justify-center gap-2 shadow-lg shadow-primary/20 h-[42px] px-4 w-full sm:w-auto shrink-0"
+                      className="btn-primary flex items-center justify-center gap-2 shadow-lg shadow-primary/20 h-[42px] px-4 w-full lg:w-auto shrink-0"
                     >
                       <Ship className={deploying ? "animate-bounce" : ""} size={16} />
                       Deploy
                     </button>
                     <button 
                       onClick={handleDelete} 
-                      className="bg-destructive/10 text-destructive hover:bg-destructive hover:text-destructive-foreground transition-colors px-4 rounded-lg flex items-center justify-center gap-2 text-sm font-medium border border-destructive/20 hover:border-destructive shadow-lg h-[42px] w-full sm:w-auto shrink-0"
+                      className="bg-destructive/10 text-destructive hover:bg-destructive hover:text-destructive-foreground transition-colors px-4 rounded-lg flex items-center justify-center gap-2 text-sm font-medium border border-destructive/20 hover:border-destructive shadow-lg h-[42px] w-full lg:w-auto shrink-0"
                     >
                       <Trash2 size={16} />
                       Delete
