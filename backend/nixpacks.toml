@@ -1,7 +1,7 @@
 ﻿providers = ["node"]
 
 [variables]
-NIXPACKS_NODE_VERSION = "22"
+NIXPACKS_NODE_VERSION = "23"
 
 [phases.setup]
 nixPkgs = ["...", "git"]
