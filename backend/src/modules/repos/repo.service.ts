@@ -261,6 +261,7 @@ export interface CreateRepoResult {
   auto_deploy_enabled: boolean;
   active_deployment_id: string | null;
   created_at: string;
+  updated_at?: string;
   git_url: string;
 }
 
