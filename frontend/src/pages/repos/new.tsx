@@ -112,7 +112,7 @@ export default function NewRepositoryPage() {
                 >
                   {creating ? (
                     <span className="flex items-center justify-center gap-2">
-                      <div className="w-4 h-4 border-2 border-background/20 border-t-background rounded-full animate-spin"></div> 
+                      <Ship className="animate-bounce" size={16} /> 
                       <span className="hidden sm:inline">Creating...</span>
                     </span>
                   ) : (

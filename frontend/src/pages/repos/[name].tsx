@@ -5,7 +5,7 @@ import { routes } from '@/lib/routes';
 import { useToast } from '@/contexts/toast-context';
 import { FileBrowser, TreeEntry } from '@/components/file-browser';
 import { MarkdownContent } from '@/components/markdown-content';
-import { BookOpen, ShieldAlert, Terminal, Trash2, Rocket, Copy, Check, ExternalLink, Ship, PowerOff } from 'lucide-react';
+import { BookOpen, Terminal, Trash2, Copy, Check, ExternalLink, Ship, PowerOff } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
 import Link from 'next/link';
 
@@ -242,7 +242,7 @@ export default function RepositoryPage() {
                       disabled={undeploying}
                       className="bg-destructive/10 text-destructive hover:bg-destructive hover:text-destructive-foreground transition-colors px-4 rounded-lg flex items-center justify-center gap-2 text-sm font-medium border border-destructive/20 hover:border-destructive shadow-lg h-[42px] w-full sm:w-auto shrink-0"
                     >
-                      {undeploying ? <div className="w-4 h-4 border-2 border-t-current rounded-full animate-spin border-destructive-foreground/20"></div> : <PowerOff size={16} />}
+                      {undeploying ? <Ship className="animate-bounce" size={16} /> : <PowerOff size={16} />}
                       Undeploy
                     </button>
                     <button 
@@ -260,7 +260,7 @@ export default function RepositoryPage() {
                       disabled={deploying}
                       className="btn-primary flex items-center justify-center gap-2 shadow-lg shadow-primary/20 h-[42px] px-4 w-full sm:w-auto shrink-0"
                     >
-                      {deploying ? <div className="w-4 h-4 border-2 border-t-current rounded-full animate-spin border-background/20"></div> : <Rocket size={16} />}
+                      <Ship className={deploying ? "animate-bounce" : ""} size={16} />
                       Deploy
                     </button>
                     <button 

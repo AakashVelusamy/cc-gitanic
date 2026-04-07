@@ -1,5 +1,5 @@
 import Link from 'next/link';
-import { Folder, FileText, Clock } from 'lucide-react';
+import { Folder, FileText, Clock, Ship } from 'lucide-react';
 import { routes } from '@/lib/routes';
 import {
   Breadcrumb,
@@ -56,7 +56,7 @@ export function FileBrowser({ repoName, entries, currentPath = '', ref = 'HEAD',
            <Folder size={18} className="text-muted-foreground mr-2" /> Source Code
         </div>
         <div className="p-8 text-center text-muted-foreground flex flex-col items-center justify-center gap-3">
-           <div className="w-6 h-6 border-2 border-primary/20 border-t-primary rounded-full animate-spin"></div>
+           <Ship className="animate-bounce text-primary opacity-50" size={32} />
         </div>
       </div>
     );

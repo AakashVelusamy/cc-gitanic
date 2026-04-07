@@ -131,7 +131,7 @@ export default function BlobPage() {
       <div className="min-h-[calc(100vh-4.5rem)] bg-background flex flex-col">
         <Navbar />
         <div className="flex justify-center items-center h-[50vh]">
-          <div className="w-12 h-12 border-4 border-primary/20 border-t-primary rounded-full animate-spin"></div>
+          <Ship className="animate-bounce text-primary opacity-50" size={48} />
         </div>
       </div>
     );
