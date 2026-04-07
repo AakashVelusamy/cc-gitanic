@@ -19,13 +19,14 @@ const app = express();
 const PORT = Number.parseInt(process.env.PORT ?? '3000', 10);
 
 // CORS: restrict to known origins; credentials require explicit origin (not wildcard)
-const ALLOWED_ORIGINS = (process.env.ALLOWED_ORIGINS ?? '')
-  .split(',')
-  .map((o) => o.trim())
-  .filter(Boolean);
+// Uncomment when ready strictly:
+// const ALLOWED_ORIGINS = (process.env.ALLOWED_ORIGINS ?? '')
+//   .split(',')
+//   .map((o) => o.trim())
+//   .filter(Boolean);
 
 app.use(cors({
-  origin: ALLOWED_ORIGINS.length > 0 ? ALLOWED_ORIGINS : false,
+  origin: true, // Allow all origins for now during development
   credentials: true,
 }));
 app.use(requestLogger);

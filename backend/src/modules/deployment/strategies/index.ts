@@ -75,7 +75,9 @@ async function runCommand(cmd: string, args: string[], cwd: string, timeout: num
       cwd,
       stdio: 'pipe',
       timeout,
-      env: SAFE_ENV,
+      env: (cmd === 'npm' && (args.includes('ci') || args.includes('install')))
+        ? { ...SAFE_ENV, NODE_ENV: 'development' }
+        : SAFE_ENV,
     });
     if (output.length > 0) {
       await log(output.toString('utf8').trim());
@@ -159,7 +161,7 @@ export const ReactStrategy: DeployStrategy = {
   async build(srcDir, log) {
     // ── npm ci ──────────────────────────────────────────────────────────────
     await log('[build:react] npm ci (timeout 120 s)');
-    await runCommand('npm', ['ci', '--prefer-offline'], srcDir, NPM_CI_TIMEOUT, log);
+      await runCommand('npm', ['ci', '--prefer-offline', '--include=dev'], srcDir, NPM_CI_TIMEOUT, log);
 
     // ── npm run build ────────────────────────────────────────────────────────
     await log('[build:react] npm run build (timeout 180 s)');
@@ -212,7 +214,7 @@ export const ViteStrategy: DeployStrategy = {
   async build(srcDir, log) {
     // ── npm ci ──────────────────────────────────────────────────────────────
     await log('[build:vite] npm ci (timeout 120 s)');
-    await runCommand('npm', ['ci', '--prefer-offline'], srcDir, NPM_CI_TIMEOUT, log);
+      await runCommand('npm', ['ci', '--prefer-offline', '--include=dev'], srcDir, NPM_CI_TIMEOUT, log);
 
     // ── vite build ───────────────────────────────────────────────────────────
     await log('[build:vite] vite build (timeout 180 s)');

@@ -2,7 +2,6 @@ import { useEffect, useState, useCallback } from 'react';
 import { useRouter } from 'next/router';
 import { fetchApi, getCanonicalUsername, getToken, getTokenPayload } from '@/lib/api';
 import { routes } from '@/lib/routes';
-import { Navbar } from '@/components/navbar';
 import { useToast } from '@/contexts/toast-context';
 import { FileBrowser, TreeEntry } from '@/components/file-browser';
 import { MarkdownContent } from '@/components/markdown-content';
@@ -177,7 +176,9 @@ export default function RepositoryPage() {
 
   if (loading) {
     return (
-     <div className="min-h-[calc(100vh-4.5rem)] bg-background flex flex-col"><Navbar /><div className="flex justify-center items-center h-[50vh]"><Ship className="animate-bounce text-primary opacity-50" size={32} /></div></div>
+      <div className="flex-1 bg-background flex flex-col items-center justify-center">
+        <Ship className="animate-bounce text-primary opacity-50" size={32} />
+      </div>
     );
   }
 
@@ -186,8 +187,7 @@ export default function RepositoryPage() {
   }
 
   return (
-    <div className="min-h-[calc(100vh-4.5rem)] bg-background pb-6 flex flex-col">
-      <Navbar />
+    <div className="flex-1 flex flex-col bg-background pb-6">
 
       {/* Repo Header */}
       <div className="bg-background border-b border-white/5 py-8 mb-8 z-40 backdrop-blur-3xl">
@@ -269,7 +269,7 @@ export default function RepositoryPage() {
         </div>
       </div>
 
-      <main className="flex-1 w-full max-w-[1600px] mx-auto px-4 sm:px-6 lg:px-8 flex flex-col gap-8">
+      <div className="flex-1 w-full max-w-[1600px] mx-auto px-4 sm:px-6 lg:px-8 flex flex-col gap-8">
 
         {/* Main Content */}
         <div className="w-full space-y-8 min-w-0">
@@ -295,7 +295,7 @@ export default function RepositoryPage() {
              </div>
            )}
         </div>
-        </main>
+        </div>
       </div>
     );
   }

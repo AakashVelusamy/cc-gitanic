@@ -2,7 +2,6 @@ import { useState, useEffect } from 'react';
 import { useRouter } from 'next/router';
 import { fetchApi, setToken } from '@/lib/api';
 import { routes } from '@/lib/routes';
-import { Navbar } from '@/components/navbar';
 import { useToast } from '@/contexts/toast-context';
 import Link from 'next/link';
 import { Ship, Eye, EyeOff } from 'lucide-react';
@@ -132,10 +131,8 @@ export default function LoginPage() {
   const disabledInputClass = `${inputClass} opacity-50 cursor-not-allowed`;
 
   return (
-    <div className="min-h-screen bg-background relative overflow-hidden flex flex-col">
-      <div className="sticky top-0 z-50">
-        <Navbar />
-      </div>
+    <div className="flex-1 bg-background relative overflow-hidden flex flex-col">
+
 
       <div className="flex-1 flex flex-col justify-center py-12 sm:px-6 lg:px-8 relative z-10 -mt-16">
         <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] bg-primary/10 blur-[100px] rounded-full pointer-events-none"></div>

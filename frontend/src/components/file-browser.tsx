@@ -1,6 +1,14 @@
 import Link from 'next/link';
-import { Folder, FileText, ChevronRight, Clock, Ship } from 'lucide-react';
+import { Folder, FileText, Clock } from 'lucide-react';
 import { routes } from '@/lib/routes';
+import {
+  Breadcrumb,
+  BreadcrumbItem,
+  BreadcrumbLink,
+  BreadcrumbList,
+  BreadcrumbPage,
+  BreadcrumbSeparator,
+} from '@/components/ui/breadcrumb';
 
 export interface TreeEntry {
   mode: string;
@@ -69,45 +77,59 @@ export function FileBrowser({ repoName, entries, currentPath = '', ref = 'HEAD',
 
   return (
     <div className="glass rounded-xl overflow-hidden mb-6 border border-white/5 shadow-lg">
-      <div className="bg-secondary/40 px-4 py-3 border-b border-white/5 flex flex-col md:flex-row md:items-center justify-between shadow-inner gap-3">
-        <div className="flex items-center flex-wrap gap-1 text-sm min-w-0">
-          {onFolderDoubleClick ? (
-            <button onClick={() => onFolderDoubleClick('')} className="font-semibold text-primary hover:text-accent transition-colors flex items-center gap-2 shrink-0 cursor-pointer bg-transparent border-none p-0 outline-none">
-              <Folder size={16} />
-              {repoName}
-            </button>
-          ) : (
-            <Link href={getTreeRoute()} className="font-semibold text-primary hover:text-accent transition-colors flex items-center gap-2 shrink-0">
-              <Folder size={16} />
-              {repoName}
-            </Link>
-          )}
-          {parts.map((part, i) => {
-            const partPath = parts.slice(0, i + 1).join('/');
-            const isLast = i === parts.length - 1;
-            return (
-              <span key={partPath} className="flex items-center gap-1 text-muted-foreground shrink-0">
-                <ChevronRight size={14} className="mx-0.5 opacity-50" />
-                {isLast ? (
-                  <span className="font-semibold text-foreground">{part}</span>
+      <div className="bg-white/[0.02] px-4 py-3 border-b border-white/5 flex flex-col md:flex-row md:items-center justify-between gap-3">
+        <div className="flex items-center flex-wrap gap-3 text-sm min-w-0">
+          <Breadcrumb>
+            <BreadcrumbList>
+              <BreadcrumbItem>
+                {parts.length === 0 ? (
+                  <BreadcrumbPage className="flex items-center gap-1.5">
+                    <Folder size={14} /> {repoName}
+                  </BreadcrumbPage>
                 ) : onFolderDoubleClick ? (
-                  <button onClick={() => onFolderDoubleClick(partPath)} className="text-primary hover:text-accent transition-colors cursor-pointer bg-transparent border-none p-0 outline-none">
-                    {part}
-                  </button>
+                  <BreadcrumbLink asChild>
+                    <button onClick={() => onFolderDoubleClick('')} className="flex items-center gap-1.5 bg-transparent border-none p-0 cursor-pointer">
+                      <Folder size={14} /> {repoName}
+                    </button>
+                  </BreadcrumbLink>
                 ) : (
-                  <Link href={getTreeRoute(partPath)} className="text-primary hover:text-accent transition-colors">
-                    {part}
-                  </Link>
+                  <BreadcrumbLink asChild>
+                    <Link href={getTreeRoute()} className="flex items-center gap-1.5">
+                      <Folder size={14} /> {repoName}
+                    </Link>
+                  </BreadcrumbLink>
                 )}
-              </span>
-            );
-          })}
+              </BreadcrumbItem>
+              {parts.map((part, i) => {
+                const partPath = parts.slice(0, i + 1).join('/');
+                const isLast = i === parts.length - 1;
+                return (
+                  <span key={partPath} className="contents">
+                    <BreadcrumbSeparator />
+                    <BreadcrumbItem>
+                      {isLast ? (
+                        <BreadcrumbPage>{part}</BreadcrumbPage>
+                      ) : onFolderDoubleClick ? (
+                        <BreadcrumbLink asChild>
+                          <button onClick={() => onFolderDoubleClick(partPath)} className="bg-transparent border-none p-0 cursor-pointer">{part}</button>
+                        </BreadcrumbLink>
+                      ) : (
+                        <BreadcrumbLink asChild>
+                          <Link href={getTreeRoute(partPath)}>{part}</Link>
+                        </BreadcrumbLink>
+                      )}
+                    </BreadcrumbItem>
+                  </span>
+                );
+              })}
+            </BreadcrumbList>
+          </Breadcrumb>
           {commits && commits.length > 0 && (
-             <div className="md:ml-3 md:border-l border-white/10 md:pl-3 flex items-center min-w-0 mt-2 md:mt-0 flex-1 truncate">
-               <span className="text-xs text-muted-foreground truncate" title={commits[0].message}>
-                 {commits[0].message}
-               </span>
-             </div>
+            <div className="flex items-center min-w-0 flex-1 truncate">
+              <span className="text-xs text-muted-foreground truncate" title={commits[0].message}>
+                {commits[0].message}
+              </span>
+            </div>
           )}
         </div>
         {commits && commits.length > 0 && (

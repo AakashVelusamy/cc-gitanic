@@ -2,7 +2,6 @@ import { useEffect, useMemo, useState } from 'react';
 import { useRouter } from 'next/router';
 import { fetchApi, getToken } from '@/lib/api';
 import { routes } from '@/lib/routes';
-import { Navbar } from '@/components/navbar';
 import { useToast } from '@/contexts/toast-context';
 import { BookOpen, Search, PlusCircle, Ship, Clock } from 'lucide-react';
 import Link from 'next/link';
@@ -51,8 +50,7 @@ export default function DashboardPage() {
 
   if (loading) {
     return (
-      <div className="min-h-[calc(100vh-4.5rem)] bg-background flex flex-col">
-        <Navbar />
+      <div className="flex-1 bg-background flex flex-col">
         <div className="flex-1 flex items-center justify-center">
             <Ship className="animate-bounce text-primary opacity-50" size={32} />
         </div>
@@ -61,10 +59,8 @@ export default function DashboardPage() {
   }
 
   return (
-    <div className="min-h-[calc(100vh-4.5rem)] bg-background flex flex-col">
-      <Navbar />
-
-      <main className="flex-1 w-full max-w-[1600px] mx-auto px-4 sm:px-6 lg:px-8 py-8">
+    <div className="flex-1 bg-background flex flex-col">
+      <div className="flex-1 w-full max-w-[1600px] mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <div className="flex flex-col sm:flex-row items-center justify-between gap-4 mb-6">
           <div className="relative w-full md:w-[calc((100%-1rem)/2)] lg:w-[calc((100%-3rem)/4)] shrink-0">
              <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" size={16} />
@@ -98,7 +94,7 @@ export default function DashboardPage() {
              ))}
           </div>
         )}
-      </main>
+      </div>
     </div>
   );
 }
@@ -131,3 +127,6 @@ function timeAgo(ts: string): string {
   if (months < 12) return `${numToWords(months)} month${months === 1 ? '' : 's'} ago`;
   return `${numToWords(years)} year${years === 1 ? '' : 's'} ago`;
 }
+
+
+

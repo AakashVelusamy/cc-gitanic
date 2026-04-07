@@ -2,7 +2,6 @@ import { useEffect, useState } from 'react';
 import { useRouter } from 'next/router';
 import { fetchApi, getCanonicalUsername, getToken, getTokenPayload } from '@/lib/api';
 import { routes } from '@/lib/routes';
-import { Navbar } from '@/components/navbar';
 import { useToast } from '@/contexts/toast-context';
 import { PlusCircle, Ship } from 'lucide-react';
 
@@ -54,10 +53,9 @@ export default function NewRepositoryPage() {
   }
 
   return (
-    <div className="min-h-screen bg-background flex flex-col">
-      <Navbar />
+    <div className="flex-1 bg-background flex flex-col">
 
-      <main className="flex-1 w-full px-4 sm:px-6 lg:px-8 py-8 sm:py-12 flex flex-col">
+      <div className="flex-1 w-full px-4 sm:px-6 lg:px-8 py-8 sm:py-12 flex flex-col">
         <div className="text-center mb-8 sm:mb-10">
           <div className="w-12 h-12 sm:w-16 sm:h-16 bg-primary/10 rounded-full flex items-center justify-center mx-auto mb-4 sm:mb-6">
             <PlusCircle size={24} className="sm:size-32 text-primary" />
@@ -129,7 +127,7 @@ export default function NewRepositoryPage() {
           </div>
         </div>
       </div>
-      </main>
+      </div>
     </div>
   );
 }

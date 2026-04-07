@@ -1,0 +1,59 @@
+import React from 'react';
+import { cn } from '@/lib/utils';
+
+type BGVariantType = 'dots' | 'diagonal-stripes' | 'grid' | 'horizontal-lines' | 'vertical-lines' | 'checkerboard';
+type BGMaskType =
+  | 'fade-center' | 'fade-edges' | 'fade-top' | 'fade-bottom'
+  | 'fade-left' | 'fade-right' | 'fade-x' | 'fade-y' | 'none';
+
+type BGPatternProps = React.ComponentProps<'div'> & {
+  variant?: BGVariantType;
+  mask?: BGMaskType;
+  size?: number;
+  fill?: string;
+};
+
+const maskClasses: Record<BGMaskType, string> = {
+  'fade-edges': '[mask-image:radial-gradient(ellipse_at_center,#000,transparent)]',
+  'fade-center': '[mask-image:radial-gradient(ellipse_at_center,transparent,#000)]',
+  'fade-top': '[mask-image:linear-gradient(to_bottom,transparent,#000)]',
+  'fade-bottom': '[mask-image:linear-gradient(to_bottom,#000,transparent)]',
+  'fade-left': '[mask-image:linear-gradient(to_right,transparent,#000)]',
+  'fade-right': '[mask-image:linear-gradient(to_right,#000,transparent)]',
+  'fade-x': '[mask-image:linear-gradient(to_right,transparent,#000,transparent)]',
+  'fade-y': '[mask-image:linear-gradient(to_bottom,transparent,#000,transparent)]',
+  none: '',
+};
+
+function getBgImage(variant: BGVariantType, fill: string, size: number) {
+  switch (variant) {
+    case 'dots': return `radial-gradient(${fill} 1px, transparent 1px)`;
+    case 'grid': return `linear-gradient(to right, ${fill} 1px, transparent 1px), linear-gradient(to bottom, ${fill} 1px, transparent 1px)`;
+    case 'diagonal-stripes': return `repeating-linear-gradient(45deg, ${fill}, ${fill} 1px, transparent 1px, transparent ${size}px)`;
+    case 'horizontal-lines': return `linear-gradient(to bottom, ${fill} 1px, transparent 1px)`;
+    case 'vertical-lines': return `linear-gradient(to right, ${fill} 1px, transparent 1px)`;
+    case 'checkerboard': return `linear-gradient(45deg, ${fill} 25%, transparent 25%), linear-gradient(-45deg, ${fill} 25%, transparent 25%), linear-gradient(45deg, transparent 75%, ${fill} 75%), linear-gradient(-45deg, transparent 75%, ${fill} 75%)`;
+  }
+}
+
+export const BGPattern = ({
+  variant = 'grid',
+  mask = 'none',
+  size = 32,
+  fill = 'rgba(255,255,255,0.07)',
+  className,
+  style,
+  ...props
+}: BGPatternProps) => {
+  return (
+    <div
+      className={cn('absolute inset-0 z-0 size-full pointer-events-none', maskClasses[mask], className)}
+      style={{
+        backgroundImage: getBgImage(variant, fill, size),
+        backgroundSize: `${size}px ${size}px`,
+        ...style,
+      }}
+      {...props}
+    />
+  );
+};

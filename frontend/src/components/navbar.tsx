@@ -46,7 +46,7 @@ export function Navbar() {
   };
 
   return (
-    <nav className="glass sticky top-0 z-50 mb-8 border border-white/5 rounded-b-2xl backdrop-blur-xl">
+    <nav className="glass sticky top-0 z-50 w-full m-0 rounded-none rounded-b-2xl border-x-0 border-t-0 backdrop-blur-xl glow-border">
       <div className="max-w-[1600px] mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between items-center h-16">
           {/* Logo & Brand */}
@@ -69,8 +69,8 @@ export function Navbar() {
           <div className="flex items-center gap-4">
             {!loading && username ? (
               <>
-                <div className="flex items-center gap-2 px-3 py-1.5 rounded-md text-sm font-medium">
-                  <div className="w-6 h-6 rounded-full bg-secondary flex items-center justify-center border border-primary/20 text-xs">
+                <div className="flex items-center gap-2 px-3 py-1.5 rounded-full text-sm font-medium bg-white/5 border border-white/10">
+                  <div className="w-6 h-6 rounded-full bg-gradient-to-br from-white to-white/40 text-black flex items-center justify-center text-xs font-bold">
                     {username.charAt(0).toUpperCase()}
                   </div>
                   <span className="hidden sm:block">{username}</span>
@@ -85,10 +85,10 @@ export function Navbar() {
               </>
             ) : !loading && !username ? (
               <div className="flex items-center gap-3">
-                <Link href={routes.login} className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors">
+                <Link href={routes.login} className={`text-sm font-medium transition-colors ${router.pathname === routes.login ? 'text-foreground font-bold' : 'text-muted-foreground hover:text-foreground'}`}>
                   Log in
                 </Link>
-                <Link href={routes.signup} className="btn-primary text-sm flex items-center gap-1">
+                <Link href={routes.signup} className={`text-sm flex items-center gap-1 ${router.pathname === routes.signup ? 'btn-primary' : 'btn-secondary'}`}>
                   Sign up
                 </Link>
               </div>
