@@ -76,7 +76,7 @@ async function runCommand(cmd: string, args: string[], cwd: string, timeout: num
       stdio: 'pipe',
       timeout,
       maxBuffer: 20 * 1024 * 1024, // 20 MB buffer prevents ENOBUFS crash on verbose builds
-      env: (cmd === 'npm' && (args.includes('ci') || args.includes('install')))
+      env: (args.includes('ci') || args.includes('install'))
         ? { ...SAFE_ENV, NODE_ENV: 'development' }
         : SAFE_ENV,
     });
@@ -174,8 +174,8 @@ export const ReactStrategy: DeployStrategy = {
     await runCommand('npm', ['install', '--no-audit', '--no-fund', '--no-package-lock', '--force'], srcDir, NPM_CI_TIMEOUT, log);
 
     // ── npm run build ────────────────────────────────────────────────────────
-    await log('[build:react] npm run build using Node 23 (timeout 300 s)');
-    await runCommand('npx', ['--yes', '-p', 'node@23', '--', 'npm', 'run', 'build'], srcDir, NPM_BUILD_TIMEOUT, log);
+    await log('[build:react] npm run build (timeout 300 s)');
+    await runCommand('npm', ['run', 'build'], srcDir, NPM_BUILD_TIMEOUT, log);
 
     // ── Resolve output directory ─────────────────────────────────────────────
     // CRA outputs to build/; some setups output to dist/
@@ -236,8 +236,8 @@ export const ViteStrategy: DeployStrategy = {
     await runCommand('npm', ['install', '--no-audit', '--no-fund', '--no-package-lock', '--force'], srcDir, NPM_CI_TIMEOUT, log);
 
     // ── vite build ───────────────────────────────────────────────────────────
-    await log('[build:vite] vite build using Node 23 (timeout 300 s)');
-    await runCommand('npx', ['--yes', '-p', 'node@23', '--', 'npx', 'vite', 'build'], srcDir, NPM_BUILD_TIMEOUT, log);
+    await log('[build:vite] vite build (timeout 300 s)');
+    await runCommand('npx', ['vite', 'build'], srcDir, NPM_BUILD_TIMEOUT, log);
 
     // ── Output directory ─────────────────────────────────────────────────────
     const distDir = path.join(srcDir, 'dist');
