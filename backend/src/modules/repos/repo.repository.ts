@@ -15,6 +15,7 @@ export interface RepoRow {
   auto_deploy_enabled: boolean;
   active_deployment_id: string | null;
   created_at: string;
+  updated_at?: string;
 }
 
 export interface RepoOwnerRow {
@@ -41,10 +42,11 @@ export const RepoRepository = {
   /** List all repos belonging to a user, newest first. */
   async findAllByOwner(ownerId: string): Promise<RepoRow[]> {
     return query<RepoRow>(
-      `SELECT id, name, owner_id, auto_deploy_enabled, active_deployment_id, created_at
-         FROM repositories
-        WHERE owner_id = $1
-        ORDER BY created_at DESC`,
+      `SELECT r.id, r.name, r.owner_id, r.auto_deploy_enabled, r.active_deployment_id, r.created_at,
+              COALESCE((SELECT MAX(h.deployed_at) FROM deployment_history h WHERE h.repo_id = r.id), r.created_at) AS updated_at
+         FROM repositories r
+        WHERE r.owner_id = $1
+        ORDER BY updated_at DESC`,
       [ownerId]
     );
   },
@@ -52,9 +54,10 @@ export const RepoRepository = {
   /** Find a single repo by owner + name. Returns undefined if not found. */
   async findByOwnerAndName(ownerId: string, name: string): Promise<RepoRow | undefined> {
     const rows = await query<RepoRow>(
-      `SELECT id, name, owner_id, auto_deploy_enabled, active_deployment_id, created_at
-         FROM repositories
-        WHERE owner_id = $1 AND name = $2
+      `SELECT r.id, r.name, r.owner_id, r.auto_deploy_enabled, r.active_deployment_id, r.created_at,
+              COALESCE((SELECT MAX(h.deployed_at) FROM deployment_history h WHERE h.repo_id = r.id), r.created_at) AS updated_at
+         FROM repositories r
+        WHERE r.owner_id = $1 AND r.name = $2
         LIMIT 1`,
       [ownerId, name]
     );
@@ -64,9 +67,10 @@ export const RepoRepository = {
   /** Find a single repo by UUID. */
   async findById(id: string): Promise<RepoRow | undefined> {
     const rows = await query<RepoRow>(
-      `SELECT id, name, owner_id, auto_deploy_enabled, active_deployment_id, created_at
-         FROM repositories
-        WHERE id = $1
+      `SELECT r.id, r.name, r.owner_id, r.auto_deploy_enabled, r.active_deployment_id, r.created_at,
+              COALESCE((SELECT MAX(h.deployed_at) FROM deployment_history h WHERE h.repo_id = r.id), r.created_at) AS updated_at
+         FROM repositories r
+        WHERE r.id = $1
         LIMIT 1`,
       [id]
     );
@@ -78,7 +82,7 @@ export const RepoRepository = {
     const rows = await query<RepoRow>(
       `INSERT INTO repositories (name, owner_id)
        VALUES ($1, $2)
-       RETURNING id, name, owner_id, auto_deploy_enabled, active_deployment_id, created_at`,
+       RETURNING id, name, owner_id, auto_deploy_enabled, active_deployment_id, created_at, created_at as updated_at`,
       [input.name, input.owner_id]
     );
     return rows[0];

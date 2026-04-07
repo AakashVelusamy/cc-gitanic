@@ -266,7 +266,7 @@ public class WorkspaceController {
 
     private void setCommitStatus(String msg, boolean err) {
         commitStatusLabel.setText(msg);
-        commitStatusLabel.setStyle(err ? "-fx-text-fill:#f43f5e;" : "-fx-text-fill:#3fb950;");
+        commitStatusLabel.setStyle(err ? "-fx-text-fill:#ff4d6d;" : "-fx-text-fill:#3fb950;");
     }
 
     // ====================================================================
@@ -386,24 +386,24 @@ public class WorkspaceController {
             }
             setText(item);
             if (item.startsWith("+") && !item.startsWith("+++")) {
-                setStyle("-fx-background-color:#0a2e1a;-fx-text-fill:#3fb950;"
+                setStyle("-fx-background-color:rgba(63,185,80,0.1);-fx-text-fill:#3fb950;"
                        + "-fx-font-family:Consolas,'Courier New',monospace;-fx-font-size:12;"
                        + "-fx-padding:0;-fx-line-spacing:0;");
             } else if (item.startsWith("-") && !item.startsWith("---")) {
-                setStyle("-fx-background-color:#2e0a14;-fx-text-fill:#f43f5e;"
+                setStyle("-fx-background-color:rgba(255,77,109,0.1);-fx-text-fill:#ff4d6d;"
                        + "-fx-font-family:Consolas,'Courier New',monospace;-fx-font-size:12;"
                        + "-fx-padding:0;-fx-line-spacing:0;");
             } else if (item.startsWith("@@")) {
-                setStyle("-fx-background-color:#0b1528;-fx-text-fill:#00f0ff;"
+                setStyle("-fx-background-color:#0a0a0a;-fx-text-fill:#ffffff;"
                        + "-fx-font-family:Consolas,'Courier New',monospace;-fx-font-size:12;"
                        + "-fx-padding:0;-fx-line-spacing:0;");
             } else if (item.startsWith("diff ") || item.startsWith("index ")
                     || item.startsWith("---") || item.startsWith("+++")) {
-                setStyle("-fx-background-color:#0b1528;-fx-text-fill:#94a3b8;"
+                setStyle("-fx-background-color:#0a0a0a;-fx-text-fill:#8a8a93;"
                        + "-fx-font-family:Consolas,'Courier New',monospace;-fx-font-size:12;"
                        + "-fx-font-weight:bold;-fx-padding:0;-fx-line-spacing:0;");
             } else {
-                setStyle("-fx-background-color:transparent;-fx-text-fill:#f8fafc;"
+                setStyle("-fx-background-color:transparent;-fx-text-fill:#f5f5f7;"
                        + "-fx-font-family:Consolas,'Courier New',monospace;-fx-font-size:12;"
                        + "-fx-padding:0;-fx-line-spacing:0;");
             }
@@ -421,7 +421,7 @@ public class WorkspaceController {
                 return;
             }
             setText(item);
-            setStyle("-fx-background-color:transparent;-fx-text-fill:#f8fafc;"
+            setStyle("-fx-background-color:transparent;-fx-text-fill:#f5f5f7;"
                    + "-fx-font-family:Consolas,'Courier New',monospace;-fx-font-size:12;"
                    + "-fx-padding:0;-fx-line-spacing:0;");
         }
@@ -442,7 +442,7 @@ public class WorkspaceController {
             row.setAlignment(Pos.CENTER_LEFT);
 
             Label nameLabel = new Label(item.getPath());
-            nameLabel.setStyle("-fx-text-fill:#f8fafc;-fx-font-size:12;");
+            nameLabel.setStyle("-fx-text-fill:#f5f5f7;-fx-font-size:12;");
             HBox.setHgrow(nameLabel, Priority.ALWAYS);
 
             FileStatus.Code code = displayCode(item);
@@ -478,11 +478,11 @@ public class WorkspaceController {
 
         private static String color(FileStatus.Code code) {
             return switch (code) {
-                case MODIFIED  -> "#0ea5e9";
+                case MODIFIED  -> "#ffffff";
                 case ADDED     -> "#3fb950";
-                case DELETED   -> "#f43f5e";
-                case RENAMED, COPIED -> "#00f0ff";
-                default        -> "#94a3b8";
+                case DELETED   -> "#ff4d6d";
+                case RENAMED, COPIED -> "#ffffff";
+                default        -> "#8a8a93";
             };
         }
     }

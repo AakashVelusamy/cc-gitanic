@@ -11,6 +11,7 @@ interface Repo {
   name: string;
   auto_deploy_enabled: boolean;
   created_at: string;
+  updated_at?: string;
 }
 
 export default function DashboardPage() {
@@ -19,6 +20,7 @@ export default function DashboardPage() {
   const [repos, setRepos] = useState<Repo[]>([]);
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState('');
+  const [, setTick] = useState(0);
 
   useEffect(() => {
     if (!getToken()) {
@@ -26,12 +28,16 @@ export default function DashboardPage() {
       return;
     }
     void fetchDashboardData();
+
+    // Auto-update time display every minute
+    const timer = setInterval(() => setTick(t => t + 1), 60000);
+    return () => clearInterval(timer);
   }, [router]);
 
   async function fetchDashboardData() {
     try {
       const data = await fetchApi<Repo[]>('/api/repos');
-      const sorted = data.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
+      const sorted = data.sort((a, b) => new Date(b.updated_at || b.created_at).getTime() - new Date(a.updated_at || a.created_at).getTime())
       setRepos(sorted);
       if (sorted.length === 0) {
         toast('No Repositories Yet', 'info');
@@ -88,7 +94,7 @@ export default function DashboardPage() {
                       </div>
                       <div className="flex items-center gap-2 text-xs text-muted-foreground shrink-0">
                          <Clock size={12} />
-                         <span className="whitespace-nowrap">{timeAgo(repo.created_at)}</span>
+                         <span className="whitespace-nowrap">{timeAgo(repo.updated_at || repo.created_at)}</span>
                       </div>
                   </Link>
              ))}
@@ -120,7 +126,7 @@ function timeAgo(ts: string): string {
   const months = Math.floor(days / 30);
   const years = Math.floor(days / 365);
 
-  if (mins < 1) return 'just now';
+  if (mins < 1) return 'zero minutes ago';
   if (mins < 60) return `${numToWords(mins)} minute${mins === 1 ? '' : 's'} ago`;
   if (hours < 24) return `${numToWords(hours)} hour${hours === 1 ? '' : 's'} ago`;
   if (days < 30) return `${numToWords(days)} day${days === 1 ? '' : 's'} ago`;

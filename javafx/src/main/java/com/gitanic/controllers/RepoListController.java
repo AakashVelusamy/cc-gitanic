@@ -239,7 +239,7 @@ public class RepoListController {
     private void showStatus(String msg, boolean isError) {
         statusLabel.setText(msg);
         statusLabel.setStyle(isError
-                ? "-fx-text-fill: #f43f5e;"
+                ? "-fx-text-fill: #ff4d6d;"
                 : "-fx-text-fill: #3fb950;");
         statusLabel.setVisible(true);
     }

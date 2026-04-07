@@ -61,17 +61,18 @@
                 <padding><Insets top="14" right="20" bottom="16" left="20"/></padding>
 
                 <Label text="CLONE A REPOSITORY" styleClass="field-label"/>
-                <HBox spacing="8">
-                    <TextField fx:id="urlField" HBox.hgrow="ALWAYS"/>
+                <HBox spacing="8" alignment="CENTER_LEFT">
+                    <TextField fx:id="urlField" HBox.hgrow="ALWAYS" promptText="Enter repository URL..."/>
+                    <Button fx:id="cloneButton"
+                            text="Clone"
+                            onAction="#onCloneClicked"
+                            styleClass="primary-button"
+                            minWidth="80" prefWidth="90"/>
                 </HBox>
 
                 <HBox spacing="10" alignment="CENTER_RIGHT">
                     <ProgressBar fx:id="progressBar" prefWidth="200" progress="-1"/>
                     <Label fx:id="statusLabel" wrapText="true" HBox.hgrow="ALWAYS"/>
-                    <Button fx:id="cloneButton"
-                            text="Clone"
-                            onAction="#onCloneClicked"
-                            styleClass="primary-button"/>
                 </HBox>
             </VBox>
         </VBox>

@@ -75,14 +75,15 @@
                         <configuration>
                             <headerType>gui</headerType>
                             <outfile>${project.root.dir}/gitanic.exe</outfile>
-                            <jar>${project.build.directory}/${project.artifactId}-${project.version}-fat.jar</jar>
+                            <jar>javafx/target/${project.artifactId}-${project.version}-fat.jar</jar>
+                            <dontWrapJar>true</dontWrapJar>
                             <errTitle>Gitanic Error</errTitle>
                             <classPath>
                                 <mainClass>com.gitanic.Main</mainClass>
                             </classPath>
                             <jre>
                                 <minVersion>17.0.0</minVersion>
-                                <runtimeBits>64 / 32</runtimeBits>
+                                <requires64Bit>true</requires64Bit>
                                 <path>%JAVA_HOME%</path>
                             </jre>
                         </configuration>
