@@ -82,7 +82,7 @@ export default function DashboardPage() {
   }
 
   return (
-    <div className="flex-1 bg-background relative overflow-hidden flex flex-col">
+    <div className="flex-1 flex flex-col bg-background relative overflow-x-hidden pb-12 sm:pb-20">
       <BGPattern variant="grid" mask="fade-edges" size={32} fill="rgba(255,255,255,0.05)" />
       <div className="flex-1 w-full max-w-[1600px] mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <div className="flex flex-col sm:flex-row items-center justify-between gap-4 mb-6">

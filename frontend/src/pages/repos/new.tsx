@@ -54,7 +54,7 @@ export default function NewRepositoryPage() {
   }
 
   return (
-    <div className="flex-1 bg-background relative overflow-hidden flex flex-col">
+    <div className="flex-1 flex flex-col bg-background relative overflow-x-hidden pb-12 sm:pb-20">
       <BGPattern variant="grid" mask="fade-edges" size={32} fill="rgba(255,255,255,0.05)" />
       <div className="flex-1 w-full px-4 sm:px-6 lg:px-8 py-8 sm:py-12 flex flex-col">
         <div className="text-center mb-8 sm:mb-10">

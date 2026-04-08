@@ -132,7 +132,7 @@ export default function LoginPage() {
   const disabledInputClass = `${inputClass} opacity-50 cursor-not-allowed`;
 
   return (
-    <div className="flex-1 bg-background relative overflow-hidden flex flex-col">
+    <div className="flex-1 flex flex-col bg-background relative overflow-x-hidden pb-12 sm:pb-20">
       <BGPattern variant="grid" mask="fade-edges" size={32} fill="rgba(255,255,255,0.05)" />
 
       <div className="flex-1 flex flex-col justify-center py-12 sm:px-6 lg:px-8 relative z-10 -mt-16">
