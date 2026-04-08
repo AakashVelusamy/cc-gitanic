@@ -17,8 +17,10 @@ export default function App({ Component, pageProps }: AppProps) {
         <Navbar />
         <main id="main-scroll-container" className="flex-1 flex flex-col relative w-full overflow-y-auto md:snap-y md:snap-mandatory scroll-smooth z-10">
           <Component {...pageProps} />
+          <div className="pb-[env(safe-area-inset-bottom)]">
+            <Footer />
+          </div>
         </main>
-        <Footer />
       </div>
     </ToastProvider>
   );
