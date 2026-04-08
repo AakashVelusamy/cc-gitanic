@@ -76,7 +76,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       return res.status(500).json({ error: 'Internal server error' });
     }
 
-    // Construct the upstream URL strictly from validated components only
+    // Construct the upstream URL strictly from validated components only 
     const targetUrl = `${supabaseUrl}/storage/v1/object/public/deployments/${uname}/${depId}/${relativePath}`;
 
     const supabaseRes = await fetch(targetUrl);
