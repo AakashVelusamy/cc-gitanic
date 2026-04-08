@@ -127,9 +127,9 @@ export default function Home() {
         </section>
 
         {/* GRADIENT CARDS */}
-        <section id="features" className="relative flex flex-col items-center lg:justify-center justify-start h-auto lg:h-[calc(100vh-114px)] min-h-0 lg:min-h-[calc(100vh-114px)] pt-44 pb-24 lg:py-8 w-full px-4 md:snap-start lg:snap-start md:snap-always shrink-0">
+        <section id="features" className="relative flex flex-col items-center lg:justify-center justify-start h-auto lg:h-[calc(100vh-114px)] min-h-0 lg:min-h-[calc(100vh-114px)] pt-32 pb-16 md:pt-16 md:pb-8 lg:py-8 w-full px-4 md:snap-start lg:snap-start md:snap-always shrink-0">
           <BGPattern variant="grid" mask="fade-edges" size={32} fill="rgba(255,255,255,0.07)" />
-          <div className="relative z-50 max-w-6xl mx-auto text-center mb-16 md:mb-24 lg:mb-12">
+          <div className="relative z-50 max-w-6xl mx-auto text-center mb-12 md:mb-10 lg:mb-12">
             <h2 className="text-4xl md:text-6xl font-black text-white glow-text mb-4">How It Works?</h2>
             
           </div>
@@ -138,11 +138,11 @@ export default function Home() {
             {cards.map((c) => <GradientCard key={c.title} {...c} />)}
           </div>
           {/* Tablet: 2 top row, 1 centered bottom */}
-          <div className="hidden md:flex lg:hidden flex-col items-center gap-0 w-full mt-6">
-            <div className="flex justify-center">
+          <div className="hidden md:flex lg:hidden flex-col items-center gap-0 w-full mt-4">
+            <div className="flex justify-center gap-4">
               {cards.slice(0, 2).map((c) => <GradientCard key={c.title} {...c} />)}
             </div>
-            <div className="flex justify-center -mt-12">
+            <div className="flex justify-center mt-6">
               <GradientCard {...cards[2]} />
             </div>
           </div>

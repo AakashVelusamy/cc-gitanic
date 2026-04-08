@@ -44,7 +44,7 @@ export function GradientCard({ title, desc, gradientFrom, gradientTo, icon }: Gr
       </div>
 
       {/* ── Tablet (md–lg): same skew design, narrower ── */}
-      <div className="hidden md:block lg:hidden group relative w-[240px] h-[320px] m-[24px_16px] transition-all duration-500">
+      <div className="hidden md:block lg:hidden group relative w-[260px] h-[340px] m-[16px_10px] transition-all duration-500">
         <span className="absolute top-0 left-[38px] w-1/2 h-full rounded-2xl skew-x-[15deg] transition-all duration-500 group-hover:skew-x-0 group-hover:left-[14px] group-hover:w-[calc(100%-70px)]" style={{ background: gradient }} />
         <span className="absolute top-0 left-[38px] w-1/2 h-full rounded-2xl skew-x-[15deg] blur-[24px] transition-all duration-500 group-hover:skew-x-0 group-hover:left-[14px] group-hover:w-[calc(100%-70px)]" style={{ background: gradient }} />
         <span className="pointer-events-none absolute inset-0 z-10">
