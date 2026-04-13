@@ -279,7 +279,7 @@ export default function RepositoryTreePage() {
                 {repo.active_deployment_id ? (
                   <>
                     <a
-                      href={`/api/live/${username}/${repo.active_deployment_id}/`}
+                      href={`/api/live/${username}/${repo.name}/`}
                       target="_blank"
                       rel="noopener noreferrer"
                       className="btn-primary flex items-center justify-center gap-2 shadow-lg shadow-primary/20 h-[42px] px-4 w-full lg:w-auto shrink-0 overflow-hidden text-sm"

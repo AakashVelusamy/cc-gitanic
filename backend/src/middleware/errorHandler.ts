@@ -30,7 +30,7 @@ export function errorHandler(
   // Log all errors internally
   logger.error(`[errorHandler] ${req.method} ${req.path} → ${statusCode}: ${err.message}`, {
     meta: {
-      stack: process.env.NODE_ENV !== 'production' ? err.stack : undefined,
+      stack: process.env.NODE_ENV === 'production' ? undefined : err.stack,
     },
   });
 

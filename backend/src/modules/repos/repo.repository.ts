@@ -64,6 +64,19 @@ export const RepoRepository = {
     return rows[0];
   },
 
+  /** Find a single repo by Username + Repo Name. Returns undefined if not found. */
+  async findByUsernameAndRepoName(username: string, repoName: string): Promise<RepoRow | undefined> {
+    const rows = await query<RepoRow>(
+      `SELECT r.id, r.name, r.owner_id, r.auto_deploy_enabled, r.active_deployment_id, r.created_at
+         FROM repositories r
+         JOIN users u ON u.id = r.owner_id
+        WHERE u.username = $1 AND r.name = $2
+        LIMIT 1`,
+      [username, repoName]
+    );
+    return rows[0];
+  },
+
   /** Find a single repo by UUID. */
   async findById(id: string): Promise<RepoRow | undefined> {
     const rows = await query<RepoRow>(

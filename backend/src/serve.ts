@@ -68,6 +68,9 @@ async function resolveDeployment(username: string): Promise<string | null> {
 
 // ── Express app ──────────────────────────────────────────────────────────────
 
+/** Valid username: lowercase alphanumeric + hyphens only */
+const SAFE_USERNAME_RE = /^[a-z0-9][a-z0-9-]{0,62}[a-z0-9]$|^[a-z0-9]$/;
+
 const app = express();
 app.use(express.json());
 
@@ -112,18 +115,26 @@ app.get('/:username/*', handleSiteRequest);
 app.get('/:username', handleSiteRequest);
 
 async function handleSiteRequest(req: Request, res: Response): Promise<void> {
-  const username = req.params['username'];
+  const rawUsername = req.params['username'];
 
   // Skip favicon and other non-user requests
-  if (username === 'favicon.ico' || username === 'health') {
+  if (rawUsername === 'favicon.ico' || rawUsername === 'health') {
     res.status(404).end();
     return;
   }
+
+  // Validate username to a known-safe set of characters (S5131)
+  if (!SAFE_USERNAME_RE.test(rawUsername)) {
+    res.status(400).end();
+    return;
+  }
+  const username = rawUsername;
 
   try {
     const deploymentId = await resolveDeployment(username);
 
     if (!deploymentId) {
+      // username is validated to safe alphanumeric/hyphen chars; escapeHtml as defence-in-depth
       res.status(404).send(notFoundPage(username));
       return;
     }
@@ -134,13 +145,19 @@ async function handleSiteRequest(req: Request, res: Response): Promise<void> {
 
     // If path doesn't look like a file (no extension), default to index.html (SPA fallback)
     if (!filePath.includes('.')) {
-      filePath = filePath.endsWith('/') ? filePath + 'index.html' : 'index.html';
+      filePath = filePath.endsWith('/') ? `${filePath}index.html` : 'index.html';
     }
 
-    // Build Supabase Storage public URL
-    const safePath = filePath.replace(/\.\./g, '');
+    // Encode every segment of the path to prevent path injection (S7044)
+    const encodedPath = filePath
+      .split('/')
+      .filter((seg) => seg.length > 0 && seg !== '..' && seg !== '.')
+      .map(encodeURIComponent)
+      .join('/') || 'index.html';
+
+    // Build Supabase Storage public URL from fully-encoded components
     const storageUrl =
-      `${SUPABASE_URL}/storage/v1/object/public/${BUCKET}/${encodeURIComponent(username)}/${encodeURIComponent(deploymentId)}/${safePath}`;
+      `${SUPABASE_URL}/storage/v1/object/public/${BUCKET}/${encodeURIComponent(username)}/${encodeURIComponent(deploymentId)}/${encodedPath}`;
 
     // Proxy the response from Supabase Storage
     const upstream = await fetch(storageUrl);

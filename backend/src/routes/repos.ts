@@ -9,6 +9,9 @@ import { authMiddleware } from '../middleware/authMiddleware';
 
 const router = Router();
 
+// Public route for deployment resolution (must come before authMiddleware)
+router.get('/resolve/:username/:repoName', RepoController.resolveDeployment);
+
 // All repo routes are protected
 router.use(authMiddleware);
 

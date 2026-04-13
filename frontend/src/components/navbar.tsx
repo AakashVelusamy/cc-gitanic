@@ -74,32 +74,38 @@ export function Navbar() {
 
           {/* Nav Right */}
           <div className="flex items-center gap-4">
-            {!loading && username ? (
-              <>
-                <div className="flex items-center gap-2 px-3 py-1.5 rounded-full text-sm font-medium bg-white/5 border border-white/10">
-                  <div className="w-6 h-6 rounded-full bg-gradient-to-br from-white to-white/40 text-black flex items-center justify-center text-xs font-bold">
-                    {username.charAt(0).toUpperCase()}
-                  </div>
-                  <span className="hidden sm:block">{username}</span>
+            {(() => {
+              if (!loading && username) {
+                return (
+                  <>
+                    <div className="flex items-center gap-2 px-3 py-1.5 rounded-full text-sm font-medium bg-white/5 border border-white/10">
+                      <div className="w-6 h-6 rounded-full bg-gradient-to-br from-white to-white/40 text-black flex items-center justify-center text-xs font-bold">
+                        {username.charAt(0).toUpperCase()}
+                      </div>
+                      <span className="hidden sm:block">{username}</span>
+                    </div>
+                    <button
+                      className="p-2 rounded-md text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-colors"
+                      onClick={handleLogout}
+                      title="Logout"
+                    >
+                      <LogOut size={18} />
+                    </button>
+                  </>
+                );
+              }
+              const showLoginLinks = !loading && !username;
+              return showLoginLinks ? (
+                <div className="flex items-center gap-3">
+                  <Link href={routes.login} className={`text-sm font-medium transition-colors ${router.pathname === routes.login ? 'text-foreground font-bold' : 'text-muted-foreground hover:text-foreground'}`}>
+                    Log in
+                  </Link>
+                  <Link href={routes.signup} className={`text-sm flex items-center gap-1 ${router.pathname === routes.signup ? 'btn-primary' : 'btn-secondary'}`}>
+                    Sign up
+                  </Link>
                 </div>
-                <button
-                  className="p-2 rounded-md text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-colors"
-                  onClick={handleLogout}
-                  title="Logout"
-                >
-                  <LogOut size={18} />
-                </button>
-              </>
-            ) : !loading && !username ? (
-              <div className="flex items-center gap-3">
-                <Link href={routes.login} className={`text-sm font-medium transition-colors ${router.pathname === routes.login ? 'text-foreground font-bold' : 'text-muted-foreground hover:text-foreground'}`}>
-                  Log in
-                </Link>
-                <Link href={routes.signup} className={`text-sm flex items-center gap-1 ${router.pathname === routes.signup ? 'btn-primary' : 'btn-secondary'}`}>
-                  Sign up
-                </Link>
-              </div>
-            ) : null}
+              ) : null;
+            })()}
           </div>
         </div>
       </div>

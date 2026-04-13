@@ -13,6 +13,9 @@ const USERNAME_RE = /^[a-z0-9][a-z0-9-]{0,62}[a-z0-9]$|^[a-z0-9]$/;
 /** UUID v4 format for deployment IDs */
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 
+/** Safe repo name: alphanumeric, hyphen, underscore, dot, 1-100 chars */
+const REPO_NAME_RE = /^[a-zA-Z0-9._-]{1,100}$/;
+
 /** Reject path segments that attempt traversal or contain dangerous characters */
 function isSafePathSegment(segment: string): boolean {
   if (segment === '..') return false;
@@ -42,17 +45,44 @@ function inferContentType(filePath: string): string {
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
   try {
-    const { username, deploymentId, path } = req.query;
+    const { username, repoName, path } = req.query;
 
     const uname = Array.isArray(username) ? username[0] : username;
-    const depId = Array.isArray(deploymentId) ? deploymentId[0] : deploymentId;
+    const repoOrId = Array.isArray(repoName) ? repoName[0] : repoName;
 
     // --- Input validation (SSRF / path-traversal guards) ---
     if (!uname || !USERNAME_RE.test(uname)) {
       return res.status(400).json({ error: 'Invalid request' });
     }
-    if (!depId || !UUID_RE.test(depId)) {
+    if (!repoOrId || (!REPO_NAME_RE.test(repoOrId) && !UUID_RE.test(repoOrId))) {
       return res.status(400).json({ error: 'Invalid request' });
+    }
+
+    let depId = '';
+
+    // If it's already a UUID, use it directly (legacy support)
+    if (UUID_RE.test(repoOrId)) {
+        depId = repoOrId;
+    } else {
+        // Resolve repo name to deployment ID via backend
+        const apiBase = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000';
+        const resolveUrl = `${apiBase}/api/repos/resolve/${uname}/${repoOrId}`;
+        
+        try {
+            const resolveRes = await fetch(resolveUrl);
+            if (!resolveRes.ok) {
+                return res.status(resolveRes.status).send('Deployment not found for this repository');
+            }
+            const data = await resolveRes.json();
+            depId = data.deploymentId;
+        } catch (err) {
+            console.error('[live] Failed to resolve deployment:', err);
+            return res.status(500).json({ error: 'Resolution failed' });
+        }
+    }
+
+    if (!depId || !UUID_RE.test(depId)) {
+      return res.status(400).json({ error: 'Invalid deployment' });
     }
 
     // Parse path segments and validate each one
@@ -92,7 +122,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
     if (contentType.includes('text/html')) {
         let htmlStr = Buffer.from(buffer).toString('utf-8');
-        const basePath = `/api/live/${uname}/${depId}`;
+        const basePath = `/api/live/${uname}/${repoOrId}`;
         const baseTag = `<base href="${basePath}/" />`;
         
         // Rewrite absolute asset paths to point to the proxy base path

@@ -142,8 +142,8 @@ export const ReactStrategy: DeployStrategy = {
       };
 
       const deps = {
-        ...(pkg.dependencies    ?? {}),
-        ...(pkg.devDependencies ?? {}),
+        ...pkg.dependencies,
+        ...pkg.devDependencies,
       };
 
       // Explicit react-scripts dependency
@@ -298,7 +298,7 @@ export function detectStrategy(srcDir: string): DeployStrategy {
         dependencies?: Record<string, string>;
         devDependencies?: Record<string, string>;
       };
-      const allDeps = { ...(pkg.dependencies ?? {}), ...(pkg.devDependencies ?? {}) };
+      const allDeps = { ...pkg.dependencies, ...pkg.devDependencies };
 
       if ('next' in allDeps)
         hint = ' Your project uses Next.js, which requires server-side rendering — Gitanic only supports static site output.';

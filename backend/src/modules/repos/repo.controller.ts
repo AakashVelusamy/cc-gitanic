@@ -100,7 +100,7 @@ export const RepoController = {
       const filePath = (req.query['path'] as string | undefined) ?? '';
       if (!filePath) { res.status(400).json({ error: 'path is required' }); return; }
       const { RepoGitService } = await import('./repo.git.service');
-      const blob = RepoGitService.getBlob(username, repoName, ref, filePath);
+      const blob = RepoGitService.getBlob(username, repoName, filePath, ref);
       res.status(200).json(blob);
     } catch (err) {
       next(err);
@@ -120,6 +120,25 @@ export const RepoController = {
       const { RepoGitService } = await import('./repo.git.service');
       const commits = RepoGitService.getCommits(username, repoName, ref, limit);
       res.status(200).json(commits);
+    } catch (err) {
+      next(err);
+    }
+  },
+
+  /**
+   * GET /api/repos/resolve/:username/:repoName
+   * 200: { deploymentId: string }
+   * 404: not found
+   */
+  async resolveDeployment(req: Request, res: Response, next: NextFunction): Promise<void> {
+    try {
+      const { username, repoName } = req.params;
+      const deploymentId = await RepoService.resolveDeploymentId(username ?? '', repoName ?? '');
+      if (!deploymentId) {
+        res.status(404).json({ error: 'Deployment not found' });
+        return;
+      }
+      res.status(200).json({ deploymentId });
     } catch (err) {
       next(err);
     }

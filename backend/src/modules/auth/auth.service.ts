@@ -54,6 +54,42 @@ export interface UpdateProfileInput {
   email?: string | null;
 }
 
+// ── Helpers ───────────────────────────────────────────────────────────────────
+
+function validateRegisterInput(username: string, password: string, email: string, otp: string): void {
+  const normalizedUsername = username.toLowerCase();
+  if (!normalizedUsername) {
+    throw createError(400, 'username is required');
+  }
+  if (!USERNAME_RE.test(normalizedUsername)) {
+    throw createError(
+      400,
+      'username must contain only alphanumeric characters and hyphens, and cannot start or end with a hyphen'
+    );
+  }
+  if (normalizedUsername.length > 39) {
+    throw createError(400, 'username must be 39 characters or fewer');
+  }
+  if (!password || typeof password !== 'string') {
+    throw createError(400, 'password is required');
+  }
+  if (password.length < 8) {
+    throw createError(400, 'password must be at least 8 characters');
+  }
+  if (!email || typeof email !== 'string') {
+    throw createError(400, 'email is required');
+  }
+  if (!EMAIL_RE.test(email.trim())) {
+    throw createError(400, 'email must be a valid email address');
+  }
+  if (email.length > 254) {
+    throw createError(400, 'email must be 254 characters or fewer');
+  }
+  if (!otp || typeof otp !== 'string' || otp.length !== 6) {
+    throw createError(400, 'A valid 6-digit OTP is required');
+  }
+}
+
 // ── Service ───────────────────────────────────────────────────────────────────
 
 export const AuthService = {
@@ -79,39 +115,9 @@ export const AuthService = {
    * - Persists user
    */
 async register(username: string, password: string, email: string, otp: string): Promise<RegisterResult> {
-    const normalizedUsername = username.toLowerCase();
-
     // ── Input validation ──────────────────────────────────────────────────────
-    if (!normalizedUsername) {
-      throw createError(400, 'username is required');
-    }
-    if (!USERNAME_RE.test(normalizedUsername)) {
-      throw createError(
-        400,
-        'username must contain only alphanumeric characters and hyphens, and cannot start or end with a hyphen'
-      );
-    }
-    if (normalizedUsername.length > 39) {
-      throw createError(400, 'username must be 39 characters or fewer');        
-    }
-    if (!password || typeof password !== 'string') {
-      throw createError(400, 'password is required');
-    }
-    if (password.length < 8) {
-      throw createError(400, 'password must be at least 8 characters');
-    }
-    if (!email || typeof email !== 'string') {
-      throw createError(400, 'email is required');
-    }
-    if (!EMAIL_RE.test(email.trim())) {
-      throw createError(400, 'email must be a valid email address');
-    }
-    if (email.length > 254) {
-      throw createError(400, 'email must be 254 characters or fewer');
-    }
-    if (!otp || typeof otp !== 'string' || otp.length !== 6) {
-      throw createError(400, 'A valid 6-digit OTP is required');
-    }
+    validateRegisterInput(username, password, email, otp);
+    const normalizedUsername = username.toLowerCase();
 
     // ── Validate OTP ──────────────────────────────────────────────────────────
     if (!otpService.verifyOtp(email.trim().toLowerCase(), otp)) {

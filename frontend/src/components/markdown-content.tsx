@@ -1,9 +1,9 @@
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 
-interface Props {
+type Props = Readonly<{
   content: string;
-}
+}>;
 
 /**
  * Renders Markdown to React elements.

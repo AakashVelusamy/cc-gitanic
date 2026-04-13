@@ -45,14 +45,14 @@ BreadcrumbLink.displayName = 'BreadcrumbLink';
 
 export const BreadcrumbPage = React.forwardRef<HTMLSpanElement, React.ComponentPropsWithoutRef<'span'>>(
   ({ className, ...props }, ref) => (
-    <span ref={ref} role="link" aria-disabled="true" aria-current="page"
+    <span ref={ref} aria-disabled="true" aria-current="page"
       className={cn('font-semibold text-foreground drop-shadow-[0_0_10px_rgba(255,255,255,0.4)]', className)} {...props} />
   )
 );
 BreadcrumbPage.displayName = 'BreadcrumbPage';
 
 export const BreadcrumbSeparator = ({ children, className, ...props }: React.ComponentProps<'li'>) => (
-  <li role="presentation" aria-hidden="true" className={cn('[&>svg]:size-3.5 text-muted-foreground/60', className)} {...props}>
+  <li aria-hidden="true" className={cn('[&>svg]:size-3.5 text-muted-foreground/60', className)} {...props}>
     {children ?? <ChevronsRight />}
   </li>
 );

@@ -46,7 +46,7 @@ function validatePath(p: string): void {
     normalized.startsWith('/') ||
     normalized.startsWith('..') ||
     normalized.includes('\0') ||
-    normalized.split(path.sep).some((seg) => seg === '..')
+    normalized.split(path.sep).includes('..')
   ) {
     throw createError(400, 'Invalid path');
   }
@@ -120,7 +120,7 @@ export const RepoGitService = {
   },
 
   /** Get the raw content of a file blob. */
-  getBlob(username: string, repoName: string, ref = 'HEAD', filePath: string): BlobResult {
+  getBlob(username: string, repoName: string, filePath: string, ref = 'HEAD'): BlobResult {
     validateRef(ref);
     validatePath(filePath);
 

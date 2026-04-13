@@ -27,6 +27,8 @@ export interface LogEvent {
   meta?: Record<string, unknown>;
 }
 
+type LogContext = LogContext;
+
 // ── EventEmitter singleton ────────────────────────────────────────────────────
 
 class AppLogger extends EventEmitter {
@@ -60,7 +62,7 @@ class AppLogger extends EventEmitter {
   private _emit(
     level: LogLevel,
     message: string,
-    context?: Omit<LogEvent, 'level' | 'message' | 'timestamp'>
+    context?: LogContext
   ): void {
     const event: LogEvent = {
       level,
@@ -71,21 +73,21 @@ class AppLogger extends EventEmitter {
     this.emit('log', event);
   }
 
-  debug(message: string, context?: Omit<LogEvent, 'level' | 'message' | 'timestamp'>): void {
+  debug(message: string, context?: LogContext): void {
     if (process.env.NODE_ENV !== 'production') {
       this._emit('debug', message, context);
     }
   }
 
-  info(message: string, context?: Omit<LogEvent, 'level' | 'message' | 'timestamp'>): void {
+  info(message: string, context?: LogContext): void {
     this._emit('info', message, context);
   }
 
-  warn(message: string, context?: Omit<LogEvent, 'level' | 'message' | 'timestamp'>): void {
+  warn(message: string, context?: LogContext): void {
     this._emit('warn', message, context);
   }
 
-  error(message: string, context?: Omit<LogEvent, 'level' | 'message' | 'timestamp'>): void {
+  error(message: string, context?: LogContext): void {
     this._emit('error', message, context);
   }
 }

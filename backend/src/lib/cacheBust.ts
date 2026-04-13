@@ -31,10 +31,10 @@ export async function bustDeploymentCache(username: string): Promise<void> {
       signal: AbortSignal.timeout(5_000), // 5 s timeout — fire-and-forget
     });
 
-    if (!res.ok) {
-      logger.warn(`[cacheBust] Invalidation request failed: ${res.status}`);
-    } else {
+    if (res.ok) {
       logger.info(`[cacheBust] Cache busted for user "${username}"`);
+    } else {
+      logger.warn(`[cacheBust] Invalidation request failed: ${res.status}`);
     }
   } catch (err) {
     // Non-blocking — a cache bust failure must NOT affect the deployment result.
@@ -63,10 +63,10 @@ export async function bustLocalServeCache(username: string): Promise<void> {
       signal: AbortSignal.timeout(3_000),
     });
 
-    if (!res.ok) {
-      logger.warn(`[cacheBust] Local serve cache bust failed: ${res.status}`);
-    } else {
+    if (res.ok) {
       logger.info(`[cacheBust] Local serve cache busted for user "${username}"`);
+    } else {
+      logger.warn(`[cacheBust] Local serve cache bust failed: ${res.status}`);
     }
   } catch (err) {
     logger.warn(`[cacheBust] Local serve cache bust error: ${String(err)}`);

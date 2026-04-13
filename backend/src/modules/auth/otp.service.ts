@@ -112,7 +112,7 @@ class OtpService {
       logger.error('[otp] OTP_STATIC must not be set in production — it allows anyone to register');
       throw createError(500, 'Server misconfiguration');
     }
-    const otp = staticOtp ? staticOtp : this.generateOtp();
+    const otp = staticOtp || this.generateOtp();
 
     this.store.set(normalizedEmail, {
       hash: this.hashOtp(otp),

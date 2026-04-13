@@ -26,7 +26,7 @@ export interface CommitInfo {
   date: string;
 }
 
-interface FileBrowserProps {
+type FileBrowserProps = Readonly<{
   repoName: string;
   entries: TreeEntry[];
   currentPath?: string;
@@ -35,7 +35,7 @@ interface FileBrowserProps {
   onFolderDoubleClick?: (path: string) => void;
   commits?: CommitInfo[];
   language?: string | null;
-}
+}>;
 
 const LANG_STYLES: Record<string, { dot: string; label: string; text: string }> = {
   'Vite':     { dot: 'bg-amber-400',  label: 'vite',  text: 'text-amber-400'  },
@@ -45,7 +45,7 @@ const LANG_STYLES: Record<string, { dot: string; label: string; text: string }> 
   'CSS':      { dot: 'bg-blue-400',   label: 'css',   text: 'text-blue-400'   },
 };
 
-export function LanguageBadge({ language, size = 'md' }: { language: string; size?: 'sm' | 'md' }) {
+export function LanguageBadge({ language, size = 'md' }: Readonly<{ language: string; size?: 'sm' | 'md' }>) {
   const style = LANG_STYLES[language];
   if (!style) return null;
   return (
@@ -115,48 +115,55 @@ export function FileBrowser({ repoName, entries, currentPath = '', ref = 'HEAD',
           <Breadcrumb>
             <BreadcrumbList className="text-[11px] sm:text-sm flex-nowrap">
               <BreadcrumbItem>
-                {parts.length === 0 ? (
-                  <BreadcrumbPage className="flex items-center gap-1 sm:gap-1.5">
-                    <Folder size={12} className="sm:hidden" />
-                    <Folder size={14} className="hidden sm:block" />
-                    <span className="max-w-[80px] sm:max-w-none truncate">{repoName}</span>
-                  </BreadcrumbPage>
-                ) : onFolderDoubleClick ? (
-                  <BreadcrumbLink asChild>
-                    <button onClick={() => onFolderDoubleClick('')} className="flex items-center gap-1 sm:gap-1.5 bg-transparent border-none p-0 cursor-pointer">
-                      <Folder size={12} className="sm:hidden" />
-                      <Folder size={14} className="hidden sm:block" />
-                      <span className="max-w-[60px] sm:max-w-none truncate">{repoName}</span>
-                    </button>
-                  </BreadcrumbLink>
-                ) : (
-                  <BreadcrumbLink asChild>
-                    <Link href={getTreeRoute()} className="flex items-center gap-1 sm:gap-1.5">
-                      <Folder size={12} className="sm:hidden" />
-                      <Folder size={14} className="hidden sm:block" />
-                      <span className="max-w-[60px] sm:max-w-none truncate">{repoName}</span>
-                    </Link>
-                  </BreadcrumbLink>
-                )}
+                {(() => {
+                  if (parts.length === 0) {
+                    return (
+                      <BreadcrumbPage className="flex items-center gap-1 sm:gap-1.5">
+                        <Folder size={12} className="sm:hidden" />
+                        <Folder size={14} className="hidden sm:block" />
+                        <span className="max-w-[80px] sm:max-w-none truncate">{repoName}</span>
+                      </BreadcrumbPage>
+                    );
+                  }
+                  const rootContent = onFolderDoubleClick ? (
+                    <BreadcrumbLink asChild>
+                      <button onClick={() => onFolderDoubleClick('')} className="flex items-center gap-1 sm:gap-1.5 bg-transparent border-none p-0 cursor-pointer">
+                        <Folder size={12} className="sm:hidden" />
+                        <Folder size={14} className="hidden sm:block" />
+                        <span className="max-w-[60px] sm:max-w-none truncate">{repoName}</span>
+                      </button>
+                    </BreadcrumbLink>
+                  ) : (
+                    <BreadcrumbLink asChild>
+                      <Link href={getTreeRoute()} className="flex items-center gap-1 sm:gap-1.5">
+                        <Folder size={12} className="sm:hidden" />
+                        <Folder size={14} className="hidden sm:block" />
+                        <span className="max-w-[60px] sm:max-w-none truncate">{repoName}</span>
+                      </Link>
+                    </BreadcrumbLink>
+                  );
+                  return rootContent;
+                })()}
               </BreadcrumbItem>
               {parts.map((part, i) => {
                 const partPath = parts.slice(0, i + 1).join('/');
                 const isLast = i === parts.length - 1;
+                const partLink = onFolderDoubleClick ? (
+                  <BreadcrumbLink asChild>
+                    <button onClick={() => onFolderDoubleClick(partPath)} className="bg-transparent border-none p-0 cursor-pointer max-w-[50px] sm:max-w-[100px] truncate block">{part}</button>
+                  </BreadcrumbLink>
+                ) : (
+                  <BreadcrumbLink asChild>
+                    <Link href={getTreeRoute(partPath)} className="max-w-[50px] sm:max-w-[100px] truncate block">{part}</Link>
+                  </BreadcrumbLink>
+                );
                 return (
                   <span key={partPath} className="contents">
                     <BreadcrumbSeparator />
                     <BreadcrumbItem>
                       {isLast ? (
                         <BreadcrumbPage className="max-w-[60px] sm:max-w-[120px] truncate block">{part}</BreadcrumbPage>
-                      ) : onFolderDoubleClick ? (
-                        <BreadcrumbLink asChild>
-                          <button onClick={() => onFolderDoubleClick(partPath)} className="bg-transparent border-none p-0 cursor-pointer max-w-[50px] sm:max-w-[100px] truncate block">{part}</button>
-                        </BreadcrumbLink>
-                      ) : (
-                        <BreadcrumbLink asChild>
-                          <Link href={getTreeRoute(partPath)} className="max-w-[50px] sm:max-w-[100px] truncate block">{part}</Link>
-                        </BreadcrumbLink>
-                      )}
+                      ) : partLink}
                     </BreadcrumbItem>
                   </span>
                 );
@@ -180,7 +187,7 @@ export function FileBrowser({ repoName, entries, currentPath = '', ref = 'HEAD',
             </div>
             <div className="flex items-center gap-1.5 text-xs text-muted-foreground w-fit px-3 py-1 bg-background/50 rounded-full border border-white/5 mx-0 md:ml-2">
                <Clock size={12} className="text-muted-foreground/70" />
-               <span className="font-medium">{commits.length} commit{commits.length !== 1 ? 's' : ''}</span>
+               <span className="font-medium">{commits.length} commit{commits.length === 1 ? '' : 's'}</span>
             </div>
           </div>
         )}
