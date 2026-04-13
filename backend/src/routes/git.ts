@@ -238,7 +238,9 @@ router.all('/:username/*', (req: Request, res: Response): void => {
   // ── Spawn git-http-backend ────────────────────────────────────────────────
   const env = buildCgiEnv(req, username, repoName, pathInfo, queryString);
 
-  const backend = spawn('git', ['http-backend'], {
+  const GIT_BIN = process.env.GIT_BIN_PATH || (require('node:os').platform() === 'win32' ? 'git' : '/usr/bin/git');
+
+  const backend = spawn(GIT_BIN, ['http-backend'], {
     env,
     stdio: ['pipe', 'pipe', 'pipe'],
   });

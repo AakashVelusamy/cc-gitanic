@@ -16,8 +16,12 @@
 
 import path from 'node:path';
 import fs from 'node:fs';
+import os from 'node:os';
 import { execFileSync } from 'node:child_process';
 import crypto from 'node:crypto';
+
+const GIT_BIN = process.env.GIT_BIN_PATH || (os.platform() === 'win32' ? 'git' : '/usr/bin/git');
+
 import { RepoRepository, RepoRow } from './repo.repository';
 import { createError } from '../../middleware/errorHandler';
 import { logger } from '../../lib/logger';
@@ -143,13 +147,13 @@ export const RepoFactory = {
 
     try {
       // Step 1  git init --bare into temp dir
-      execFileSync('git', ['init', '--bare', '--initial-branch=main', tmpPath], {
+      execFileSync(GIT_BIN, ['init', '--bare', '--initial-branch=main', tmpPath], {
         stdio: 'pipe',
         timeout: 15_000,
       });
 
         // Step 1b  enable http receive-pack (allow pushes over smart HTTP)
-        execFileSync('git', ['config', 'http.receivepack', 'true'], {
+        execFileSync(GIT_BIN, ['config', 'http.receivepack', 'true'], {
           cwd: tmpPath,
           stdio: 'pipe',
           timeout: 5_000,

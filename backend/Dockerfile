@@ -12,8 +12,9 @@ USER node
 RUN npm ci
 
 # Explicitly copy source code instead of recursive COPY . . to prevent sensitive data leaks
-COPY --chown=node:node tsconfig.json ./
-COPY --chown=node:node src/ ./src/
+# Ensure files are read-only to the node executor
+COPY tsconfig.json ./
+COPY src/ ./src/
 
 RUN npm run build
 

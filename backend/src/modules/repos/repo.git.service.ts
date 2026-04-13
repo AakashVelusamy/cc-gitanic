@@ -75,8 +75,11 @@ export interface CommitInfo {
   date: string;
 }
 
+import os from 'node:os';
+const GIT_BIN = process.env.GIT_BIN_PATH || (os.platform() === 'win32' ? 'git' : '/usr/bin/git');
+
 function gitRun(args: string[], cwd: string): Buffer {
-  return execFileSync('git', args, {
+  return execFileSync(GIT_BIN, args, {
     cwd,
     timeout: 15_000,
     maxBuffer: 10 * 1024 * 1024,
