@@ -52,6 +52,10 @@ EXCEPTION
     WHEN duplicate_object THEN null;
 END $$;
 
+-- enum constants to avoid literal duplication
+CREATE OR REPLACE FUNCTION ds_success() RETURNS deployment_status AS $$ SELECT 'success'::deployment_status $$ LANGUAGE SQL IMMUTABLE;
+
+
 CREATE TABLE IF NOT EXISTS deployment_history (
     id             UUID        PRIMARY KEY DEFAULT gen_random_uuid(),
     repo_id        UUID        NOT NULL REFERENCES repositories(id) ON DELETE CASCADE,
@@ -137,7 +141,7 @@ RETURNS TRIGGER
 LANGUAGE plpgsql
 AS $$
 BEGIN
-    IF NEW.status = 'success' AND OLD.status <> 'success' THEN
+    IF NEW.status = ds_success() AND OLD.status <> ds_success() THEN
         UPDATE repositories
            SET active_deployment_id = NEW.id,
                auto_deploy_enabled  = true
@@ -150,7 +154,7 @@ $$;
 CREATE TRIGGER trg_auto_deploy_on_success
 AFTER UPDATE ON deployment_history
 FOR EACH ROW
-WHEN (NEW.status = 'success' AND OLD.status <> 'success')
+WHEN (NEW.status = ds_success() AND OLD.status <> ds_success())
 EXECUTE FUNCTION auto_deploy_on_success();
 
 COMMENT ON FUNCTION auto_deploy_on_success()
