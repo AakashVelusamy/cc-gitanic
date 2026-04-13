@@ -5,7 +5,7 @@ import { routes } from '@/lib/routes';
 import { useToast } from '@/contexts/toast-context';
 import { FileBrowser, TreeEntry, detectLanguage } from '@/components/file-browser';
 import { MarkdownContent } from '@/components/markdown-content';
-import { BookOpen, FolderCode, Terminal, Trash2, Copy, Check, ExternalLink, Ship, PowerOff } from 'lucide-react';
+import { FolderCode, Terminal, Trash2, Copy, Check, ExternalLink, Ship, PowerOff } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
 import Link from 'next/link';
 import { BGPattern } from '@/components/ui/bg-pattern';
@@ -343,7 +343,7 @@ export default function RepositoryPage() {
            {readme && (
              <div className="glass rounded-xl overflow-hidden shadow-lg border border-white/5">
                 <div className="bg-secondary/40 px-4 py-3 border-b border-white/5 flex items-center gap-2 font-medium">
-                  <BookOpen size={16} className="text-muted-foreground" /> README.md
+                  <FolderCode size={16} className="text-muted-foreground" /> README.md
                 </div>
                 <div className="p-8 prose prose-invert max-w-none prose-a:text-primary hover:prose-a:text-accent prose-headings:border-white/10 prose-hr:border-white/10 prose-code:text-primary prose-code:bg-primary/10 prose-code:px-1 prose-code:rounded prose-pre:bg-[#0b1528] prose-pre:border prose-pre:border-white/5">
                   <MarkdownContent content={readme} />
