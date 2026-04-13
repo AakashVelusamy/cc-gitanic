@@ -1,19 +1,14 @@
-/**
- * repo.controller.ts — HTTP layer for repository endpoints
- *
- * Translates HTTP → service call → HTTP response.
- * Architecture: MVC Controller
- */
+// repository request handler
+// facilitates repository creation and deletion
+// exposes git tree and blob exploration apis
+// provides commit history and metadata retrieval
+// resolves live deployment ids for site delivery
 
 import { Request, Response, NextFunction } from 'express';
 import { RepoService } from './repo.service';
 
 export const RepoController = {
-  /**
-   * POST /api/repos
-   * Body: { name: string }
-   * 201: { id, name, owner_id, auto_deploy_enabled, active_deployment_id, created_at, git_url }
-   */
+  // post /api/repos
   async create(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
       const { sub: userId, username } = res.locals.user;
@@ -25,10 +20,7 @@ export const RepoController = {
     }
   },
 
-  /**
-   * GET /api/repos
-   * 200: RepoResult[]
-   */
+  // get /api/repos
   async list(_req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
       const { sub: userId, username } = res.locals.user;
@@ -39,11 +31,7 @@ export const RepoController = {
     }
   },
 
-  /**
-   * GET /api/repos/:repoName
-   * 200: RepoResult
-   * 404: not found
-   */
+  // get /api/repos/:reponame
   async getOne(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
       const { sub: userId, username } = res.locals.user;
@@ -55,10 +43,7 @@ export const RepoController = {
     }
   },
 
-  /**
-   * DELETE /api/repos/:repoName
-   * 204: deleted
-   */
+  // delete /api/repos/:reponame
   async remove(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
       const { sub: userId, username } = res.locals.user;
@@ -70,10 +55,7 @@ export const RepoController = {
     }
   },
 
-  /**
-   * GET /api/repos/:repoName/tree?ref=HEAD&path=
-   * 200: TreeEntry[]
-   */
+  // get /api/repos/:reponame/tree
   async getTree(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
       const { username } = res.locals.user;
@@ -88,10 +70,7 @@ export const RepoController = {
     }
   },
 
-  /**
-   * GET /api/repos/:repoName/blob?ref=HEAD&path=src/index.html
-   * 200: BlobResult
-   */
+  // get /api/repos/:reponame/blob
   async getBlob(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
       const { username } = res.locals.user;
@@ -107,10 +86,7 @@ export const RepoController = {
     }
   },
 
-  /**
-   * GET /api/repos/:repoName/commits?ref=HEAD&limit=20
-   * 200: CommitInfo[]
-   */
+  // get /api/repos/:reponame/commits
   async getCommits(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
       const { username } = res.locals.user;
@@ -125,11 +101,7 @@ export const RepoController = {
     }
   },
 
-  /**
-   * GET /api/repos/resolve/:username/:repoName
-   * 200: { deploymentId: string }
-   * 404: not found
-   */
+  // get /api/repos/resolve/:username/:reponame
   async resolveDeployment(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
       const { username, repoName } = req.params;

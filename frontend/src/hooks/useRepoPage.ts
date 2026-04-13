@@ -1,10 +1,8 @@
-/**
- * useRepoPage.ts — Shared hook for [name].tsx and tree/[[...path]].tsx
- *
- * Extracts the common repo data loading, deploy/undeploy/delete actions,
- * Supabase realtime subscriptions, and copy-URL logic to avoid duplication.
- */
-
+// repository data orchestration hook
+// manages repository state and directory exploration
+// coordinates deployment lifecycle and realtime updates
+// implements supabase broadcast event handling
+// provides shared logic for repository detailed views
 import { useState, useCallback, useEffect } from 'react';
 import { useRouter } from 'next/router';
 import { fetchApi, getCanonicalUsername, getToken, getTokenPayload } from '@/lib/api';
@@ -30,11 +28,11 @@ export interface CommitInfo {
   date: string;
 }
 
-// ── Deploy step message resolver ─────────────────────────────────────────────
+// deploy step message resolver
 
 /**
- * Ordered table of [log-substring, UI-label] pairs.
- * Earlier entries take priority over later ones (first-match wins).
+ * ordered table of [log-substring, ui-label] pairs.
+ * earlier entries take priority over later ones (first-match wins).
  */
 const DEPLOY_STEP_LABELS: ReadonlyArray<readonly [string, string]> = [
   ['strategy selected',    'Strategized' ],
@@ -53,8 +51,8 @@ const DEPLOY_STEP_LABELS: ReadonlyArray<readonly [string, string]> = [
 ] satisfies Array<[string, string]>;
 
 /**
- * Return the first human-readable UI label whose trigger keyword appears in
- * `rawMessage`, or an empty string if none match (no toast will be shown).
+ * return the first human-readable ui label whose trigger keyword appears in
+ * `rawmessage`, or an empty string if none match (no toast will be shown).
  */
 function resolveStepLabel(rawMessage: string): string {
   const msg = rawMessage.toLowerCase();
@@ -62,7 +60,7 @@ function resolveStepLabel(rawMessage: string): string {
   return match ? match[1] : '';
 }
 
-// ── Hook ─────────────────────────────────────────────────────────────────────
+// hook
 
 export function useRepoPage(repoName: string, treePath: string = '') {
   const router = useRouter();
@@ -92,7 +90,7 @@ export function useRepoPage(repoName: string, treePath: string = '') {
         if (path === '') {
           setLanguage(detectLanguage(tree));
         } else {
-          // Fetch root tree in background to detect overall repo language
+          // fetch root tree in background to detect overall repo language
           fetchApi<TreeEntry[]>(`/api/repos/${name}/tree?ref=HEAD&path=`)
             .then(rootTree => setLanguage(detectLanguage(rootTree)))
             .catch(console.error);
@@ -130,7 +128,7 @@ export function useRepoPage(repoName: string, treePath: string = '') {
     }
   }, [router, toast]);
 
-  // ── Initial load ────────────────────────────────────────────────────────────
+  // initial load
 
   useEffect(() => {
     if (!repoName) return;
@@ -151,7 +149,7 @@ export function useRepoPage(repoName: string, treePath: string = '') {
     })();
   }, [repoName, treePath, router, loadRepoData]);
 
-  // ── Realtime: broadcast deployment progress events ──────────────────────────
+  // realtime: broadcast deployment progress events
 
   useEffect(() => {
     if (!activeDeploymentTask) return;
@@ -193,7 +191,7 @@ export function useRepoPage(repoName: string, treePath: string = '') {
     return () => { supabase.removeChannel(channel); };
   }, [activeDeploymentTask, repoName, treePath, loadRepoData, toast, repo?.active_deployment_id]);
 
-  // ── Realtime: auto-deploy trigger (DB INSERT on deployments table) ──────────
+  // realtime: auto-deploy trigger (db insert on deployments table)
 
   useEffect(() => {
     if (!repo?.id) return;
@@ -210,7 +208,7 @@ export function useRepoPage(repoName: string, treePath: string = '') {
     return () => { supabase.removeChannel(channel); };
   }, [repo?.id]);
 
-  // ── Action handlers ─────────────────────────────────────────────────────────
+  // action handlers
 
   async function handleDeploy() {
     setDeploying(true);

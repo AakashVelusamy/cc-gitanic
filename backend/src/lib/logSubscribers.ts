@@ -1,34 +1,15 @@
-/**
- * logSubscribers.ts — Observer subscribers for deployment events
- *
- * Wires the deployEvents emitter to:
- *   1. DB persistence  → LogRepository.append (logs table, append-only)
- *   2. Supabase Realtime broadcast → channel "deployment:{id}" so the
- *      frontend can subscribe and stream logs live without polling
- *
- * HOW SUPABASE REALTIME WORKS HERE:
- *   - We use the Realtime Broadcast API (not DB replication).
- *   - Backend calls channel.send({ type: 'broadcast', event: '...', payload })
- *   - Frontend subscribes to channel "deployment:{id}" and receives events
- *     in real-time, regardless of network latency to the DB.
- *   - The DB logs INSERT still happens in parallel for persistence.
- *
- * CALL initLogSubscribers() ONCE at server startup (index.ts).
- *
- * Architecture: Observer Pattern (EventEmitter subscribers)
- */
+// deployment event observation service
+// maps pipeline events to realtime broadcasts
+// coordinates log persistence into database
+// manages lifecycle of realtime communication channels
+// implements best-effort delivery for build updates
 
 import { deployEvents }   from './deployEvents';
 import { supabase }       from './supabase';
 import { logger }         from './logger';
 import { LogRepository }  from '../modules/deployment/deployment.repository';
 
-// ── Realtime channel cache ────────────────────────────────────────────────────
-
-/**
- * Cache of active Supabase Realtime channels keyed by deploymentId.
- * Channels are created on deploy:start and closed on deploy:success/failed.
- */
+// active supabase realtime channels keyed by deploymentid
 const realtimeChannels = new Map<string, ReturnType<typeof supabase.channel>>();
 
 function getOrCreateChannel(deploymentId: string) {
@@ -45,17 +26,16 @@ async function closeChannel(deploymentId: string): Promise<void> {
   if (ch) {
     try {
       await ch.unsubscribe();
-      // supabase.removeChannel(ch) crashes in Node 20 with "connToClose.close is not a function"
-      // so we just unsubscribe to stop listening.
+      // unsubscribe to stop listening
     } catch (err) {
-      // Unsubscribe errors are non-critical; log at warn level (not silent swallow — S2486)
+      // unsubscribe errors are non-critical
       logger.warn(`[realtime] Failed to unsubscribe channel for deployment ${deploymentId}: ${String(err)}`);
     }
     realtimeChannels.delete(deploymentId);
   }
 }
 
-// ── Broadcast helper ──────────────────────────────────────────────────────────
+// broadcast helper
 
 async function broadcast(
   deploymentId: string,
@@ -66,28 +46,28 @@ async function broadcast(
     const ch = getOrCreateChannel(deploymentId);
     await ch.httpSend(event, { deploymentId, ...payload });
   } catch (err) {
-    // Realtime broadcast is best-effort — never block the pipeline
+    // realtime broadcast is best-effort — never block the pipeline
     logger.warn(`[realtime] Broadcast "${event}" failed: ${String(err)}`);
   }
 }
 
-// ── Subscriber setup ──────────────────────────────────────────────────────────
+// subscriber setup
 
 export function initLogSubscribers(): void {
 
-  // ── deploy:start ───────────────────────────────────────────────────────────
+  // handle deploy:start
   deployEvents.on('deploy:start', (payload) => {
     const msg = `[START] Deployment started for ${payload.username}/${payload.repoName}`;
 
-    // Pre-create the realtime channel so it's ready before step events arrive
+    // pre-create the realtime channel so it's ready before step events arrive
     getOrCreateChannel(payload.deploymentId);
 
-    // Persist to logs table
+    // persist to logs table
     LogRepository.append(
       payload.deploymentId, payload.repoId, payload.userId, msg
     ).catch(() => undefined);
 
-    // Broadcast
+    // broadcast
     void broadcast(payload.deploymentId, 'deploy:start', {
       username:  payload.username,
       repoName:  payload.repoName,
@@ -100,10 +80,10 @@ export function initLogSubscribers(): void {
     });
   });
 
-  // ── deploy:step ────────────────────────────────────────────────────────────
+  // handle deploy:step
   deployEvents.on('deploy:step', (payload) => {
-    // DB persistence is already handled by LogRepository.append inside
-    // makeLog() inside the pipeline. We just add realtime broadcast here.
+    // db persistence is already handled by logrepository.append inside
+    // makelog() inside the pipeline. we just add realtime broadcast here.
     void broadcast(payload.deploymentId, 'deploy:step', {
       step:      payload.step,
       message:   payload.message,
@@ -111,7 +91,7 @@ export function initLogSubscribers(): void {
     });
   });
 
-  // ── deploy:success ─────────────────────────────────────────────────────────
+  // handle deploy:success
   deployEvents.on('deploy:success', (payload) => {
     const msg = `[SUCCESS] Deployment complete in ${payload.durationMs}ms → ${payload.storagePath}`;
 
@@ -132,11 +112,11 @@ export function initLogSubscribers(): void {
       meta:   { durationMs: payload.durationMs, storagePath: payload.storagePath },
     });
 
-    // Close realtime channel after a short delay to ensure final events flush
+    // close realtime channel after a short delay to ensure final events flush
     setTimeout(() => void closeChannel(payload.deploymentId), 5_000);
   });
 
-  // ── deploy:failed ──────────────────────────────────────────────────────────
+  // handle deploy:failed
   deployEvents.on('deploy:failed', (payload) => {
     const msg = `[FAILED] Deployment failed after ${payload.durationMs}ms: ${payload.error}`;
 
@@ -156,7 +136,7 @@ export function initLogSubscribers(): void {
       meta:   { durationMs: payload.durationMs, error: payload.error },
     });
 
-    // Close realtime channel
+    // close realtime channel
     setTimeout(() => void closeChannel(payload.deploymentId), 5_000);
   });
 

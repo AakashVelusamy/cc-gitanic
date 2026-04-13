@@ -1,3 +1,8 @@
+// hierarchical navigation breadcrumb component
+// implements responsive breadcrumb layout
+// provides glassmorphic styling for path segments
+// supports accessible navigation landmark patterns
+// ensures type-safe link and page rendering
 import * as React from 'react';
 import { ChevronsRight } from 'lucide-react';
 import { cn } from '@/lib/utils';

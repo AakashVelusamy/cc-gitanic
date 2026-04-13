@@ -1,17 +1,11 @@
-/**
- * cacheBust.ts
- *
- * Notifies the Vercel frontend edge layer to drop its cached deployment
- * entry for a given user. Called after a successful deployment push.
- *
- * The frontend responds to this with 200; the actual edge Map TTL (60 s)
- * ensures the cache naturally expires. For instant purge, upgrade to
- * Vercel KV writes inside the invalidation endpoint.
- */
-
+// distribution cache invalidation service
+// notifies frontend edge layer of deployment changes
+// triggers local serve server memory cache resets
+// authorizes requests using internal shared secrets
+// implements timeout-guarded fetch calls
 import { logger } from '../lib/logger';
 
-const FRONTEND_URL   = process.env.FRONTEND_URL!;   // e.g. https://gitanic.vercel.app
+const FRONTEND_URL   = process.env.FRONTEND_URL!;
 const INTERNAL_SECRET = process.env.INTERNAL_SECRET!;
 
 export async function bustDeploymentCache(username: string): Promise<void> {
@@ -28,7 +22,7 @@ export async function bustDeploymentCache(username: string): Promise<void> {
         'x-internal-secret': INTERNAL_SECRET,
       },
       body: JSON.stringify({ username }),
-      signal: AbortSignal.timeout(5_000), // 5 s timeout — fire-and-forget
+      signal: AbortSignal.timeout(5_000),
     });
 
     if (res.ok) {
@@ -37,17 +31,11 @@ export async function bustDeploymentCache(username: string): Promise<void> {
       logger.warn(`[cacheBust] Invalidation request failed: ${res.status}`);
     }
   } catch (err) {
-    // Non-blocking — a cache bust failure must NOT affect the deployment result.
     logger.warn(`[cacheBust] Invalidation request error: ${String(err)}`);
   }
 }
 
-/**
- * Bust the local serve server's (serve.ts) in-memory deployment resolution cache.
- * The serve server runs on SERVE_PORT (default 4000) and maintains a 60s TTL Map
- * from username → deploymentId. After a successful deploy we POST here so the
- * new deploymentId is picked up immediately instead of waiting for the TTL.
- */
+// bust the local serve server's in-memory deployment resolution cache
 export async function bustLocalServeCache(username: string): Promise<void> {
   const servePort = process.env.SERVE_PORT ?? '4000';
   const secret = process.env.INTERNAL_SECRET ?? 'change-me-internal-secret';

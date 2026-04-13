@@ -1,14 +1,10 @@
+// edge cache invalidation endpoint
+// coordinates with vercel api for clearing cdns
+// fetches latest deployment metadata from supabase
+// handles timing-safe secret verification for internals
+// implements edge config patching for live routing
 import type { NextApiRequest, NextApiResponse } from 'next';
 
-/**
- * POST /api/cache/invalidate
- *
- * Called by the Railway backend after a successful deployment to notify
- * the frontend to warm/update its Edge Config cache for a specific user.
- *
- * Body: { username: string }
- * Headers: x-internal-secret: <INTERNAL_SECRET>
- */
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
   if (req.method !== 'POST') {
     return res.status(405).json({ error: 'Method not allowed' });
@@ -25,7 +21,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
   }
 
   const VERCEL_API_TOKEN = process.env.VERCEL_API_TOKEN;
-  const EDGE_CONFIG_ID = process.env.EDGE_CONFIG_ID; // The ID of the Edge Config stores (e.g. edge_config_...)
+  const EDGE_CONFIG_ID = process.env.EDGE_CONFIG_ID; // the id of the edge config stores (e.g. edge_config_...)
 
   if (!VERCEL_API_TOKEN || !EDGE_CONFIG_ID) {
     console.log(`[cache-invalidate] VERCEL_API_TOKEN or EDGE_CONFIG_ID missing. Acknowledging cache bust without updating Edge Config.`);
@@ -33,7 +29,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
   }
 
   try {
-    // 1. Fetch latest active deployment from Supabase
+    // 1. fetch latest active deployment from supabase
     const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL!;
     const SUPABASE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY!;
 
@@ -71,7 +67,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       }
     }
 
-    // 2. Patch Edge Config
+    // 2. patch edge config
     const patchRes = await fetch(`https://api.vercel.com/v1/edge-config/${EDGE_CONFIG_ID}/items`, {
       method: 'PATCH',
       headers: {

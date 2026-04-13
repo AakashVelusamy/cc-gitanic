@@ -1,7 +1,8 @@
-/**
- * routes/deploy.ts — Deployment router
- * All routes require JWT authentication.
- */
+// deployment api routing
+// exposes endpoints for pipeline control
+// provides real-time and historical log access
+// mounts queue status and monitoring services
+// secures deployment actions with auth guards
 
 import { Router } from 'express';
 import { DeploymentController } from '../modules/deployment/deployment.controller';
@@ -11,28 +12,28 @@ const router = Router();
 
 router.use(authMiddleware);
 
-// POST /api/repos/:repoName/deploy          → enqueue deployment
+// post /api/repos/:reponame/deploy          → enqueue deployment
 router.post('/repos/:repoName/deploy', DeploymentController.enqueue);
 
-// DELETE /api/repos/:repoName/deploy          → undeploy active site
+// delete /api/repos/:reponame/deploy          → undeploy active site
 router.delete('/repos/:repoName/deploy', DeploymentController.undeploy);
 
-// GET  /api/repos/:repoName/deployments     → list deployments for repo
+// get  /api/repos/:reponame/deployments     → list deployments for repo
 router.get('/repos/:repoName/deployments', DeploymentController.list);
 
-// GET  /api/deployments/:deploymentId       → get single deployment
+// get  /api/deployments/:deploymentid       → get single deployment
 router.get('/deployments/:deploymentId', DeploymentController.getOne);
 
-// GET  /api/deployments/:deploymentId/logs  → get deployment logs
+// get  /api/deployments/:deploymentid/logs  → get deployment logs
 router.get('/deployments/:deploymentId/logs', DeploymentController.getLogs);
 
-// GET  /api/repos/:repoName/deployments/:deploymentId      → get single deployment (repo-scoped alias)
+// get  /api/repos/:reponame/deployments/:deploymentid      → get single deployment (repo-scoped alias)
 router.get('/repos/:repoName/deployments/:deploymentId', DeploymentController.getOne);
 
-// GET  /api/repos/:repoName/deployments/:deploymentId/logs → get deployment logs (repo-scoped alias)
+// get  /api/repos/:reponame/deployments/:deploymentid/logs → get deployment logs (repo-scoped alias)
 router.get('/repos/:repoName/deployments/:deploymentId/logs', DeploymentController.getLogs);
 
-// GET  /api/queue/status                    → monitoring
+// get  /api/queue/status                    → monitoring
 router.get('/queue/status', DeploymentController.queueStatus);
 
 export default router;

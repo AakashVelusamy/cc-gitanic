@@ -1,12 +1,8 @@
-/**
- * supabase.ts — Supabase client singleton
- *
- * Uses the SERVICE ROLE key (backend only — never expose to clients).
- * The service role bypasses Row-Level Security, which is required for
- * all deployment pipeline operations (upload, DB writes).
- *
- * Architecture: Singleton Pattern
- */
+// supabase integration layer
+// initializes singleton storage client
+// configures bucket and path resolution
+// enforces service role authorization
+// maps users and deployments to storage paths
 
 import { createClient, SupabaseClient } from '@supabase/supabase-js';
 
@@ -17,7 +13,7 @@ if (!process.env.SUPABASE_SERVICE_ROLE_KEY) {
   throw new Error('[supabase] SUPABASE_SERVICE_ROLE_KEY environment variable is not set');
 }
 
-/** Singleton Supabase client (service role — bypasses RLS). */
+// supabase client (bypasses rls)
 export const supabase: SupabaseClient = createClient(
   process.env.SUPABASE_URL,
   process.env.SUPABASE_SERVICE_ROLE_KEY,
@@ -29,13 +25,10 @@ export const supabase: SupabaseClient = createClient(
   }
 );
 
-/** Supabase Storage bucket used for all deployments. */
+// storage bucket name
 export const DEPLOYMENTS_BUCKET = 'deployments';
 
-/**
- * Build the canonical Supabase Storage path for a deployment's files.
- * Pattern: deployments/{username}/{deploymentId}/
- */
+// build canonical storage path for a deployment
 export function deploymentStoragePath(username: string, deploymentId: string): string {
   return `${username}/${deploymentId}`;
 }

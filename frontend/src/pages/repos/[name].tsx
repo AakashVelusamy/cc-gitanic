@@ -1,3 +1,8 @@
+// repository overview and exploration interface
+// implements interactive file and directory browser
+// provides deployment control and status management
+// renders readme content with markdown support
+// orchestrates clone url copying and deletion actions
 import { useRouter } from 'next/router';
 import { routes } from '@/lib/routes';
 import { FileBrowser } from '@/components/file-browser';
@@ -27,7 +32,7 @@ export default function RepositoryPage() {
   }
 
   if (!repo) {
-    return null; /* Handled by toast + redirect */
+    return null; /* handled by toast + redirect */
   }
 
   return (

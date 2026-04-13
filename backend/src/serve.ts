@@ -1,52 +1,36 @@
-/**
- * serve.ts — Static Site Server (Proxy/Gateway Pattern)
- *
- * Standalone Express server that serves deployed static sites locally.
- * In production, Vercel Edge Middleware handles this role.
- * Locally, this server replicates that behavior by proxying to Supabase Storage.
- *
- * Request flow:
- *   GET http://localhost:4000/{username}/{path}
- *     → Look up user's active_deployment_id (cached 60s)
- *     → Proxy to Supabase Storage public URL
- *     → SPA fallback: serve index.html for non-file paths
- *
- * Architecture: Proxy/Gateway Pattern + Singleton (db pool)
- */
-
+// static site delivery server
+// proxies incoming requests to supabase storage
+// implements in-memory deployment resolution cache
+// handles spa fallback routing for react/vite apps
+// provides secure cache invalidation endpoints
 import 'dotenv/config';
 import path from 'node:path';
 import crypto from 'node:crypto';
 import express, { Request, Response } from 'express';
 import { query } from './lib/db';
 
-// ── Configuration ────────────────────────────────────────────────────────────
-
-const PORT         = Number.parseInt(process.env.SERVE_PORT ?? '4000', 10);
+const PORT = Number.parseInt(process.env.SERVE_PORT ?? '4000', 10);
 const SUPABASE_URL = process.env.SUPABASE_URL!;
-const BUCKET       = 'deployments';
+const BUCKET = 'deployments';
 
 if (!SUPABASE_URL) {
   console.error('[serve] SUPABASE_URL is required');
   process.exit(1);
 }
 
-// ── In-memory cache (username → { deploymentId, expiresAt }) ─────────────────
-
+// in-memory cache for user deployment ids
 interface CacheEntry {
   deploymentId: string;
   expiresAt: number;
 }
 
-const CACHE_TTL_MS = 60_000; // 60 seconds
+const CACHE_TTL_MS = 60_000;
 const cache = new Map<string, CacheEntry>();
 
 async function resolveDeployment(username: string): Promise<string | null> {
   const now = Date.now();
   const cached = cache.get(username);
-  if (cached && cached.expiresAt > now) {
-    return cached.deploymentId;
-  }
+  if (cached && cached.expiresAt > now) return cached.deploymentId;
 
   const rows = await query<{ active_deployment_id: string }>(
     `SELECT r.active_deployment_id
@@ -66,21 +50,18 @@ async function resolveDeployment(username: string): Promise<string | null> {
   return deploymentId;
 }
 
-// ── Express app ──────────────────────────────────────────────────────────────
-
-/** Valid username: lowercase alphanumeric + hyphens only */
+// lowercase alphanumeric + hyphens only
 const SAFE_USERNAME_RE = /^[a-z0-9][a-z0-9-]{0,62}[a-z0-9]$|^[a-z0-9]$/;
 
 const app = express();
 app.disable('x-powered-by');
 app.use(express.json());
 
-// Health check
 app.get('/health', (_req, res) => {
   res.json({ status: 'ok', service: 'gitanic-serve', ts: new Date().toISOString() });
 });
 
-// Cache bust endpoint — called by deployment pipeline after a successful deploy
+// cache bust endpoint for deployment pipeline
 app.post('/cache/bust', (req, res) => {
   const secret = process.env.INTERNAL_SECRET;
   if (!secret) {
@@ -89,11 +70,12 @@ app.post('/cache/bust', (req, res) => {
   }
   const provided = req.headers['x-gitanic-secret'];
   const providedStr = Array.isArray(provided) ? provided[0] : provided ?? '';
-  // Timing-safe comparison prevents secret enumeration via response timing (S6432)
-  const secretBuf   = Buffer.from(secret,      'utf8');
+  // timing-safe comparison to prevent secret enumeration
+  const secretBuf = Buffer.from(secret, 'utf8');
   const providedBuf = Buffer.from(providedStr, 'utf8');
   const isValid = secretBuf.length === providedBuf.length &&
     crypto.timingSafeEqual(secretBuf, providedBuf);
+
   if (!isValid) {
     res.status(401).json({ error: 'Unauthorized' });
     return;
@@ -104,27 +86,25 @@ app.post('/cache/bust', (req, res) => {
     console.log(`[serve] Cache busted for user "${username.replace(/[\r\n]/g, '')}"`);
     res.json({ ok: true, username });
   } else {
-    // Bust everything
     cache.clear();
     console.log('[serve] Full cache cleared');
     res.json({ ok: true, all: true });
   }
 });
 
-// Static site proxy: /{username}/{path?}
+// route site requests through proxy
 app.get('/:username/*', handleSiteRequest);
 app.get('/:username', handleSiteRequest);
 
 async function handleSiteRequest(req: Request, res: Response): Promise<void> {
   const rawUsername = req.params['username'];
 
-  // Skip favicon and other non-user requests
   if (rawUsername === 'favicon.ico' || rawUsername === 'health') {
     res.status(404).end();
     return;
   }
 
-  // Validate username to a known-safe set of characters (S5131)
+  // validate username against safe character set
   if (!SAFE_USERNAME_RE.test(rawUsername)) {
     res.status(400).end();
     return;
@@ -135,36 +115,30 @@ async function handleSiteRequest(req: Request, res: Response): Promise<void> {
     const deploymentId = await resolveDeployment(username);
 
     if (!deploymentId) {
-      // username is validated to safe alphanumeric/hyphen chars; escapeHtml as defence-in-depth
       res.status(404).send(notFoundPage(username));
       return;
     }
 
-    // Build the file path within the deployment
-    // req.params[0] is the wildcard match (everything after /{username}/)
+    // default to index.html for spa-style routing
     let filePath = req.params[0] || 'index.html';
-
-    // If path doesn't look like a file (no extension), default to index.html (SPA fallback)
     if (!filePath.includes('.')) {
       filePath = filePath.endsWith('/') ? `${filePath}index.html` : 'index.html';
     }
 
-    // Encode every segment of the path to prevent path injection (S7044)
+    // encode path segments to prevent injection
     const encodedPath = filePath
       .split('/')
       .filter((seg) => seg.length > 0 && seg !== '..' && seg !== '.')
       .map(encodeURIComponent)
       .join('/') || 'index.html';
 
-    // Build Supabase Storage public URL from fully-encoded components
     const storageUrl =
       `${SUPABASE_URL}/storage/v1/object/public/${BUCKET}/${encodeURIComponent(username)}/${encodeURIComponent(deploymentId)}/${encodedPath}`;
 
-    // Proxy the response from Supabase Storage
     const upstream = await fetch(storageUrl);
 
     if (!upstream.ok) {
-      // If the specific file wasn't found, try SPA fallback (index.html)
+      // spa fallback on 404
       if (upstream.status === 404 || upstream.status === 400) {
         const fallbackUrl =
           `${SUPABASE_URL}/storage/v1/object/public/${BUCKET}/${encodeURIComponent(username)}/${encodeURIComponent(deploymentId)}/index.html`;
@@ -192,12 +166,7 @@ async function handleSiteRequest(req: Request, res: Response): Promise<void> {
   }
 }
 
-/**
- * Forward content-type and cache-control headers from upstream response.
- * Content-Type is ALWAYS determined by the local MIME map (file extension),
- * which guarantees .html → text/html even if Supabase stored it as text/plain.
- * Falls back to the upstream header only for unknown extensions.
- */
+// forward headers, determining content-type by file extension
 function copyHeaders(upstream: globalThis.Response, res: Response, filePath: string): void {
   const localMime = inferMimeType(filePath);
   const upstreamCt = upstream.headers.get('content-type');
@@ -206,11 +175,10 @@ function copyHeaders(upstream: globalThis.Response, res: Response, filePath: str
   const cc = upstream.headers.get('cache-control');
   if (cc) res.set('Cache-Control', cc);
 
-  // Allow cross-origin requests for fonts/assets
   res.set('Access-Control-Allow-Origin', '*');
 }
 
-/** Map file extensions to MIME types. Returns null for unknown extensions. */
+// map file extensions to mime types
 function inferMimeType(filePath: string): string | null {
   const map: Record<string, string> = {
     '.html':  'text/html; charset=utf-8',
@@ -249,7 +217,7 @@ function inferMimeType(filePath: string): string | null {
   return map[path.extname(filePath).toLowerCase()] ?? null;
 }
 
-/** Escape a string for safe inclusion in HTML content (prevents XSS). */
+// escape html for xss prevention
 function escapeHtml(str: string): string {
   return str
     .replace(/&/g, '&amp;')
@@ -259,9 +227,9 @@ function escapeHtml(str: string): string {
     .replace(/'/g, '&#x27;');
 }
 
-/** Simple 404 HTML page. */
+// 404 html page template
 function notFoundPage(username: string): string {
-  // Escape username before injecting into HTML to prevent XSS
+  // escape username to prevent xss
   const safeUsername = escapeHtml(username);
   return `<!DOCTYPE html>
 <html lang="en">
@@ -292,7 +260,7 @@ function notFoundPage(username: string): string {
 </html>`;
 }
 
-// ── Start ────────────────────────────────────────────────────────────────────
+// start server
 
 app.listen(PORT, () => {
   console.log(`[serve] Gitanic static site server listening on http://localhost:${PORT}`);

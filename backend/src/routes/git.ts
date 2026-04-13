@@ -1,24 +1,8 @@
-/**
- * routes/git.ts — Production git-http-backend CGI pass-through
- *
- * Handles the full git smart-HTTP protocol without NGINX:
- *   GET  /git/:username/:repo.git/info/refs?service=git-upload-pack   → clone/fetch
- *   GET  /git/:username/:repo.git/info/refs?service=git-receive-pack  → push auth
- *   POST /git/:username/:repo.git/git-upload-pack                     → fetch/clone data
- *   POST /git/:username/:repo.git/git-receive-pack                    → push data
- *
- * Protected by: gitAuthMiddleware (HTTP Basic — validated against DB with bcrypt)
- *
- * Key correctness notes:
- *   1. CONTENT_LENGTH must be forwarded so git-http-backend reads the full body
- *   2. GIT_DIR must NOT be set when GIT_PROJECT_ROOT is used (they conflict)
- *   3. PATH_INFO format must exactly match what git-http-backend expects
- *   4. Header parsing is binary-safe using Buffer concatenation (not string)
- *   5. All I/O is streamed — no buffering in process memory
- *
- * Architecture: Middleware Pattern (gitAuthMiddleware) + native git-http-backend
- */
-
+// git smart-http protocol proxy
+// implements binary-safe cgi command passthrough
+// manages git-http-backend process lifecycle
+// coordinates authentication for git operations
+// parses and forwards cgi headers to clients
 import { Router, Request, Response } from 'express';
 import { spawn } from 'node:child_process';
 import path from 'node:path';
@@ -27,26 +11,13 @@ import { logger } from '../lib/logger';
 
 const router = Router();
 
-// Input validation regexes (S2076, S2083)
+// input validation (no leading/trailing hyphens)
 const SAFE_USERNAME_RE = /^[a-zA-Z0-9][a-zA-Z0-9-]*[a-zA-Z0-9]$|^[a-zA-Z0-9]$/;
 const SAFE_REPO_RE     = /^[a-zA-Z0-9._-]{1,100}$/;
 
-// ── Auth guard on every git route ─────────────────────────────────────────────
 router.use(gitAuthMiddleware);
 
-// ── CGI environment builder ───────────────────────────────────────────────────
-
-/**
- * Build the minimal set of CGI/1.1 environment variables required by
- * git-http-backend. Extraneous variables are stripped to avoid leaking
- * Railway secrets into the child process environment.
- *
- * @param req          - Incoming Express request
- * @param username     - Repo owner (from URL)
- * @param repoName     - Repo name without .git suffix
- * @param pathInfo     - PATH_INFO starting with /  (e.g. /my-site.git/info/refs)
- * @param queryString  - Raw query string without leading ?
- */
+// build minimal cgi environment for git-http-backend
 function buildCgiEnv(
   req: Request,
   username: string,
@@ -57,50 +28,32 @@ function buildCgiEnv(
   const reposRoot = process.env.REPOS_ROOT ?? '/repos';
 
   return {
-    // ── git-http-backend required vars ──────────────────────────────────────
     GIT_PROJECT_ROOT:   path.join(reposRoot, username),
-    GIT_HTTP_EXPORT_ALL: '1',   // allow clone of any repo under PROJECT_ROOT
+    GIT_HTTP_EXPORT_ALL: '1',   // allow clone of any repo under project_root
 
-    // ── CGI/1.1 standard vars ────────────────────────────────────────────────
     REQUEST_METHOD:  req.method,
-    PATH_INFO:       pathInfo,          // e.g. /my-site.git/info/refs
-    QUERY_STRING:    queryString,       // e.g. service=git-upload-pack
+    PATH_INFO:       pathInfo,
+    QUERY_STRING:    queryString,
     CONTENT_TYPE:    req.headers['content-type']   ?? '',
     CONTENT_LENGTH:  req.headers['content-length'] ?? '',
 
-    // ── Server identity (required by some git versions) ──────────────────────
     SERVER_NAME:     req.hostname ?? 'localhost',
     SERVER_PORT:     String(req.socket.localPort ?? 80),
     SERVER_PROTOCOL: 'HTTP/1.1',
     SERVER_SOFTWARE: 'gitanic/1.0',
 
-    // ── Client identity ──────────────────────────────────────────────────────
     REMOTE_ADDR: req.socket.remoteAddress ?? '127.0.0.1',
     REMOTE_USER: username,
 
-    // ── Passthrough — only safe subset of process env ────────────────────────
-    // PATH is required so git can find sub-commands; HOME is /tmp (not Railway's home)
     PATH: process.env.PATH ?? '/usr/bin:/bin',
     HOME: '/tmp',
 
-    // ── Context for post-receive hook (via env, not git-http-backend) ────────
-    // These are passed through to the hook process environment
     GITANIC_REPO:     repoName,
     GITANIC_USERNAME: username,
   };
 }
 
-// ── Binary-safe CGI response parser ──────────────────────────────────────────
-
-/**
- * Parses the CGI response from git-http-backend stdout.
- *
- * CGI format:
- *   <headers>\r\n\r\n<body>
- *
- * Uses Buffer throughout (never string) to preserve binary pack data integrity.
- * Supports multi-chunk delivery — buffers until the header separator is found.
- */
+// binary-safe cgi response parser
 class CgiResponseParser {
   private _buf: Buffer = Buffer.alloc(0);
   private _headersEmitted = false;
@@ -112,22 +65,22 @@ class CgiResponseParser {
 
   get headersDone(): boolean { return this._headersEmitted; }
 
-  /** Feed the next stdout chunk from git-http-backend. */
+  // feed next stdout chunk from git-http-backend
   feed(chunk: Buffer): void {
     if (this._headersEmitted) {
-      // Headers already parsed — stream body directly
+      // headers already parsed — stream body directly
       this.res.write(chunk);
       return;
     }
 
-    // Accumulate binary data
+    // accumulate binary data
     this._buf = Buffer.concat([this._buf, chunk]);
 
-    // Look for \r\n\r\n separator
+    // look for \r\n\r\n separator
     const sep = this._findSeparator(this._buf);
     if (sep === -1) return; // need more data
 
-    // Split into header section + body remainder
+    // split into header section + body remainder
     const headerBuf = this._buf.slice(0, sep);
     const bodyBuf   = this._buf.slice(sep + 4); // skip \r\n\r\n
 
@@ -139,10 +92,10 @@ class CgiResponseParser {
     }
   }
 
-  /** Call when stdout 'end' fires. */
+  // end of stdout stream
   end(): void {
     if (!this._headersEmitted) {
-      // Backend exited without emitting any headers — emit an error
+      // backend exited without emitting any headers — emit an error
       this._onError('git-http-backend closed stdout without sending headers');
       if (!this.res.headersSent) {
         this.res.status(502).send('Bad Gateway: git backend produced no output');
@@ -152,8 +105,7 @@ class CgiResponseParser {
     this.res.end();
   }
 
-  // ── Private ────────────────────────────────────────────────────────────────
-
+  // private helper to find \r\n\r\n
   private _findSeparator(buf: Buffer): number {
     for (let i = 0; i < buf.length - 3; i++) {
       if (
@@ -180,7 +132,6 @@ class CgiResponseParser {
       const value = line.slice(colonIdx + 1).trim();
 
       if (key === 'status') {
-        // CGI Status header: "200 OK" — extract numeric code
         const code = Number.parseInt(value, 10);
         if (!Number.isNaN(code)) {
           this.res.status(code);
@@ -191,22 +142,15 @@ class CgiResponseParser {
       }
     }
 
-    // git-http-backend omits Status for 200 — default
+    // git-http-backend omits status for 200 — default
     if (!statusSet) this.res.status(200);
   }
 }
 
-// ── Route handler ─────────────────────────────────────────────────────────────
-
-/**
- * Mounted at /git in index.ts → matches /git/:username/*
- * The wildcard captures everything after /:username/, preserving slashes.
- */
+// route handler for git protocol
 router.all('/:username/*', (req: Request, res: Response): void => {
   const username = req.params['username'] as string;
 
-  // req.params[0] is the wildcard after /:username/
-  // e.g.  "my-site.git/info/refs"  or  "my-site.git/git-upload-pack"
   const wildcard  = (req.params as Record<string, string>)['0'] ?? '';
   const dotGitIdx = wildcard.indexOf('.git');
 
@@ -215,19 +159,19 @@ router.all('/:username/*', (req: Request, res: Response): void => {
     return;
   }
 
-  const repoName   = wildcard.slice(0, dotGitIdx);           // "my-site"
+  const repoName   = wildcard.slice(0, dotGitIdx);
 
-  // Validate username and repoName before using them in filesystem paths (S2083, S2076)
+  // validate path components
   if (!SAFE_USERNAME_RE.test(username) || !SAFE_REPO_RE.test(repoName)) {
     res.status(400).send('Invalid username or repository name');
     return;
   }
 
-  const afterDotGit = wildcard.slice(dotGitIdx + 4);         // "/info/refs" or ""
-  const pathInfo   = `/${repoName}.git${afterDotGit}`;       // "/my-site.git/info/refs"
+  const afterDotGit = wildcard.slice(dotGitIdx + 4);
+  const pathInfo   = `/${repoName}.git${afterDotGit}`;
 
-  // Raw query string (without leading ?)
-  const rawUrl      = req.url;  // includes query string
+  // extract query string
+  const rawUrl      = req.url;
   const qIdx        = rawUrl.indexOf('?');
   const queryString = qIdx === -1 ? '' : rawUrl.slice(qIdx + 1);
 
@@ -235,7 +179,7 @@ router.all('/:username/*', (req: Request, res: Response): void => {
     meta: { username, repoName },
   });
 
-  // ── Spawn git-http-backend ────────────────────────────────────────────────
+  // spawn backend
   const env = buildCgiEnv(req, username, repoName, pathInfo, queryString);
 
   const GIT_BIN = process.env.GIT_BIN_PATH || (require('node:os').platform() === 'win32' ? 'git' : '/usr/bin/git');
@@ -245,17 +189,17 @@ router.all('/:username/*', (req: Request, res: Response): void => {
     stdio: ['pipe', 'pipe', 'pipe'],
   });
 
-  // ── Stdin: stream request body → backend ──────────────────────────────────
+  // stream request body to backend
   req.pipe(backend.stdin, { end: true });
 
-  // Handle stdin errors (client disconnect during push)
+  // handle client disconnect during push
   backend.stdin.on('error', (err: NodeJS.ErrnoException) => {
     if (err.code !== 'EPIPE') {
       logger.warn(`[git] stdin write error: ${err.message}`, { meta: { username, repoName } });
     }
   });
 
-  // ── Stdout: binary-safe CGI parser → response ─────────────────────────────
+  // parse stdout
   const parser = new CgiResponseParser(res, (msg) => {
     logger.error(`[git] CGI parse error: ${msg}`, { meta: { username, repoName } });
     if (!res.headersSent) res.status(500).send('Git backend error');
@@ -264,7 +208,7 @@ router.all('/:username/*', (req: Request, res: Response): void => {
   backend.stdout.on('data', (chunk: Buffer) => parser.feed(chunk));
   backend.stdout.on('end', ()               => parser.end());
 
-  // ── Stderr: log git diagnostics ───────────────────────────────────────────
+  // log stderr diagnostics
   backend.stderr.on('data', (chunk: Buffer) => {
     const text = chunk.toString('utf8').trim();
     if (text) {
@@ -272,7 +216,7 @@ router.all('/:username/*', (req: Request, res: Response): void => {
     }
   });
 
-  // ── Process-level errors ──────────────────────────────────────────────────
+  // handle process errors
   backend.on('error', (err) => {
     logger.error(`[git] Failed to spawn git-http-backend: ${err.message}`, {
       meta: { username, repoName },
@@ -290,7 +234,7 @@ router.all('/:username/*', (req: Request, res: Response): void => {
     }
   });
 
-  // ── Client disconnect — kill backend to avoid zombie processes ────────────
+  // kill backend on client disconnect
   res.on('close', () => {
     if (!backend.killed) backend.kill('SIGTERM');
   });

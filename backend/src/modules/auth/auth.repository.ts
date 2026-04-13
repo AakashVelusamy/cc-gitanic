@@ -1,9 +1,8 @@
-/**
- * auth.repository.ts — Data access layer for auth
- *
- * All raw SQL lives here. No business logic.
- * Architecture: Repository Pattern
- */
+// data access layer for users
+// manages account registration and profile records
+// facilitates secure lookup by username or id
+// provides profile update and synchronization logic
+// enforces unique identity constraints at data level
 
 import { query } from '../../lib/db';
 
@@ -26,9 +25,7 @@ export interface UpdateProfileInput {
 }
 
 export const AuthRepository = {
-  /**
-   * Find a user by username (case-insensitive). Returns undefined if not found.
-   */
+  // find user by username
   async findByUsername(username: string): Promise<UserRow | undefined> {
     const rows = await query<UserRow>(
       `SELECT id, username, email, password_hash, created_at
@@ -40,9 +37,7 @@ export const AuthRepository = {
     return rows[0];
   },
 
-  /**
-   * Find a user by UUID. Returns undefined if not found.
-   */
+  // find user by id
   async findById(id: string): Promise<UserRow | undefined> {
     const rows = await query<UserRow>(
       `SELECT id, username, email, password_hash, created_at
@@ -54,10 +49,7 @@ export const AuthRepository = {
     return rows[0];
   },
 
-  /**
-   * Insert a new user row. Returns the created row.
-   * Throws a DB unique-violation error if username or email is taken.
-   */
+  // insert new user row
   async create(input: CreateUserInput): Promise<UserRow> {
     const rows = await query<UserRow>(
       `INSERT INTO users (username, password_hash, email)

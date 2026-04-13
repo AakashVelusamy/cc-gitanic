@@ -1,3 +1,8 @@
+// centralized application route manifest
+// maps logical paths to url strings
+// provides dynamic uri builders for resources
+// handles encoding for repository and path names
+// ensures type-safe navigation across the frontend
 export const routes = {
   home: '/',
   login: '/login',

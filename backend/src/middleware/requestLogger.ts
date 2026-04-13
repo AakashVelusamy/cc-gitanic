@@ -1,12 +1,8 @@
-/**
- * requestLogger.ts — HTTP request logging middleware
- *
- * Logs every incoming request (method, path, status, duration).
- * Uses the AppLogger EventEmitter so log lines flow through the
- * same observer pipeline as deployment logs.
- *
- * Architecture: Middleware Pattern + Observer (via logger)
- */
+// http traffic monitoring middleware
+// records incoming request paths and methods
+// captures response status codes and timing
+// includes authenticated user id in logs
+// provides structured metadata for observability
 
 import { Request, Response, NextFunction } from 'express';
 import { logger } from '../lib/logger';

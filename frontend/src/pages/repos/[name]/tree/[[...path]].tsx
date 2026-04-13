@@ -1,3 +1,8 @@
+// repository directory navigation interface
+// implements hierarchical tree browsing logic
+// orchestrates directory state and path resolution
+// renders readme content for current directory level
+// provides seamless transition between folders and files
 import { useRouter } from 'next/router';
 import { routes } from '@/lib/routes';
 import { FileBrowser } from '@/components/file-browser';

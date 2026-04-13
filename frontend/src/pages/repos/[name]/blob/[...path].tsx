@@ -1,3 +1,8 @@
+// repository file viewer and syntax highlighter
+// manages blob content retrieval and encoding
+// implements multi-language syntax highlighting
+// providing image previews and binary file handling
+// orchestrates markdown rendering and file downloads
 import { useEffect, useState, useCallback } from 'react';
 import { useRouter } from 'next/router';
 import { fetchApi, getToken } from '@/lib/api';
@@ -17,7 +22,7 @@ interface BlobResult {
   isBinary: boolean;
 }
 
-/** Map file extensions to react-syntax-highlighter language identifiers */
+/** map file extensions to react-syntax-highlighter language identifiers */
 function getLanguage(filename: string): string {
   const ext = filename.split('.').pop()?.toLowerCase() ?? '';
   const map: Record<string, string> = {
@@ -38,14 +43,14 @@ function getLanguage(filename: string): string {
     vue: 'html', svelte: 'html',
     gitignore: 'bash', editorconfig: 'ini',
   };
-  // Handle special filenames
+  // handle special filenames
   const name = filename.toLowerCase();
   if (name === 'dockerfile') return 'docker';
   if (name === 'makefile') return 'makefile';
   return map[ext] || 'text';
 }
 
-/** Check if the file is an image based on extension */
+/** check if the file is an image based on extension */
 function isImageFile(filename: string): boolean {
   const ext = filename.split('.').pop()?.toLowerCase() ?? '';
   return ['png', 'jpg', 'jpeg', 'gif', 'webp', 'svg', 'ico', 'bmp', 'avif'].includes(ext);
@@ -183,10 +188,10 @@ export default function BlobPage() {
     URL.revokeObjectURL(url);
   }
 
-  // Breadcrumb parts
+  // breadcrumb parts
   const pathParts = filePath ? filePath.split('/') : [];
 
-  // Loading state
+  // loading state
   if (loading) {
     return (
       <div className="min-h-[calc(100vh-4.5rem)] bg-background relative overflow-hidden flex flex-col">
@@ -198,9 +203,9 @@ export default function BlobPage() {
     );
   }
 
-  // Error state
+  // error state
   if (!blob) {
-    return null; // Handled by toast + redirect
+    return null; // handled by toast + redirect
   }
 
   const language = getLanguage(fileName);
@@ -209,7 +214,7 @@ export default function BlobPage() {
   const isText = !blob.isBinary;
   const lineCount = isText ? blob.content.split('\n').length : 0;
 
-  // Pre-computed for the file info bar (avoids nested ternaries in JSX)
+  // pre-computed for the file info bar (avoids nested ternaries in jsx)
   let fileTypeIcon: React.ReactNode;
   let fileTypeLabel: string;
   if (!blob.isBinary) {
@@ -228,7 +233,7 @@ export default function BlobPage() {
       <BGPattern variant="grid" mask="fade-edges" size={32} fill="rgba(255,255,255,0.05)" />
 
       <main className="flex-1 w-full max-w-[1600px] mx-auto px-4 sm:px-6 lg:px-8 mt-6 pb-6">
-        {/* Back link */}
+        {/* back link */}
         <Link
           href={
             pathParts.length > 1
@@ -241,9 +246,9 @@ export default function BlobPage() {
 
         </Link>
 
-        {/* Breadcrumb navigation */}
+        {/* breadcrumb navigation */}
         <div className="glass rounded-xl overflow-hidden border border-white/5 shadow-lg">
-          {/* Header bar with breadcrumbs and actions */}
+          {/* header bar with breadcrumbs and actions */}
           <div className="bg-secondary/40 px-4 py-3 border-b border-white/5 flex items-center justify-between gap-4">
             <div className="flex items-center flex-wrap gap-1 text-sm min-w-0">
               <Link
@@ -274,7 +279,7 @@ export default function BlobPage() {
               })}
             </div>
 
-            {/* Action buttons */}
+            {/* action buttons */}
             <div className="flex items-center gap-2 shrink-0">
               {!blob.isBinary && (
                 <button
@@ -295,7 +300,7 @@ export default function BlobPage() {
             </div>
           </div>
 
-          {/* File info bar */}
+          {/* file info bar */}
           <div className="bg-secondary/20 px-4 py-2 border-b border-white/5 flex items-center justify-between text-xs text-muted-foreground">
             <div className="flex items-center gap-4">
               <span className="flex items-center gap-1.5">
@@ -310,7 +315,7 @@ export default function BlobPage() {
             </div>
           </div>
 
-          {/* File content */}
+          {/* file content */}
           <div className="overflow-x-auto">
             {renderFileContent(blob, isImage, isMarkdown, language, fileName, handleDownload)}
           </div>

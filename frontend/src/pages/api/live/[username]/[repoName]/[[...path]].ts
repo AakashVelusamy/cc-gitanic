@@ -1,3 +1,9 @@
+// live site delivery proxy
+// resolves repository names to active deployment ids
+// proxies asset requests to supabase storage
+// implements secure path validation and ssrf guards
+// rewrites html asset paths for correct relative resolution
+// infers mime types and manages cache headers
 import type { NextApiRequest, NextApiResponse } from 'next';
 
 export const config = {
@@ -7,16 +13,16 @@ export const config = {
   },
 };
 
-/** Safe username: lowercase alphanumeric, hyphens only, max 64 chars */
+// safe username regex
 const USERNAME_RE = /^[a-z0-9][a-z0-9-]{0,62}[a-z0-9]$|^[a-z0-9]$/;
 
-/** UUID v4 format for deployment IDs */
+// uuid v4 regex
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 
-/** Safe repo name: alphanumeric, hyphen, underscore, dot, 1-100 chars */
+// safe repo name regex
 const REPO_NAME_RE = /^[a-zA-Z0-9._-]{1,100}$/;
 
-/** Reject path segments that attempt traversal or contain dangerous characters */
+// reject dangerous path segments
 function isSafePathSegment(segment: string): boolean {
   if (segment === '..') return false;
   if (segment === '.') return false;
@@ -43,7 +49,7 @@ function inferContentType(filePath: string): string {
   return ext ? map[ext] || 'application/octet-stream' : 'application/octet-stream';
 }
 
-/** Rewrite HTML asset paths and inject a <base> tag so relative resources resolve correctly. */
+// inject base tag into html
 function rewriteHtml(html: string, basePath: string): string {
   const baseTag = `<base href="${basePath}/" />`;
   const rewritten = html
@@ -59,11 +65,7 @@ function rewriteHtml(html: string, basePath: string): string {
   return baseTag + rewritten;
 }
 
-/**
- * Resolve the deployment ID from either a UUID (used directly) or a repo name
- * (resolved via the backend API). Returns null and writes an error response
- * on failure so the handler can return immediately.
- */
+// resolve deployment identifier
 async function resolveDepId(
   uname: string,
   repoOrId: string,
@@ -88,10 +90,7 @@ async function resolveDepId(
   }
 }
 
-/**
- * Parse and validate path query segments.
- * Returns the path array, or null (and writes a 400) if any segment is unsafe.
- */
+// parse and validate path segments
 function parseSafePath(
   path: string | string[] | undefined,
   res: NextApiResponse,
@@ -121,7 +120,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     const uname = Array.isArray(username) ? username[0] : username;
     const repoOrId = Array.isArray(repoName) ? repoName[0] : repoName;
 
-    // Input validation (SSRF / path-traversal guards)
+    // input validation (ssrf / path-traversal guards)
     if (!uname || !USERNAME_RE.test(uname)) {
       return res.status(400).json({ error: 'Invalid request' });
     }
@@ -145,7 +144,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       return res.status(500).json({ error: 'Internal server error' });
     }
 
-    // Construct the upstream URL strictly from validated components only
+    // construct the upstream url strictly from validated components only
     const targetUrl = `${supabaseUrl}/storage/v1/object/public/deployments/${uname}/${depId}/${relativePath}`;
     const supabaseRes = await fetch(targetUrl);
 
@@ -168,7 +167,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     res.send(Buffer.from(buffer));
 
   } catch {
-    // Do not expose internal error details
+    // do not expose internal error details
     res.status(500).json({ error: 'Internal server error' });
   }
 }

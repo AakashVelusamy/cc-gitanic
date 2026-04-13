@@ -1,10 +1,9 @@
-/**
- * auth.service.ts — Business logic for auth
- *
- * Orchestrates: validation → repository → bcrypt → JWT
- * Never touches Express (req/res). Returns plain data or throws AppError.
- * Architecture: Service Layer Pattern
- */
+// authentication and identity service
+// validates registration inputs and email formats
+// manages password hashing using bcrypt
+// issues and verifies jwt access tokens
+// coordinates otp verification for new accounts
+// provides user profile and data retrieval
 
 import bcrypt from 'bcrypt';
 import jwt from 'jsonwebtoken';
@@ -12,27 +11,24 @@ import { AuthRepository } from './auth.repository';
 import { createError } from '../../middleware/errorHandler';
 import { otpService } from './otp.service';
 
-// ── Constants ─────────────────────────────────────────────────────────────────
 
 const BCRYPT_ROUNDS = 12;
 const JWT_EXPIRY = '7d';
 
-// Alphanumeric + hyphen; matches DB CHECK constraint
+// alphanumeric + hyphen; matches db check constraint
 const USERNAME_RE = /^[a-zA-Z0-9][a-zA-Z0-9-]*[a-zA-Z0-9]$|^[a-zA-Z0-9]$/;
 const EMAIL_RE = /^[a-zA-Z0-9.!#$%&'*+/=?^_`{|}~-]+@[a-zA-Z0-9-]+(?:\.[a-zA-Z0-9-]+)*$/;
 
-// ── JWT helper ───────────────────────────────────────────────────────────────
 
 function signJwt(userId: string, username: string): string {
   const secret = process.env.JWT_SECRET;
   if (!secret) {
     throw createError(500, 'Server misconfiguration: JWT_SECRET not set');
   }
-  // Explicitly specify algorithm to match verification side (S5659)
+  // verify token using hs256 algorithm
   return jwt.sign({ sub: userId, username }, secret, { expiresIn: JWT_EXPIRY, algorithm: 'HS256' });
 }
 
-// ── Types ─────────────────────────────────────────────────────────────────────
 
 export interface RegisterResult {
   id: string;
@@ -54,7 +50,6 @@ export interface UpdateProfileInput {
   email?: string | null;
 }
 
-// ── Helpers ───────────────────────────────────────────────────────────────────
 
 function validateRegisterInput(username: string, password: string, email: string, otp: string): void {
   const normalizedUsername = username.toLowerCase();
@@ -90,7 +85,6 @@ function validateRegisterInput(username: string, password: string, email: string
   }
 }
 
-// ── Service ───────────────────────────────────────────────────────────────────
 
 export const AuthService = {
   async requestOtp(email: string): Promise<void> {
@@ -102,35 +96,25 @@ export const AuthService = {
       throw createError(400, 'email must be a valid email address');
     }
     
-    // In production Railway/Vercel, we need to ensure this doesn't block the HTTP response
-    // if the SMTP server is slow, but we still want to catch immediate configuration errors.
+    // in production railway/vercel, we need to ensure this doesn't block the http response
+    // if the smtp server is slow, but we still want to catch immediate configuration errors.
     await otpService.sendOtp(normalizedEmail);
   },
 
-  /**
-   * Register a new user.
-   * - Validates username + email format
-   * - Checks uniqueness (catches PG unique-violation)
-   * - Hashes password with bcrypt
-   * - Persists user
-   */
+  // register a new user
 async register(username: string, password: string, email: string, otp: string): Promise<RegisterResult> {
-    // ── Input validation ──────────────────────────────────────────────────────
     validateRegisterInput(username, password, email, otp);
     const normalizedUsername = username.toLowerCase();
 
-    // ── Validate OTP ──────────────────────────────────────────────────────────
     if (!otpService.verifyOtp(email.trim().toLowerCase(), otp)) {
       throw createError(400, 'Invalid or expired OTP');
     }
 
-    // ── Uniqueness pre-check (friendly error) ─────────────────────────────────
     const existing = await AuthRepository.findByUsername(normalizedUsername);
     if (existing) {
       throw createError(409, `Username "${normalizedUsername}" is already taken`);
     }
 
-    // ── Hash + persist ────────────────────────────────────────────────────────
     const password_hash = await bcrypt.hash(password, BCRYPT_ROUNDS);
 
     let user: Awaited<ReturnType<typeof AuthRepository.create>>;
@@ -151,15 +135,13 @@ async register(username: string, password: string, email: string, otp: string): 
       throw err;
     }
 
-    // Auto-login: issue JWT immediately (user already proved identity via OTP)
+    // auto-login: issue jwt immediately (user already proved identity via otp)
     const token = signJwt(user.id, user.username);
 
     return { id: user.id, username: user.username, token };
   },
 
-  /**
-   * Login: validate credentials and return a signed JWT.
-   */
+  // login and issue jwt
   async login(username: string, password: string): Promise<LoginResult> {
     if (!username || !password) {
       throw createError(400, 'username and password are required');
@@ -167,7 +149,7 @@ async register(username: string, password: string, email: string, otp: string): 
 
     const user = await AuthRepository.findByUsername(username);
 
-    // Always run bcrypt.compare even when user not found to prevent timing oracle (S6432)
+    // timing-safe bcrypt comparison
     const DUMMY_HASH = '$2b$12$invalidhashpaddingthatisexactly53charslong........';
     const hashToCompare = user ? user.password_hash : DUMMY_HASH;
     const valid = await bcrypt.compare(password, hashToCompare);

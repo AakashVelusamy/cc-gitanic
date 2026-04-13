@@ -1,18 +1,13 @@
-/**
- * authMiddleware.ts — JWT authentication guard
- *
- * Verifies a Bearer token in the Authorization header.
- * On success, attaches decoded payload to res.locals.user.
- * On failure, responds 401 — no business logic leaks through.
- *
- * Architecture: Middleware Pattern
- */
-
+// jwt security middleware
+// validates incoming bearer token headers
+// decodes and verifies hs256 jwt payloads
+// attaches user identity to request locals
+// enforces mandatory authentication for routes
 import { Request, Response, NextFunction } from 'express';
 import jwt from 'jsonwebtoken';
 
 export interface AuthPayload {
-  sub: string;      // user UUID
+  sub: string;      // user uuid
   username: string;
   iat: number;
   exp: number;
@@ -47,7 +42,7 @@ export function authMiddleware(
   }
 
   try {
-    // Explicitly specify algorithm to prevent algorithm-confusion attacks (S5659)
+    // verify token using hs256 algorithm
     const payload = jwt.verify(token, secret, { algorithms: ['HS256'] }) as AuthPayload;
     res.locals.user = payload;
     next();

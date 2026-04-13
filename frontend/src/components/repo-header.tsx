@@ -1,7 +1,8 @@
-/**
- * RepoHeader.tsx — Shared repo page header with clone URL, deploy/undeploy/delete actions.
- * Used by both [name].tsx and tree/[[...path]].tsx.
- */
+// repository action header component
+// displays repository identity and ownership path
+// provides git clone url interaction and feedback
+// orchestrates deployment status and control actions
+// manages repository lifecycle triggers like deletion
 
 import React from 'react';
 import Link from 'next/link';

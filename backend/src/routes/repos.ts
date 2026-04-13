@@ -1,7 +1,8 @@
-/**
- * routes/repos.ts — Repository router
- * All routes require JWT authentication.
- */
+// repository api routing
+// exposes endpoints for repo lifecycle management
+// mounts git object exploration and list services
+// enforces jwt authentication on all member routes
+// maps http verbs to repository controller actions
 
 import { Router } from 'express';
 import { RepoController } from '../modules/repos/repo.controller';
@@ -9,31 +10,31 @@ import { authMiddleware } from '../middleware/authMiddleware';
 
 const router = Router();
 
-// Public route for deployment resolution (must come before authMiddleware)
+// public route for deployment resolution (must come before authmiddleware)
 router.get('/resolve/:username/:repoName', RepoController.resolveDeployment);
 
-// All repo routes are protected
+// all repo routes are protected
 router.use(authMiddleware);
 
-// POST   /api/repos         → create a new repo
+// post   /api/repos         → create a new repo
 router.post('/', RepoController.create);
 
-// GET    /api/repos         → list the caller's repos
+// get    /api/repos         → list the caller's repos
 router.get('/', RepoController.list);
 
-// GET    /api/repos/:repoName  → get one repo
+// get    /api/repos/:reponame  → get one repo
 router.get('/:repoName', RepoController.getOne);
 
-// DELETE /api/repos/:repoName  → delete a repo
+// delete /api/repos/:reponame  → delete a repo
 router.delete('/:repoName', RepoController.remove);
 
-// GET /api/repos/:repoName/tree   → list tree entries
+// get /api/repos/:reponame/tree   → list tree entries
 router.get('/:repoName/tree', RepoController.getTree);
 
-// GET /api/repos/:repoName/blob   → get file content
+// get /api/repos/:reponame/blob   → get file content
 router.get('/:repoName/blob', RepoController.getBlob);
 
-// GET /api/repos/:repoName/commits → list commits
+// get /api/repos/:reponame/commits → list commits
 router.get('/:repoName/commits', RepoController.getCommits);
 
 export default router;

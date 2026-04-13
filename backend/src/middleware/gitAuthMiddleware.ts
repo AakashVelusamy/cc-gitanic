@@ -1,18 +1,8 @@
-/**
- * gitAuthMiddleware.ts — HTTP Basic auth guard for git-http-backend routes
- *
- * git CLI sends credentials as HTTP Basic auth (base64).
- * This middleware:
- *   1. Prompts unauthenticated requests with WWW-Authenticate
- *   2. Decodes and validates credentials against the DB (bcrypt)
- *   3. Verifies the authenticated user matches the :username in the URL
- *   4. Attaches user identity to res.locals for downstream use
- *
- * Applied only to routes under /git/*
- *
- * Architecture: Middleware Pattern
- */
-
+// git protocol security middleware
+// implements http basic authentication for git
+// decodes and validates base64 credentials
+// performs secure password hash comparisons
+// enforces repository ownership and access
 import { Request, Response, NextFunction } from 'express';
 import bcrypt from 'bcrypt';
 import { query } from '../lib/db';
@@ -31,15 +21,15 @@ export async function gitAuthMiddleware(
 ): Promise<void> {
   const authHeader = req.headers['authorization'];
 
-  // ── Missing / wrong scheme → challenge client ──────────────────────────────
+  // authenticate via basic auth
   if (!authHeader?.startsWith('Basic ')) {
     res.set('WWW-Authenticate', 'Basic realm="Gitanic", charset="UTF-8"');
-    // Use 401 text/plain — git CLI parses this for credential prompting
+    // use 401 text/plain for git cli
     res.status(401).type('text/plain').send('Authentication required\n');
     return;
   }
 
-  // ── Decode base64 credentials ──────────────────────────────────────────────
+  // decode base64 credentials
   let credUsername: string;
   let password: string;
 
@@ -63,7 +53,7 @@ export async function gitAuthMiddleware(
     return;
   }
 
-  // ── DB lookup ──────────────────────────────────────────────────────────────
+  // database lookup
   let user: UserRow | undefined;
   try {
     const rows = await query<UserRow>(
@@ -77,9 +67,7 @@ export async function gitAuthMiddleware(
     return;
   }
 
-  // ── Constant-time bcrypt compare (timing-safe) ─────────────────────────────
-  // Always call bcrypt.compare even if user not found to prevent timing oracle (S6432).
-  // The dummy hash is a valid bcrypt hash (60 chars) so bcrypt.compare doesn't throw.
+  // bcrypt comparison
   const DUMMY_HASH = '$2b$12$invalidhashpaddingthatisexactly53charslong........';
   const hashToCompare = user ? user.password_hash : DUMMY_HASH;
   const valid = await bcrypt.compare(password, hashToCompare);
@@ -90,9 +78,7 @@ export async function gitAuthMiddleware(
     return;
   }
 
-  // ── URL ownership check ────────────────────────────────────────────────────
-  // The :username segment in the URL must match the authenticated user exactly (case-insensitive).
-  // This prevents user A from pushing to user B's repo.
+  // verify that authenticated user matches url path
   const urlUsername = req.params['username'] as string | undefined;
   if (urlUsername && urlUsername.toLowerCase() !== user.username.toLowerCase()) {
     logger.warn(`[gitAuth] User "${user.username}" attempted access to "${urlUsername}" repos`, {
@@ -103,7 +89,7 @@ export async function gitAuthMiddleware(
     return;
   }
 
-  // ── Attach identity ────────────────────────────────────────────────────────
+  // attach user identity
   res.locals.user = { sub: user.id, username: user.username, iat: 0, exp: 0 };
   next();
 }

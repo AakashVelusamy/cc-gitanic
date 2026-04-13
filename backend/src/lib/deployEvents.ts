@@ -1,23 +1,12 @@
-/**
- * deployEvents.ts — Typed deployment event emitter (Observer Pattern)
- *
- * All deployment lifecycle events are emitted here.
- * Subscribers (logger, Realtime broadcaster) register once at startup.
- *
- * Events:
- *   deploy:start    — job dequeued and pipeline begins
- *   deploy:step     — individual pipeline step log line
- *   deploy:success  — deployment completed successfully
- *   deploy:failed   — deployment failed at any step
- *
- * Log format in DB/output:  "[STEP] message"
- *
- * Architecture: Observer Pattern + Singleton EventEmitter
- */
+// deployment event definitions
+// defines typed payloads for pipeline stages
+// provides centralized event bus for deployments
+// maps pipeline progress to observer patterns
+// enables cross-module realtime notification
 
 import { EventEmitter } from 'node:events';
 
-// ── Event payload types ───────────────────────────────────────────────────────
+// event payload types
 
 export interface DeployStartPayload {
   deploymentId: string;
@@ -32,10 +21,9 @@ export interface DeployStepPayload {
   deploymentId: string;
   repoId:       string;
   userId:       string;
-  /** Formatted as "[STEP] message" — ready to store in DB. */
   message:      string;
   step:         string;   // e.g. "validate", "checkout", "build", "upload"
-  timestamp:    string;   // ISO 8601
+  timestamp:    string;   // iso 8601
 }
 
 export interface DeploySuccessPayload {
@@ -59,7 +47,7 @@ export interface DeployFailedPayload {
   error:        string;
 }
 
-// ── Event map ─────────────────────────────────────────────────────────────────
+// event map
 
 export type DeployEventMap = {
   'deploy:start':   [payload: DeployStartPayload];
@@ -68,18 +56,13 @@ export type DeployEventMap = {
   'deploy:failed':  [payload: DeployFailedPayload];
 };
 
-// ── DeployEventEmitter ────────────────────────────────────────────────────────
+// deployeventemitter implementation
 
 class DeployEventEmitter extends EventEmitter {
-  /** Emit a deploy:start event. */
   start(payload: DeployStartPayload): void {
     this.emit('deploy:start', payload);
   }
 
-  /**
-   * Emit a deploy:step event.
-   * Formats the message as "[STEP] message" for consistency.
-   */
   step(
     deploymentId: string,
     repoId:       string,
@@ -99,23 +82,21 @@ class DeployEventEmitter extends EventEmitter {
     this.emit('deploy:step', payload);
   }
 
-  /** Emit a deploy:success event. */
   success(payload: DeploySuccessPayload): void {
     this.emit('deploy:success', payload);
   }
 
-  /** Emit a deploy:failed event. */
   failed(payload: DeployFailedPayload): void {
     this.emit('deploy:failed', payload);
   }
 }
 
-// Typed overloads for emit/on/once
+// typed overloads for emit/on/once
 declare interface DeployEventEmitter {
   emit<K extends keyof DeployEventMap>(event: K, ...args: DeployEventMap[K]): boolean;
   on<K extends keyof DeployEventMap>(event: K, listener: (...args: DeployEventMap[K]) => void): this;
   once<K extends keyof DeployEventMap>(event: K, listener: (...args: DeployEventMap[K]) => void): this;
 }
 
-/** Singleton — one event bus per process. */
+// singleton event bus
 export const deployEvents = new DeployEventEmitter();

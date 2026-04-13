@@ -1,26 +1,18 @@
-/**
- * deployQueue.ts — FIFO Deployment Queue
- *
- * Public API matches spec exactly:
- *   - queue: QueueJob[]       → the waiting job list
- *   - running: boolean        → whether a job is executing
- *   - processNext(): void     → dequeue and run the next job
- *
- * Only ONE job executes at a time. Failures do not block the queue.
- *
- * Architecture: FIFO Queue Pattern + Observer (EventEmitter) + Singleton
- */
+// deployment task scheduler
+// implements fifo job processing logic
+// manages concurrency and queue status
+// provides job lifecycle event emitters
+// handles asynchronous task execution and errors
 
 import { EventEmitter } from 'node:events';
 import { logger } from './logger';
 
-// ── Types ─────────────────────────────────────────────────────────────────────
+// queue types
 
 export type JobThunk = () => Promise<void>;
 
 export interface QueueJob {
-  /** deployment_history UUID */
-  id: string;
+  id: string; // deployment id
   userId: string;
   repoId: string;
   enqueuedAt: Date;
@@ -34,23 +26,17 @@ export type QueueEventMap = {
   drained:   [];
 };
 
-// ── DeployQueue ───────────────────────────────────────────────────────────────
+// deployment queue implementation
 
 class DeployQueue extends EventEmitter {
-  /**
-   * Jobs waiting to run (FIFO).
-   * Public so external monitoring code can inspect depth without a getter.
-   */
+  // jobs waiting to run
   readonly queue: QueueJob[] = [];
 
-  /** True while a job thunk is executing. */
+  // running status
   running = false;
 
-  // ── Public API ─────────────────────────────────────────────────────────────
 
-  /**
-   * Add a job to the back of the queue and kick processNext().
-   */
+  // add a job to the back of the queue
   enqueue(job: QueueJob): void {
     this.queue.push(job);
     logger.info('[queue] Job enqueued', {
@@ -62,11 +48,7 @@ class DeployQueue extends EventEmitter {
     this.processNext();
   }
 
-  /**
-   * Dequeue the next job and execute it.
-   * No-op if a job is already running or the queue is empty.
-   * Called internally after enqueue() and after each job finishes.
-   */
+  // dequeue and execute next job
   processNext(): void {
     if (this.running) return;
 
@@ -86,7 +68,7 @@ class DeployQueue extends EventEmitter {
     });
     this.emit('started', job);
 
-    // Run async job; always advance queue in finally
+    // run async job
     job.thunk().then(() => {
       logger.info('[queue] Job completed', {
         deploymentId: job.id,
@@ -101,30 +83,26 @@ class DeployQueue extends EventEmitter {
         repoId:       job.repoId,
         meta: { error: String(err) },
       });
-      // FAILURE RULE: active_deployment_id MUST NOT change on failure.
-      // The thunk is responsible for calling markFailed (not markSuccess).
+      // failure does not change active deployment
       this.emit('failed', job, err);
     }).finally(() => {
       this.running = false;
-      this.processNext();  // advance FIFO queue
+      this.processNext();  // advance fifo queue
     });
   }
 
-  // ── Convenience getters (backwards-compatible) ────────────────────────────
 
-  /** Alias: number of waiting jobs. */
   get depth(): number { return this.queue.length; }
 
-  /** Alias: whether a job is running. */
   get isRunning(): boolean { return this.running; }
 }
 
-// Typed emit/on/once overloads
+// typed emit/on/once overloads
 declare interface DeployQueue {
   emit<K extends keyof QueueEventMap>(event: K, ...args: QueueEventMap[K]): boolean;
   on<K extends keyof QueueEventMap>(event: K, listener: (...args: QueueEventMap[K]) => void): this;
   once<K extends keyof QueueEventMap>(event: K, listener: (...args: QueueEventMap[K]) => void): this;
 }
 
-/** Singleton — one shared queue per process. */
+// singleton deployment queue
 export const deployQueue = new DeployQueue();

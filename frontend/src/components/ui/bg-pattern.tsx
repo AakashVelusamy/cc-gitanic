@@ -1,3 +1,8 @@
+// decorative background pattern component
+// provides svg-based grid and geometric patterns
+// supports multiple masking and fading modes
+// implements dynamic sizing and color properties
+// renders as a non-interactive absolute overlay
 import React from 'react';
 import { cn } from '@/lib/utils';
 

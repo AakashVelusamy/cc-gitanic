@@ -1,16 +1,12 @@
-/**
- * deployment.repository.ts — Data access layer for deployments + logs
- *
- * Append-only tables. No UPDATE allowed on completed rows (enforced by DB
- * triggers). The only UPDATE permitted is status transitions while the pipeline
- * is running.
- *
- * Architecture: Repository Pattern
- */
+// data access layer for deployments
+// manages deployment state transitions and history
+// coordinates persistence of build and error logs
+// selectively retrieves deployment metadata and status
+// handles bulk retrieval and cleanup id lookups
 
 import { query, pool } from '../../lib/db';
 
-// ── Types ─────────────────────────────────────────────────────────────────────
+// deployment types
 
 export type DeployStatus = 'pending' | 'building' | 'success' | 'failed';
 
@@ -42,10 +38,10 @@ export interface CreateDeploymentInput {
   commit_message?: string;
 }
 
-// ── DeploymentRepository ──────────────────────────────────────────────────────
+// deploymentrepository implementation
 
 export const DeploymentRepository = {
-  /** Create a new deployment row with status = 'pending'. */
+  // create a new pending deployment row
   async create(input: CreateDeploymentInput): Promise<DeploymentRow> {
     const rows = await query<DeploymentRow>(
       `INSERT INTO deployment_history (repo_id, user_id, commit_sha, commit_message)
@@ -57,7 +53,7 @@ export const DeploymentRepository = {
     return rows[0];
   },
 
-  /** Transition status to 'building'. */
+  // mark as building
   async markBuilding(id: string): Promise<void> {
     await query(
       `UPDATE deployment_history SET status = 'building' WHERE id = $1 AND status = 'pending'`,
@@ -65,12 +61,7 @@ export const DeploymentRepository = {
     );
   },
 
-  /**
-   * Mark deployment as 'success'.
-   * Sets duration_ms and storage_path.
-   * ⚠️ The DB trigger (trg_auto_deploy_on_success) atomically swaps
-   * repositories.active_deployment_id when this update fires.
-   */
+  // mark as success
   async markSuccess(id: string, durationMs: number, storagePath: string): Promise<void> {
     await query(
       `UPDATE deployment_history
@@ -80,10 +71,7 @@ export const DeploymentRepository = {
     );
   },
 
-  /**
-   * Mark deployment as 'failed'.
-   * DOES NOT touch repositories.active_deployment_id (DB trigger only fires on 'success').
-   */
+  // mark as failed
   async markFailed(id: string, durationMs: number): Promise<void> {
     await query(
       `UPDATE deployment_history
@@ -93,10 +81,7 @@ export const DeploymentRepository = {
     );
   },
 
-  /**
-   * Update commit_sha and commit_message after HEAD checkout.
-   * Called at Step 3b — before build runs.
-   */
+  // update commit information
   async updateCommitInfo(id: string, sha: string, message: string): Promise<void> {
     await query(
       `UPDATE deployment_history
@@ -107,7 +92,7 @@ export const DeploymentRepository = {
   },
 
 
-  /** Fetch all deployments for a repo, newest first. */
+  // find all repo deployments
   async findAllByRepo(repoId: string): Promise<DeploymentRow[]> {
     return query<DeploymentRow>(
       `SELECT id, repo_id, user_id, commit_sha, commit_message,
@@ -119,7 +104,7 @@ export const DeploymentRepository = {
     );
   },
 
-  /** Fetch a single deployment by ID. */
+  // find by id
   async findById(id: string): Promise<DeploymentRow | undefined> {
     const rows = await query<DeploymentRow>(
       `SELECT id, repo_id, user_id, commit_sha, commit_message,
@@ -131,10 +116,7 @@ export const DeploymentRepository = {
     return rows[0];
   },
 
-  /**
-   * Return an ordered list of successful deployment IDs for a repo.
-   * Newest first — used by StorageService.pruneOldDeployments().
-   */
+  // get list of successful deployment ids
   async findSuccessfulDepIds(repoId: string): Promise<string[]> {
     const rows = await query<{ id: string }>(
       `SELECT id FROM deployment_history
@@ -147,10 +129,10 @@ export const DeploymentRepository = {
 };
 
 
-// ── LogRepository ─────────────────────────────────────────────────────────────
+// logrepository implementation
 
 export const LogRepository = {
-  /** Append a single log line. */
+  // append a log line
   async append(
     deploymentId: string,
     repoId: string,
@@ -164,7 +146,7 @@ export const LogRepository = {
     );
   },
 
-  /** Fetch all log lines for a deployment, ordered chronologically. */
+  // find all logs for a deployment
   async findByDeployment(deploymentId: string): Promise<LogRow[]> {
     return query<LogRow>(
       `SELECT id, user_id, repo_id, deployment_id, log_text, created_at

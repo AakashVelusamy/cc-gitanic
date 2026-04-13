@@ -1,40 +1,33 @@
-/**
- * logger.ts — Application-wide event logger
- *
- * Implements the Observer Pattern using Node's built-in EventEmitter.
- * Components emit structured log events; subscribers write them to
- * stdout and (in later phases) persist them to the `logs` DB table.
- *
- * Architecture: Observer Pattern + Singleton
- */
+// system-wide logging utility
+// implements event-based log distribution
+// includes structured metadata with every log
+// handles environment-aware log level filtering
+// formats timestamps and context tags for stdout
 
 import { EventEmitter } from 'node:events';
 
-// ── Types ─────────────────────────────────────────────────────────────────────
+// log types
 
 export type LogLevel = 'debug' | 'info' | 'warn' | 'error';
 
 export interface LogEvent {
   level: LogLevel;
   message: string;
-  /** ISO timestamp — set automatically by emit helpers */
   timestamp: string;
-  /** Context fields for DB persistence (optional at emit time) */
   userId?: string;
   repoId?: string;
   deploymentId?: string;
-  /** Extra arbitrary key-value metadata */
   meta?: Record<string, unknown>;
 }
 
 export type LogContext = Partial<Omit<LogEvent, 'level' | 'message' | 'timestamp'>>;
 
-// ── EventEmitter singleton ────────────────────────────────────────────────────
+// applogger implementation
 
 class AppLogger extends EventEmitter {
   constructor() {
     super();
-    // Default stdout subscriber — always active
+    // stdout subscriber is always active
     this.on('log', this.stdoutSubscriber.bind(this));
   }
 
@@ -57,8 +50,7 @@ class AppLogger extends EventEmitter {
     }
   }
 
-  // ── Public emit helpers ────────────────────────────────────────────────────
-
+  
   private _emit(
     level: LogLevel,
     message: string,
@@ -92,5 +84,5 @@ class AppLogger extends EventEmitter {
   }
 }
 
-/** Singleton logger instance — import and use across the entire backend. */
+// singleton logger instance
 export const logger = new AppLogger();

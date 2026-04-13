@@ -1,24 +1,21 @@
-/**
- * deployment.controller.ts — HTTP layer for deployment endpoints
- * Architecture: MVC Controller
- */
+// deployment request handler
+// orchestrates deployment lifecycle via http
+// manages build queue enrollment and tracking
+// exposes historical log and status endpoints
+// handles site teardown and cache invalidation
 
 import { Request, Response, NextFunction } from 'express';
 import { DeploymentService } from './deployment.service';
 import { deployQueue } from '../../lib/deployQueue';
 
 export const DeploymentController = {
-  /**
-   * POST /api/repos/:repoName/deploy
-   * Enqueues a new deployment (Step 1 of pipeline).
-   * 202: { deploymentId, message }
-   */
+  // post /api/repos/:reponame/deploy
   async enqueue(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
       const { sub: userId, username } = res.locals.user;
       const repoName = req.params['repoName'] as string;
 
-      // Resolve repoId from repoName (service looks it up)
+      // resolve repoid from reponame (service looks it up)
       const { RepoRepository } = await import('../repos/repo.repository');
       const { AuthRepository } = await import('../auth/auth.repository');
       const user = await AuthRepository.findById(userId);
@@ -27,9 +24,9 @@ export const DeploymentController = {
       const repo = await RepoRepository.findByOwnerAndName(userId, repoName);
       if (!repo) { res.status(404).json({ error: `Repository "${repoName}" not found` }); return; }
 
-      // auto_deploy_enabled is set to true by the DB trigger
+      // auto_deploy_enabled is set to true by the db trigger
       // (trg_auto_deploy_on_success) only after the first *successful* deployment.
-      // Setting it here before the pipeline runs would allow hook-triggered deploys
+      // setting it here before the pipeline runs would allow hook-triggered deploys
       // to fire even when no successful deployment has ever completed.
       const result = await DeploymentService.enqueue(userId, repo.id);
 
@@ -45,10 +42,7 @@ export const DeploymentController = {
     }
   },
 
-  /**
-   * GET /api/repos/:repoName/deployments
-   * List all deployments for a repo.
-   */
+  // get /api/repos/:reponame/deployments
   async list(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
       const { sub: userId } = res.locals.user;
@@ -65,10 +59,7 @@ export const DeploymentController = {
     }
   },
 
-  /**
-   * GET /api/deployments/:deploymentId
-   * Get a single deployment by ID.
-   */
+  // get /api/deployments/:deploymentid
   async getOne(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
       const { sub: userId } = res.locals.user;
@@ -80,10 +71,7 @@ export const DeploymentController = {
     }
   },
 
-  /**
-   * GET /api/deployments/:deploymentId/logs
-   * Stream log lines for a deployment.
-   */
+  // get /api/deployments/:deploymentid/logs
   async getLogs(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
       const { sub: userId } = res.locals.user;
@@ -95,10 +83,7 @@ export const DeploymentController = {
     }
   },
 
-  /**
-   * GET /api/queue/status
-   * Returns current queue depth and running state (monitoring endpoint).
-   */
+  // get /api/queue/status
   queueStatus(_req: Request, res: Response): void {
     res.status(200).json({
       depth: deployQueue.depth,
@@ -106,10 +91,7 @@ export const DeploymentController = {
     });
   },
 
-  /**
-   * DELETE /api/repos/:repoName/deploy
-   * Undeploys the active deployment and disables auto-deploy.
-   */
+  // delete /api/repos/:reponame/deploy
   async undeploy(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
       const { sub: userId, username } = res.locals.user;

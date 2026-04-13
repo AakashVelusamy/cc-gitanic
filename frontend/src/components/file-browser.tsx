@@ -1,3 +1,9 @@
+// repository file exploration component
+// implements interactive directory traversal
+// provides visual breadcrumbs for current path
+// displays commit counts and repository language badges
+// supports both client-side and route-based navigation
+// highlights file types and entry hash metadata
 import Link from 'next/link';
 import { Folder, FileText, Clock, Ship } from 'lucide-react';
 import { routes } from '@/lib/routes';
@@ -68,13 +74,13 @@ export function detectLanguage(entries: TreeEntry[]): string | null {
 }
 
 export function FileBrowser({ repoName, entries, currentPath = '', loading, onFolderDoubleClick, commits = [], language }: FileBrowserProps) {
-  // Sort: directories first, then files, both alphabetical
+  // sort: directories first, then files, both alphabetical
   const sorted = [...entries].sort((a, b) => {
     if (a.type !== b.type) return a.type === 'tree' ? -1 : 1;
     return a.name.localeCompare(b.name);
   });
 
-  // Build breadcrumb parts
+  // build breadcrumb parts
   const parts = currentPath ? currentPath.split('/') : [];
 
   const getTreeRoute = (path?: string) => routes.repoTree(repoName, path);
@@ -109,7 +115,7 @@ export function FileBrowser({ repoName, entries, currentPath = '', loading, onFo
   return (
     <div className="glass rounded-xl overflow-hidden mb-6 border border-white/5 shadow-lg">
       <div className="bg-white/[0.02] px-4 py-3 border-b border-white/5 flex flex-col md:flex-row md:items-center justify-between gap-2 md:gap-3">
-        {/* Left: breadcrumb + last commit message */}
+        {/* left: breadcrumb + last commit message */}
         <div className="flex items-center flex-wrap gap-2 text-[11px] sm:text-sm min-w-0 overflow-hidden">
           <Breadcrumb>
             <BreadcrumbList className="text-[11px] sm:text-sm flex-nowrap">
@@ -178,7 +184,7 @@ export function FileBrowser({ repoName, entries, currentPath = '', loading, onFo
           )}
         </div>
 
-        {/* Right: language badge + commits pill */}
+        {/* right: language badge + commits pill */}
         {commits && commits.length > 0 && (
           <div className="flex items-center justify-between gap-2 w-full md:w-auto shrink-0 mt-1 md:mt-0">
             <div>
@@ -192,11 +198,11 @@ export function FileBrowser({ repoName, entries, currentPath = '', loading, onFo
         )}
       </div>
 
-      {/* Table */}
+      {/* table */}
       <div className="overflow-x-auto">
         <table className="w-full text-left border-collapse">
           <tbody>
-            {/* Parent directory link */}
+            {/* parent directory link */}
             {currentPath && (
               <tr
                 className="border-b border-white/5 hover:bg-white/5 transition-colors group cursor-pointer"

@@ -1,3 +1,8 @@
+// scroll-reactive container animation component
+// implements 3d perspective tilt and zoom on scroll
+// manages responsive viewports for mobile/desktop
+// provides smooth motion transitions via framer-motion
+// integrates with global scroll containers for orchestration
 import React, { useRef, useState, useEffect } from "react";
 import { useScroll, useTransform, motion, MotionValue } from "framer-motion";   
 

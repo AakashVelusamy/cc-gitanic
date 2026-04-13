@@ -1,9 +1,8 @@
-/**
- * repo.repository.ts — Data access layer for repositories
- *
- * All raw SQL lives here. No business logic.
- * Architecture: Repository Pattern
- */
+// data access layer for repositories
+// manages repository registration and ownership records
+// synchronizes active deployment pointers
+// provides secure lookup by name or identifier
+// facilitates system-wide repository reconciliation
 
 import { query, pool } from '../../lib/db';
 import { PoolClient } from 'pg';
@@ -29,7 +28,7 @@ export interface CreateRepoInput {
 }
 
 export const RepoRepository = {
-  /** List all repositories with owner usernames (used for startup reconcile). */
+  // list all repositories with owner usernames
   async findAllWithOwnerUsername(): Promise<RepoOwnerRow[]> {
     return query<RepoOwnerRow>(
       `SELECT r.name, u.username
@@ -39,7 +38,7 @@ export const RepoRepository = {
     );
   },
 
-  /** List all repos belonging to a user, newest first. */
+  // list all repos belonging to a user
   async findAllByOwner(ownerId: string): Promise<RepoRow[]> {
     return query<RepoRow>(
       `SELECT r.id, r.name, r.owner_id, r.auto_deploy_enabled, r.active_deployment_id, r.created_at,
@@ -51,7 +50,7 @@ export const RepoRepository = {
     );
   },
 
-  /** Find a single repo by owner + name. Returns undefined if not found. */
+  // find repo by owner and name
   async findByOwnerAndName(ownerId: string, name: string): Promise<RepoRow | undefined> {
     const rows = await query<RepoRow>(
       `SELECT r.id, r.name, r.owner_id, r.auto_deploy_enabled, r.active_deployment_id, r.created_at,
@@ -64,7 +63,7 @@ export const RepoRepository = {
     return rows[0];
   },
 
-  /** Find a single repo by Username + Repo Name. Returns undefined if not found. */
+  // find repo by username and name
   async findByUsernameAndRepoName(username: string, repoName: string): Promise<RepoRow | undefined> {
     const rows = await query<RepoRow>(
       `SELECT r.id, r.name, r.owner_id, r.auto_deploy_enabled, r.active_deployment_id, r.created_at
@@ -77,7 +76,7 @@ export const RepoRepository = {
     return rows[0];
   },
 
-  /** Find a single repo by UUID. */
+  // find repo by id
   async findById(id: string): Promise<RepoRow | undefined> {
     const rows = await query<RepoRow>(
       `SELECT r.id, r.name, r.owner_id, r.auto_deploy_enabled, r.active_deployment_id, r.created_at,
@@ -90,7 +89,7 @@ export const RepoRepository = {
     return rows[0];
   },
 
-  /** Insert a new repository row. Returns the created row. */
+  // insert new repository row
   async create(input: CreateRepoInput): Promise<RepoRow> {
     const rows = await query<RepoRow>(
       `INSERT INTO repositories (name, owner_id)
@@ -101,11 +100,7 @@ export const RepoRepository = {
     return rows[0];
   },
 
-  /**
-   * Atomically swap the active deployment pointer.
-   * Only called with a deployment whose status = 'success'.
-   * Also sets auto_deploy_enabled = true (trigger handles it, but we mirror here for clarity).
-   */
+  // swap active deployment pointer and enable auto-deploy
   async setActiveDeployment(
     repoId: string,
     deploymentId: string,
@@ -124,7 +119,7 @@ export const RepoRepository = {
     }
   },
 
-  /** Delete a repo (CASCADE removes deployments + logs). */
+  // delete repo
   async delete(id: string, ownerId: string): Promise<boolean> {
     const result = await pool.query(
       `DELETE FROM repositories WHERE id = $1 AND owner_id = $2`,

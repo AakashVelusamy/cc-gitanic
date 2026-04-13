@@ -1,3 +1,8 @@
+// public landing page for gitanic
+// implements responsive glassmorphic design
+// showcases platform features and value propositions
+// provides entry points for login and registration
+// utilizes dynamic background patterns and animations
 import React from 'react';
 import { routes } from '@/lib/routes';
 import Link from 'next/link';
@@ -46,11 +51,9 @@ export default function Home() {
   return (
     <div className="flex-1 bg-background selection:bg-white/20 w-full overflow-x-hidden relative flex flex-col">
       <div className="relative flex-1 flex flex-col">
-        {/* HERO */}
         <section className="relative flex flex-col items-center justify-center overflow-hidden h-[calc(100dvh-64px)] min-h-[calc(100dvh-64px)] md:h-[calc(100dvh-114px)] md:min-h-[calc(100dvh-114px)] py-12 md:py-0 w-full px-4 md:snap-start md:snap-always shrink-0">
           <BGPattern variant="grid" mask="fade-edges" size={32} fill="rgba(255,255,255,0.06)" />
 
-          {/* Aurora */}
           <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[800px] h-[800px] rounded-full pointer-events-none blur-[120px]"
             style={{ background: 'radial-gradient(circle, rgba(255,255,255,0.10), rgba(120,80,255,0.06) 40%, transparent 70%)' }} />
 
@@ -125,18 +128,15 @@ export default function Home() {
         <hr className="absolute bottom-0 border-t border-white/10 w-full z-30 m-0" />
         </section>
 
-        {/* GRADIENT CARDS */}
         <section id="features" className="relative flex flex-col items-center lg:justify-center justify-start h-auto lg:h-[calc(100dvh-114px)] min-h-0 lg:min-h-[calc(100dvh-114px)] pt-32 pb-16 md:pt-16 md:pb-8 lg:py-8 w-full px-4 md:snap-start lg:snap-start md:snap-always shrink-0">
           <BGPattern variant="grid" mask="fade-edges" size={32} fill="rgba(255,255,255,0.07)" />
           <div className="relative z-50 max-w-6xl mx-auto text-center mb-12 md:mb-10 lg:mb-12">
             <h2 className="text-4xl md:text-6xl font-black text-white glow-text mb-4">How It Works?</h2>
             
           </div>
-          {/* Mobile: stack */}
           <div className="md:hidden flex flex-col items-center w-full mt-8">
             {cards.map((c) => <GradientCard key={c.title} {...c} />)}
           </div>
-          {/* Tablet: 2 top row, 1 centered bottom */}
           <div className="hidden md:flex lg:hidden flex-col items-center gap-0 w-full mt-4">
             <div className="flex justify-center gap-4">
               {cards.slice(0, 2).map((c) => <GradientCard key={c.title} {...c} />)}
@@ -145,14 +145,12 @@ export default function Home() {
               <GradientCard {...cards[2]} />
             </div>
           </div>
-          {/* Desktop: single row */}
           <div className="hidden lg:flex justify-center flex-wrap">
             {cards.map((c) => <GradientCard key={c.title} {...c} />)}
           </div>
         <hr className="absolute bottom-0 border-t border-white/10 w-full z-30 m-0" />
         </section>
 
-        {/* SCROLL ANIMATION */}
         <section className="relative md:snap-start md:snap-always h-auto md:h-[calc(100dvh-114px)] min-h-0 md:min-h-[calc(100dvh-114px)] py-16 md:py-0 w-full flex flex-col md:flex-row items-center justify-center shrink-0 overflow-hidden">
           <BGPattern variant="grid" mask="fade-edges" size={32} fill="rgba(255,255,255,0.05)" />
           <ContainerScroll
@@ -175,7 +173,6 @@ export default function Home() {
         <hr className="absolute bottom-0 border-t border-white/10 w-full z-30 m-0" />
         </section>
 
-        {/* CTA */}
         <section className="relative flex flex-col items-center justify-center h-auto md:h-[calc(100dvh-114px)] min-h-0 md:min-h-[calc(100dvh-114px)] py-16 md:py-8 w-full px-4 overflow-hidden md:snap-start md:snap-always shrink-0">
           <BGPattern variant="grid" mask="fade-edges" size={32} fill="rgba(255,255,255,0.08)" />
           <div className="relative max-w-3xl mx-auto text-center">

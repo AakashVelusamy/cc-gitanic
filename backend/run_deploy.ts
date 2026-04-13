@@ -1,3 +1,7 @@
+// development deployment trigger script
+// manually enqueues build jobs for specified repositories
+// facilitates testing of pipeline strategies in dev mode
+// orchestrates user and repository resolution via database
 import 'dotenv/config';
 import { DeploymentService } from './src/modules/deployment/deployment.service';
 import { query } from './src/lib/db';
@@ -7,7 +11,7 @@ interface UserRepoRow {
   rid: string;
 }
 
-/** Dev-only script: manually trigger a deployment for a given user/repo pair. */
+// dev-only script: manually trigger a deployment for a given user/repo pair
 async function run(): Promise<void> {
   const username = process.env.DEV_USERNAME ?? 'aakashvelusamy';
   const repoName = process.env.DEV_REPO ?? 'temp';

@@ -1,19 +1,14 @@
-/**
- * errorHandler.ts — Global Express error handler
- *
- * Must be registered LAST in the middleware chain (after all routes).
- * Catches any error passed via next(err) or thrown in async handlers
- * (when wrapped with asyncHandler).
- *
- * Architecture: Middleware Pattern
- */
+// centralized error handling middleware
+// catches and processes application-wide errors
+// distinguishes operational from system errors
+// sanitizes error messages for client delivery
+// provides asynchronous error wrapping helpers
 
 import { Request, Response, NextFunction } from 'express';
 import { logger } from '../lib/logger';
 
 export interface AppError extends Error {
   statusCode?: number;
-  /** Set to true to expose the error message to the client */
   isOperational?: boolean;
 }
 
@@ -27,14 +22,14 @@ export function errorHandler(
   const statusCode = err.statusCode ?? 500;
   const isOperational = err.isOperational ?? false;
 
-  // Log all errors internally
+  // log all errors internally
   logger.error(`[errorHandler] ${req.method} ${req.path} → ${statusCode}: ${err.message}`, {
     meta: {
       stack: process.env.NODE_ENV === 'production' ? undefined : err.stack,
     },
   });
 
-  // Only surface operational error messages to the client
+  // only surface operational error messages to the client
   const clientMessage = isOperational
     ? err.message
     : 'An unexpected error occurred';
@@ -47,13 +42,7 @@ export function errorHandler(
   });
 }
 
-/**
- * asyncHandler — wraps an async route handler so errors are forwarded to
- * the global errorHandler without needing try/catch in every route.
- *
- * Usage:
- *   router.get('/path', asyncHandler(async (req, res) => { ... }));
- */
+// wrap async handlers to forward errors to the global error handler
 export function asyncHandler(
   fn: (req: Request, res: Response, next: NextFunction) => Promise<void>
 ) {
@@ -62,12 +51,7 @@ export function asyncHandler(
   };
 }
 
-/**
- * createError — factory for operational AppErrors.
- *
- * Usage:
- *   throw createError(404, 'Repository not found');
- */
+// create an operational apperror
 export function createError(statusCode: number, message: string): AppError {
   const err: AppError = new Error(message);
   err.statusCode = statusCode;

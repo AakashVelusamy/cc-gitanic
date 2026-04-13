@@ -1,3 +1,8 @@
+// application root component
+// configures global styles and layout structure
+// initializes shared providers and context wrappers
+// mounts persistent ui elements like navbar and footer
+// manages global viewport and scroll configurations
 import '@/globals.css';
 import type { AppProps } from 'next/app';
 import { Footer } from '@/components/footer';

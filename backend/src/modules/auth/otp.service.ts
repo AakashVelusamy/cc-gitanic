@@ -1,38 +1,31 @@
-/**
- * otp.service.ts — Email OTP verification for registration
- *
- * Security measures:
- *   - Cryptographically secure OTP generation (crypto.randomInt)
- *   - Timing-safe comparison (crypto.timingSafeEqual)
- *   - Per-email rate limiting (60s cooldown between sends)
- *   - Max verification attempts (5) before lockout
- *   - Auto-expiry cleanup (60s sweep interval)
- *
- * Architecture: Singleton (in-memory Map store)
- */
+// email verification service
+// generates secure 6-digit one-time passwords
+// manages in-memory otp store with expiration
+// implements rate-limiting and account lockout
+// handles smtp delivery via nodemailer
 
 import crypto from 'node:crypto';
 import nodemailer from 'nodemailer';
 import { createError } from '../../middleware/errorHandler';
 import { logger } from '../../lib/logger';
 
-// ── Types ────────────────────────────────────────────────────────────────────
+// types
 
 interface OtpEntry {
-  hash: string;       // SHA-256 of the OTP (never store plaintext)
+  hash: string;       // sha-256 of otp
   expiresAt: number;
   attempts: number;
   lastSentAt: number;
 }
 
-// ── Constants ────────────────────────────────────────────────────────────────
+// constants
 
 const OTP_VALIDITY_MS   = 5 * 60 * 1000;   // 5 minutes
 const COOLDOWN_MS       = 60 * 1000;        // 60s between sends to same email
 const MAX_ATTEMPTS      = 5;                // lock out after 5 wrong guesses
 const CLEANUP_INTERVAL  = 60 * 1000;        // sweep expired entries every 60s
 
-// ── Singleton transporter ────────────────────────────────────────────────────
+// transporter creation
 
 function createTransporter(): nodemailer.Transporter | null {
   const user = process.env.SMTP_USER;
@@ -48,14 +41,14 @@ function createTransporter(): nodemailer.Transporter | null {
     port: 465,
     secure: true, // SSL — more reliably unblocked on Railway than port 587 STARTTLS
     auth: { user, pass },
-    // rejectUnauthorized: true is the secure default — validates the SMTP server certificate
+    // rejectunauthorized: true is the secure default — validates the smtp server certificate
     tls: {
       rejectUnauthorized: true,
     },
   });
 }
 
-// ── OTP Service ──────────────────────────────────────────────────────────────
+// otp service implementation
 
 class OtpService {
   private readonly store = new Map<string, OtpEntry>();
@@ -65,7 +58,7 @@ class OtpService {
   constructor() {
     this.transporter = createTransporter();
 
-    // Periodic cleanup of expired entries
+    // periodic cleanup of expired entries
     this.cleanupTimer = setInterval(() => {
       const now = Date.now();
       for (const [email, entry] of this.store) {
@@ -73,40 +66,34 @@ class OtpService {
       }
     }, CLEANUP_INTERVAL);
 
-    // Allow process to exit cleanly without waiting for this timer
+    // allow process to exit cleanly without waiting for this timer
     this.cleanupTimer.unref();
   }
 
-  /**
-   * Generate a cryptographically secure 6-digit OTP.
-   * Range: 100000–999999 (always 6 digits, no leading zeros).
-   */
+  // generate a cryptographically secure 6-digit otp
   private generateOtp(): string {
     return crypto.randomInt(100_000, 1_000_000).toString();
   }
 
-  /** SHA-256 hash of OTP — we never store the plaintext. */
+  // sha-256 hash of otp
   private hashOtp(otp: string): string {
     return crypto.createHash('sha256').update(otp).digest('hex');
   }
 
-  /**
-   * Send an OTP to the given email address.
-   * Enforces a per-email cooldown to prevent spam.
-   */
+  // send otp with per-email rate limiting
   async sendOtp(email: string): Promise<void> {
     const normalizedEmail = email.trim().toLowerCase();
     const now = Date.now();
 
-    // Rate limit: one OTP per email per cooldown period
+    // rate limit: one otp per email per cooldown period
     const existing = this.store.get(normalizedEmail);
     if (existing && (now - existing.lastSentAt) < COOLDOWN_MS) {
       const waitSec = Math.ceil((COOLDOWN_MS - (now - existing.lastSentAt)) / 1000);
       throw createError(429, `Please wait ${waitSec}s before requesting another OTP`);
     }
 
-    // OTP_STATIC env var: bypass random OTP — use a fixed code (e.g. "000000")
-    // ONLY for development/testing when SMTP is unavailable. MUST NOT be set in production.
+    // otp_static env var: bypass random otp — use a fixed code (e.g. "000000")
+    // only for development/testing when smtp is unavailable. must not be set in production.
     const staticOtp = process.env.OTP_STATIC;
     if (staticOtp && process.env.NODE_ENV === 'production') {
       logger.error('[otp] OTP_STATIC must not be set in production — it allows anyone to register');
@@ -121,8 +108,8 @@ class OtpService {
       lastSentAt: now,
     });
 
-    // In non-production: print OTP to stdout (visible in Railway/local logs) so dev/test can proceed without SMTP.
-    // In production: NEVER log the OTP — it would expose credentials in log aggregators.
+    // in non-production: print otp to stdout (visible in railway/local logs) so dev/test can proceed without smtp.
+    // in production: never log the otp — it would expose credentials in log aggregators.
     if (process.env.NODE_ENV !== 'production') {
       process.stdout.write(`[OTP:dev] ${normalizedEmail} → ${otp}\n`);
     }
@@ -148,31 +135,26 @@ class OtpService {
     }
   }
 
-  /**
-   * Verify an OTP for the given email.
-   * Returns true if valid, false if wrong/expired.
-   * Throws 429 if max attempts exceeded.
-   * Deletes the entry on success (one-time use).
-   */
+  // verify otp for the given email
   verifyOtp(email: string, otp: string): boolean {
     const normalizedEmail = email.trim().toLowerCase();
     const entry = this.store.get(normalizedEmail);
 
     if (!entry) return false;
 
-    // Expired
+    // expired
     if (Date.now() > entry.expiresAt) {
       this.store.delete(normalizedEmail);
       return false;
     }
 
-    // Max attempts exceeded — force re-send
+    // max attempts exceeded — force re-send
     if (entry.attempts >= MAX_ATTEMPTS) {
       this.store.delete(normalizedEmail);
       throw createError(429, 'Too many failed attempts. Please request a new verification code.');
     }
 
-    // Timing-safe comparison to prevent timing attacks
+    // timing-safe comparison to prevent timing attacks
     const inputHash = this.hashOtp(otp);
     const a = Buffer.from(entry.hash, 'hex');
     const b = Buffer.from(inputHash, 'hex');
@@ -183,11 +165,11 @@ class OtpService {
       return true;
     }
 
-    // Wrong OTP — increment attempts
+    // wrong otp — increment attempts
     entry.attempts += 1;
     return false;
   }
 }
 
-/** Singleton — one OTP service per process. */
+// singleton otp service
 export const otpService = new OtpService();

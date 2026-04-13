@@ -1,3 +1,8 @@
+// main application entry point
+// initializes log subscribers for deployment events
+// configures express with cors and security headers
+// mounts git protocol passthrough and api routers
+// runs repository reconciliation on startup
 import 'dotenv/config';
 import express from 'express';
 import { requestLogger } from './middleware/requestLogger';
@@ -12,42 +17,38 @@ import deployRouter   from './routes/deploy';
 import gitRouter      from './routes/git';
 import internalRouter from './routes/internal';
 
-// Bootstrap observers (must run before any routes fire)
+// initialize observers
 initLogSubscribers();
 
 const app = express();
 app.disable('x-powered-by');
 const PORT = Number.parseInt(process.env.PORT ?? '3000', 10);
 
-// CORS: restrict to frontend origin; credentials require explicit origin (not wildcard)
+// cors configuration
 app.use(cors({
   origin: process.env.FRONTEND_URL || '',
   credentials: true,
 }));
 app.use(requestLogger);
 
-// Health check
 app.get('/health', (_req, res) => {
   res.status(200).json({ status: 'ok', ts: new Date().toISOString() });
 });
 
-// IMPORTANT: Mount /git BEFORE body parsers! git-http-backend needs raw streaming bodies.
+// mount /git before body parsers for raw streaming
 app.use('/git', gitRouter);
 
-// Now apply body parsers for the rest of the API
 app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
 
-// Route mounts
 app.use('/api/auth',  authRouter);
 app.use('/api/repos', repoRouter);
 app.use('/api',       deployRouter);
 app.use('/internal',  internalRouter);
 
-// Error Handler
 app.use(errorHandler);
 
-// Server Startup
+// start server
 app.listen(PORT, async () => {
   console.log(`[HTTP] Server listening on port ${PORT}`);
   const shouldSync = process.env.SYNC_REPOS_ON_STARTUP !== 'false';

@@ -1,3 +1,8 @@
+// dynamic animated gradient card component
+// implements multi-device responsive layouts
+// provides glassmorphic hover and tilt effects
+// supports custom icon and gradient configurations
+// handles touch-based interaction for mobile devices
 import React, { useState, useEffect, useRef } from 'react';
 
 export type GradientCardData = Readonly<{
@@ -84,7 +89,7 @@ export function GradientCard({ title, desc, gradientFrom, gradientTo, icon }: Gr
 
   return (
     <>
-      {/* ── Desktop (lg+): group-hover, full size ── */}
+      {/* desktop layout (lg+) */}
       <div className="hidden lg:block group relative w-[320px] h-[400px] m-[40px_30px] transition-all duration-500">
         <span className="absolute top-0 left-[50px] w-1/2 h-full rounded-2xl skew-x-[15deg] transition-all duration-500 group-hover:skew-x-0 group-hover:left-[20px] group-hover:w-[calc(100%-90px)]" style={{ background: gradient }} />
         <span className="absolute top-0 left-[50px] w-1/2 h-full rounded-2xl skew-x-[15deg] blur-[30px] transition-all duration-500 group-hover:skew-x-0 group-hover:left-[20px] group-hover:w-[calc(100%-90px)]" style={{ background: gradient }} />
@@ -99,7 +104,7 @@ export function GradientCard({ title, desc, gradientFrom, gradientTo, icon }: Gr
         </div>
       </div>
 
-      {/* ── Tablet (md–lg): same skew design, narrower ── */}
+      {/* tablet layout (md-lg) */}
       <div className="hidden md:block lg:hidden group relative w-[260px] h-[340px] m-[16px_10px] transition-all duration-500">
         <span className="absolute top-0 left-[38px] w-1/2 h-full rounded-2xl skew-x-[15deg] transition-all duration-500 group-hover:skew-x-0 group-hover:left-[14px] group-hover:w-[calc(100%-70px)]" style={{ background: gradient }} />
         <span className="absolute top-0 left-[38px] w-1/2 h-full rounded-2xl skew-x-[15deg] blur-[24px] transition-all duration-500 group-hover:skew-x-0 group-hover:left-[14px] group-hover:w-[calc(100%-70px)]" style={{ background: gradient }} />
@@ -114,7 +119,7 @@ export function GradientCard({ title, desc, gradientFrom, gradientTo, icon }: Gr
         </div>
       </div>
 
-      {/* ── Mobile (<md): touch-state driven horizontal pill ── */}
+      {/* mobile layout (<md) */}
       <MobileCard title={title} desc={desc} gradient={gradient} icon={icon} />
     </>
   );

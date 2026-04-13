@@ -1,3 +1,8 @@
+// application notification service
+// manages transient toast message lifecycle
+// implements multi-type alert styles and icons
+// coordinates toast stacking and auto-dismissal
+// provides hook-based interface for message triggers
 import React, { createContext, useContext, useState, useCallback, useMemo, ReactNode } from 'react';
 import { X, CheckCircle, AlertCircle, Info } from 'lucide-react';
 
@@ -31,7 +36,7 @@ export function ToastProvider({ children }: Readonly<{ children: ReactNode }>) {
   const addToast = useCallback((message: string, type: ToastType = 'info') => {
     const id = crypto.randomUUID();
     setToasts((prev) => [...prev, { id, message, type }]);
-    // Auto remove after 5 seconds
+    // auto remove after 5 seconds
     setTimeout(() => { setToasts(removeById(id)); }, 5000);
   }, []);
 

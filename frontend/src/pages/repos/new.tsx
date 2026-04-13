@@ -1,3 +1,8 @@
+// repository creation interface
+// collects and validates new repository names
+// resolves canonical user identity for ownership
+// triggers backend repository initialization
+// provides responsive form with optimistic ui
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/router';
 import { fetchApi, getCanonicalUsername, getToken, getTokenPayload } from '@/lib/api';

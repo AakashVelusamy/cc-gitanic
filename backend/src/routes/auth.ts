@@ -1,8 +1,8 @@
-/**
- * routes/auth.ts — Auth router
- *
- * Mounts all /api/auth/* endpoints and applies middleware.
- */
+// authentication api routing
+// exposes registration and login endpoints
+// handles otp request and verification triggers
+// mounts profile and self-identification routes
+// secures member-only routes with jwt middleware
 
 import { Router } from 'express';
 import { AuthController } from '../modules/auth/auth.controller';
@@ -10,17 +10,17 @@ import { authMiddleware } from '../middleware/authMiddleware';
 
 const router = Router();
 
-// POST /api/auth/register
+// post /api/auth/register
 router.post('/register', AuthController.register);
 router.post('/request-otp', AuthController.requestOtp);
 
-// POST /api/auth/login
+// post /api/auth/login
 router.post('/login', AuthController.login);
 
-// GET /api/auth/me  (protected)
+// get /api/auth/me  (protected)
 router.get('/me', authMiddleware, AuthController.me);
 
-// PATCH /api/auth/me (protected)
+// patch /api/auth/me (protected)
 router.patch('/me', authMiddleware, AuthController.updateMe);
 
 export default router;

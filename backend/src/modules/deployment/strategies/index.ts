@@ -1,81 +1,50 @@
-/**
- * strategies/index.ts — Deployment Strategy System
- *
- * Implements the Strategy Pattern for framework-agnostic deployment builds.
- *
- * Each strategy:
- *   - detect(srcDir)   → returns true if this strategy applies
- *   - build(srcDir)    → runs the build and returns the output directory
- *
- * Detection order (first match wins):
- *   ViteStrategy → ReactStrategy → StaticStrategy
- *
- * Timeouts (enforced per spec):
- *   npm ci    → 120 000 ms
- *   npm build → 180 000 ms
- */
+// deployment strategy framework
+// implements automated project type detection
+// orchestrates multi-step build environments
+// provides sandboxed execution for build commands
+// includes logic for react, vite, and static sites
+// generates actionable build errors and hints
 
 import path         from 'node:path';
 import fs           from 'node:fs';
 import { execFileSync } from 'node:child_process';
 
-// ── Interface ─────────────────────────────────────────────────────────────────
+// strategy interface
 
 export interface DeployStrategy {
-  /** Human-readable name used in logs. */
-  readonly name: string;
+  readonly name: string;    // human-readable name
 
-  /**
-   * Return true if this strategy should apply to the checked-out source tree.
-   * Strategies are evaluated in priority order; the first returning true wins.
-   */
+    // return true if strategy applies to source tree
   detect(srcDir: string): boolean;
 
-  /**
-   * Run the build (if any) and return the path to the directory
-   * whose files should be uploaded to Supabase Storage.
-   *
-   * @param srcDir  - Root of the checked-out source tree
-   * @param log     - Pipeline log emitter (writes to DB + stdout)
-   */
+    // run build and return output directory path
   build(srcDir: string, log: (msg: string) => Promise<void>): Promise<string>;
 }
 
-// ── Timeouts (ms) ─────────────────────────────────────────────────────────────
+// build process timeouts
 
-const NPM_CI_TIMEOUT    = 300_000;  // 300 s — dependency install (increased for Railway)
-const NPM_BUILD_TIMEOUT = 300_000;  // 300 s — framework build (increased for Railway)
+const NPM_CI_TIMEOUT    = 300_000;  // 300 s — dependency install (increased for railway)
+const NPM_BUILD_TIMEOUT = 300_000;  // 300 s — framework build (increased for railway)
 
-// ── Sandbox environment ───────────────────────────────────────────────────────
+// sandbox settings
 
-/**
- * Restricted environment for build child processes.
- * - PATH is limited to standard system directories (no user-local bins)
- * - HOME is /tmp (no access to Railway's home dir or its secrets)
- * - NODE_ENV=production ensures framework builds optimize output
- * - No DATABASE_URL, JWT_SECRET, SUPABASE_SERVICE_ROLE_KEY, etc.
- *
- * Plan requirement: "sandboxed via child_process with no $HOME, $PATH restricted"
- */
+// restricted environment for build child processes
 const SAFE_ENV: NodeJS.ProcessEnv = {
-  // Use system PATH so Node/npm resolve correctly (required for Nixpacks/Railway paths)
+  // use system path so node/npm resolve correctly (required for nixpacks/railway paths)
   PATH:     process.env.PATH || '/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin',
   HOME:     '/tmp',
   NODE_ENV: 'production',
-  // CI=true suppresses interactive prompts in npm/CRA/Vite
+  // ci=true suppresses interactive prompts in npm/cra/vite
   CI:       'true',
 };
 
-/**
- * Helper to run a command and stream its output to the deployment log.
- */
+// helper to run a command and stream output
 async function runCommand(cmd: string, args: string[], cwd: string, timeout: number, log: (msg: string) => Promise<void>) {
   try {
     const output = execFileSync(cmd, args, {
       cwd,
       stdio: 'pipe',
       timeout,
-      maxBuffer: 20 * 1024 * 1024, // 20 MB buffer prevents ENOBUFS crash on verbose builds
       env: (args.includes('ci') || args.includes('install'))
         ? { ...SAFE_ENV, NODE_ENV: 'development' }
         : SAFE_ENV,
@@ -94,15 +63,12 @@ async function runCommand(cmd: string, args: string[], cwd: string, timeout: num
   }
 }
 
-// ── Shared build helpers ──────────────────────────────────────────────────────
+// shared build helpers
 
-/** Lockfile and cached-module artefacts that must be removed before a clean install. */
+// lockfiles and cached modules to remove
 const LOCKFILES = ['package-lock.json', 'npm-shrinkwrap.json', 'yarn.lock', 'pnpm-lock.yaml', 'node_modules'] as const;
 
-/**
- * Delete any lockfiles / node_modules present in the source directory so that
- * the subsequent `npm install` produces a deterministic, clean dependency tree.
- */
+// delete lockfiles for a clean install
 function cleanupLockfiles(srcDir: string): void {
   for (const file of LOCKFILES) {
     const filePath = path.join(srcDir, file);
@@ -112,12 +78,9 @@ function cleanupLockfiles(srcDir: string): void {
   }
 }
 
-// ── StaticStrategy ────────────────────────────────────────────────────────────
+// static strategy
 
-/**
- * Pure static sites: any directory that already contains index.html
- * at its root. No build step required — files are uploaded as-is.
- */
+// static sites with index.html at root
 export const StaticStrategy: DeployStrategy = {
   name: 'static',
 
@@ -131,20 +94,9 @@ export const StaticStrategy: DeployStrategy = {
   },
 };
 
-// ── ReactStrategy ─────────────────────────────────────────────────────────────
+// react strategy
 
-/**
- * React applications (Create React App and plain React + custom build scripts).
- *
- * Detection: package.json exists AND one of:
- *   - dependencies or devDependencies contains "react-scripts"
- *   - scripts.build contains "react-scripts"
- *   - scripts.build contains "react" (loose match for custom setups)
- *
- * Output directory resolution (first that exists wins):
- *   1. build/   ← CRA default
- *   2. dist/    ← some custom CRA configs
- */
+// react applications (cra)
 export const ReactStrategy: DeployStrategy = {
   name: 'react',
 
@@ -164,10 +116,10 @@ export const ReactStrategy: DeployStrategy = {
         ...pkg.devDependencies,
       };
 
-      // Explicit react-scripts dependency
+      // explicit react-scripts dependency
       if ('react-scripts' in deps) return true;
 
-      // Check the build script text
+      // check the build script text
       const buildScript = pkg.scripts?.['build'] ?? '';
       if (buildScript.includes('react-scripts')) return true;
 
@@ -180,16 +132,14 @@ export const ReactStrategy: DeployStrategy = {
   async build(srcDir, log) {
     cleanupLockfiles(srcDir);
 
-    // ── npm install ─────────────────────────────────────────────────────────
     await log('[build:react] npm install (timeout 300 s)');
     await runCommand('npm', ['install', '--no-audit', '--no-fund', '--no-package-lock', '--force'], srcDir, NPM_CI_TIMEOUT, log);
 
-    // ── npm run build ────────────────────────────────────────────────────────
     await log('[build:react] npm run build (timeout 300 s)');
     await runCommand('npm', ['run', 'build'], srcDir, NPM_BUILD_TIMEOUT, log);
 
-    // ── Resolve output directory ─────────────────────────────────────────────
-    // CRA outputs to build/; some setups output to dist/
+    // resolve output directory
+    // cra outputs to build/; some setups output to dist/
     const candidates = [
       path.join(srcDir, 'build'),
       path.join(srcDir, 'dist'),
@@ -209,17 +159,9 @@ export const ReactStrategy: DeployStrategy = {
   },
 };
 
-// ── ViteStrategy ──────────────────────────────────────────────────────────────
+// vite strategy
 
-/**
- * Vite-based projects (React + Vite, Vue, Svelte, vanilla Vite, etc.)
- *
- * Detection: any of these files exists at srcDir root:
- *   vite.config.ts / vite.config.js / vite.config.mts / vite.config.mjs
- *
- * Output directory: dist/ (Vite default, configurable in vite.config but we
- * assume default unless the project overrides it to another known path).
- */
+// vite-based projects
 export const ViteStrategy: DeployStrategy = {
   name: 'vite',
 
@@ -235,15 +177,13 @@ export const ViteStrategy: DeployStrategy = {
   async build(srcDir, log) {
     cleanupLockfiles(srcDir);
 
-    // ── npm install ─────────────────────────────────────────────────────────
     await log('[build:vite] npm install (timeout 300 s)');
     await runCommand('npm', ['install', '--no-audit', '--no-fund', '--no-package-lock', '--force'], srcDir, NPM_CI_TIMEOUT, log);
 
-    // ── vite build ───────────────────────────────────────────────────────────
     await log('[build:vite] vite build (timeout 300 s)');
     await runCommand('npx', ['vite', 'build'], srcDir, NPM_BUILD_TIMEOUT, log);
 
-    // ── Output directory ─────────────────────────────────────────────────────
+    // resolve output directory
     const distDir = path.join(srcDir, 'dist');
     if (!fs.existsSync(distDir)) {
       throw new Error(
@@ -257,42 +197,22 @@ export const ViteStrategy: DeployStrategy = {
   },
 };
 
-// ── Ordered strategy registry ─────────────────────────────────────────────────
+// strategy registry
 
-/**
- * Priority-ordered list of strategies.
- * The first strategy whose detect() returns true is used.
- *
- * Order matters:
- *   - ViteStrategy before ReactStrategy (Vite projects often have index.html too)
- *   - ReactStrategy before StaticStrategy (CRA projects have index.html in public/)
- */
+// priority-ordered strategies
 export const STRATEGIES: DeployStrategy[] = [
   ViteStrategy,
   ReactStrategy,
   StaticStrategy,
 ];
 
-/**
- * Select the appropriate build strategy for the given source directory.
- * Throws 422 if no strategy matches.
- *
- * Gitanic only deploys static sites. Supported projects:
- *   - Vite (React, Vue, Svelte, vanilla) → detects vite.config.*
- *   - Create React App                   → detects react-scripts in package.json
- *   - Static HTML                         → detects index.html at root
- *
- * Unsupported (intentionally rejected):
- *   - Next.js, Nuxt, Remix, SvelteKit (SSR frameworks)
- *   - Node/Express backends, Python/Django, Go servers
- *   - Any project without a static build output
- */
+// select strategy for source directory
 export function detectStrategy(srcDir: string): DeployStrategy {
   for (const strategy of STRATEGIES) {
     if (strategy.detect(srcDir)) return strategy;
   }
 
-  // Provide actionable feedback about what Gitanic supports
+  // provide actionable feedback about what gitanic supports
   const hasPkgJson = fs.existsSync(path.join(srcDir, 'package.json'));
   let hint = '';
 

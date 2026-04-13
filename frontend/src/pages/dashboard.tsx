@@ -1,3 +1,9 @@
+// user central dashboard
+// lists and filters user repositories
+// implements real-time "time-ago" updates
+// displays repository language and deployment status
+// provides navigation to detailed repository views
+// facilitates quick creation of new repositories
 import { useEffect, useMemo, useState } from 'react';
 import { useRouter } from 'next/router';
 import { fetchApi, getToken } from '@/lib/api';
@@ -32,7 +38,7 @@ export default function DashboardPage() {
     }
     fetchDashboardData().catch(() => undefined);
 
-    // Auto-update time display every minute
+    // refresh time display every minute
     const timer = setInterval(() => setTick(t => t + 1), 60000);
     return () => clearInterval(timer);
   }, [router]);
@@ -45,7 +51,7 @@ export default function DashboardPage() {
       if (sorted.length === 0) {
         toast('No Repositories Yet', 'info');
       } else {
-        // Fetch languages in parallel (fire-and-forget: each card updates independently)
+        // fetch languages in parallel (fire-and-forget: each card updates independently)
         void Promise.all(sorted.map(async (repo) => {
            try {
               const tree = await fetchApi<TreeEntry[]>(`/api/repos/${repo.name}/tree?ref=HEAD&path=`);
@@ -70,16 +76,12 @@ export default function DashboardPage() {
     return q ? repos.filter((r) => r.name.toLowerCase().includes(q)) : repos;
   }, [filter, repos]);
 
-  /**
-   * Memoised map of repo.id → human-readable time-ago string.
-   * tick is included as a dependency so this recomputes every minute
-   * (setInterval raises tick) — making all timestamp labels stay current.
-   */
+  // map repo ids to time-ago strings
   const repoTimes = useMemo(
     () => Object.fromEntries(
       repos.map(r => [r.id, timeAgo(r.updated_at || r.created_at)])
     ),
-    [repos, tick],  // tick intentionally causes 60-second refresh of labels
+    [repos, tick]
   );
 
   if (loading) {
@@ -150,7 +152,7 @@ function numToWords(n: number): string {
   if (n < 20) return a[n];
   if (n < 100) return b[Math.floor(n / 10)] + (n % 10 === 0 ? '' : ' ' + a[n % 10]);
   
-  // Basic thousands/hundreds mapping just in case, though max needed is likely < 100
+  // basic thousands/hundreds mapping just in case, though max needed is likely < 100
   if (n < 1000) return a[Math.floor(n / 100)] + ' hundred' + (n % 100 === 0 ? '' : ' ' + numToWords(n % 100));
   return n.toString();
 }

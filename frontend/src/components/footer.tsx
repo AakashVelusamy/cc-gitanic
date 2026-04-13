@@ -1,3 +1,7 @@
+// persistent footer component
+// displays application branding and versioninginfo
+// provides responsive layout for legal and credits
+// implements consistent glassmorphic styling
 import Link from 'next/link';
 
 export function Footer() {

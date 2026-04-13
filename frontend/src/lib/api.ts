@@ -1,6 +1,9 @@
-/**
- * API Client — lib/api.ts
- */
+// frontend api gateway client
+// orchestrates http requests to the backend
+// manages jwt persistence in localstorage
+// handles token decoding and payload extraction
+// provides unified error handling and response parsing
+// resolves canonical user identity from session
 
 export const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000';
 
@@ -15,24 +18,12 @@ interface AuthMeResponse {
   username: string;
 }
 
-/**
- * Returns true when executing in a browser context (not during SSR).
- * Uses globalThis.window rather than bare `window` to avoid ReferenceError
- * in Node.js environments where `window` is not declared at all.
- */
+// browser execution check
 function isClient(): boolean {
   return globalThis.window !== undefined;
 }
 
-/**
- * SECURITY NOTE (S5042 — Sensitive data in localStorage):
- * The JWT is stored in localStorage for simplicity. This means any JavaScript
- * running on the page (including from XSS) could read it.
- * The preferred mitigation is httpOnly cookies, but that requires backend
- * changes (Set-Cookie on login, cookie-based auth middleware on Railway).
- * As a compensating control, the Content Security Policy and X-XSS-Protection
- * headers are set in next.config.ts to reduce the XSS attack surface.
- */
+// store jwt in localstorage for session persistence
 export function getToken(): string | null {
   if (!isClient()) return null;
   return localStorage.getItem('gitanic_token');
@@ -109,7 +100,7 @@ export async function fetchApi<T>(
     throw new FetchError(response.status, message);
   }
 
-  // Handle 204 No Content
+  // handle 204 no content
   if (response.status === 204) {
     return {} as T;
   }

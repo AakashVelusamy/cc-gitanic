@@ -1,3 +1,9 @@
+// authentication and session entry point
+// implements secure multi-step registration flow
+// handles login and token persistence logic
+// coordinates email-based otp verification
+// provides responsive authentication interface
+// manage form state and navigation triggers
 import { useState } from 'react';
 import { useRouter } from 'next/router';
 import { fetchApi, setToken } from '@/lib/api';
@@ -7,13 +13,11 @@ import { Ship, Eye, EyeOff } from 'lucide-react';
 import Image from 'next/image';
 import { BGPattern } from '@/components/ui/bg-pattern';
 
-// ── Shared style tokens ───────────────────────────────────────────────────────
 
 const INPUT_CLASS =
   'w-full h-11 bg-secondary/50 border border-white/10 rounded-xl px-4 text-foreground focus:outline-none focus:border-primary/50 focus:ring-1 focus:ring-primary/50 focus:bg-primary/10 transition-all';
 const DISABLED_INPUT_CLASS = `${INPUT_CLASS} opacity-50 cursor-not-allowed`;
 
-// ── Pure render helpers (extracted to reduce LoginPage cognitive complexity) ──
 
 interface LoginFieldsProps {
   readonly username: string;
@@ -191,7 +195,7 @@ function SignupStep3({
   );
 }
 
-/** Determines the submit button label based on current form state. */
+// resolve submit button label
 function resolveSubmitLabel(loading: boolean, isLogin: boolean, step: number, otpSent: boolean): React.ReactNode {
   if (loading)                    return <Ship className="animate-bounce" size={24} />;
   if (isLogin)                    return 'Sign In';
@@ -201,7 +205,7 @@ function resolveSubmitLabel(loading: boolean, isLogin: boolean, step: number, ot
   return 'Create Account';
 }
 
-/** Determines whether the submit button should be disabled. */
+// validate submission state
 function isSubmitDisabled(loading: boolean, isLogin: boolean, step: number, otpSent: boolean, email: string, otp: string, username: string): boolean {
   if (loading) return true;
   if (isLogin) return false;
@@ -211,7 +215,7 @@ function isSubmitDisabled(loading: boolean, isLogin: boolean, step: number, otpS
   return false;
 }
 
-// ── Page component ────────────────────────────────────────────────────────────
+// page component
 
 export default function LoginPage() {
   const router = useRouter();

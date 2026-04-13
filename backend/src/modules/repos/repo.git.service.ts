@@ -1,6 +1,9 @@
-/**
- * repo.git.service.ts — Read git objects (tree, blob, log) from bare repos
- */
+// git object retrieval service
+// provides filesystem-level access to bare repositories
+// implements secure path and reference validation
+// orchestrates git cli calls for tree listing
+// handles binary-safe blob extraction and format conversion
+// retrieves commit history and branch metadata
 
 import { execFileSync } from 'node:child_process';
 import path from 'node:path';
@@ -8,22 +11,22 @@ import { createError } from '../../middleware/errorHandler';
 
 const REPOS_ROOT = process.env.REPOS_ROOT ?? '/repos';
 
-/** Valid ref: alphanumeric, hyphen, dot, underscore, forward-slash, HEAD */
+// valid ref regex
 const SAFE_REF_RE = /^[a-zA-Z0-9._\-/]+$/;
 
-/** Valid username: alphanumeric and hyphens only. */
+// valid username regex
 const SAFE_USERNAME_RE = /^[a-zA-Z0-9][a-zA-Z0-9-]*[a-zA-Z0-9]$|^[a-zA-Z0-9]$/;
 
-/** Valid repo name: alphanumeric, hyphen, underscore, dot; 1–100 chars. */
+// valid repo name regex
 const SAFE_REPO_RE = /^[a-zA-Z0-9._-]{1,100}$/;
 
 function repoPath(username: string, repoName: string): string {
-  // Validate inputs to prevent path traversal (S2083)
+  // input validation to prevent path traversal
   if (!SAFE_USERNAME_RE.test(username) || !SAFE_REPO_RE.test(repoName)) {
     throw createError(400, 'Invalid username or repository name');
   }
   const resolved = path.join(REPOS_ROOT, username, `${repoName}.git`);
-  // Final sanity check: ensure constructed path stays within REPOS_ROOT
+  // final sanity check: ensure constructed path stays within repos_root
   const normalBase = path.resolve(REPOS_ROOT);
   if (!path.resolve(resolved).startsWith(normalBase + path.sep)) {
     throw createError(400, 'Path traversal detected');
@@ -38,10 +41,10 @@ function validateRef(ref: string): void {
 }
 
 function validatePath(p: string): void {
-  // Resolve the path relative to a dummy root to detect traversal (S2083)
+  // detection of path traversal
   if (!p) return; // empty path is valid (root of tree)
   const normalized = path.normalize(p);
-  // Disallow absolute paths, parent traversal, or null bytes
+  // disallow absolute paths, parent traversal, or null bytes
   if (
     normalized.startsWith('/') ||
     normalized.startsWith('..') ||
@@ -87,7 +90,7 @@ function gitRun(args: string[], cwd: string): Buffer {
 }
 
 export const RepoGitService = {
-  /** List entries in a tree (directory). Returns [] when repo is empty. */
+  // list entries in a tree
   listTree(username: string, repoName: string, ref = 'HEAD', treePath = ''): TreeEntry[] {
     validateRef(ref);
     if (treePath) validatePath(treePath);
@@ -99,7 +102,7 @@ export const RepoGitService = {
     try {
       raw = gitRun(['ls-tree', treeRef], cwd).toString('utf8');
     } catch {
-      // Repo is empty or path doesn't exist
+      // repo is empty or path doesn't exist
       return [];
     }
 
@@ -122,7 +125,7 @@ export const RepoGitService = {
       });
   },
 
-  /** Get the raw content of a file blob. */
+  // get raw content of a file blob
   getBlob(username: string, repoName: string, filePath: string, ref = 'HEAD'): BlobResult {
     validateRef(ref);
     validatePath(filePath);
@@ -135,7 +138,7 @@ export const RepoGitService = {
       throw createError(404, 'File not found');
     }
 
-    // Detect binary: look for null bytes in first 8 KB
+    // detect binary: look for null bytes in first 8 kb
     const sample = raw.slice(0, 8192);
     const isBinary = sample.includes(0);
 
@@ -145,11 +148,11 @@ export const RepoGitService = {
     return { content: raw.toString('utf8'), size: raw.length, encoding: 'utf8', isBinary: false };
   },
 
-  /** Get recent commits for the repo. */
+  // get recent commits
   getCommits(username: string, repoName: string, ref = 'HEAD', limit = 20): CommitInfo[] {
     validateRef(ref);
 
-    // Ensure limit is a safe integer before interpolating into argument (S2076)
+    // safe limit normalization
     const safeLimit = Math.min(Math.max(1, Math.trunc(limit)), 200);
 
     const cwd = repoPath(username, repoName);
@@ -173,7 +176,7 @@ export const RepoGitService = {
       });
   },
 
-  /** Get the branches available in the repo. */
+  // get repo branches
   getBranches(username: string, repoName: string): string[] {
     const cwd = repoPath(username, repoName);
     try {
@@ -187,7 +190,7 @@ export const RepoGitService = {
     }
   },
 
-  /** Get the default branch (HEAD ref). */
+  // get default branch
   getDefaultBranch(username: string, repoName: string): string {
     const cwd = repoPath(username, repoName);
     try {
@@ -199,7 +202,7 @@ export const RepoGitService = {
     }
   },
 
-  /** Check whether the repo has any commits. */
+  // check for commits
   hasCommits(username: string, repoName: string): boolean {
     const cwd = repoPath(username, repoName);
     try {

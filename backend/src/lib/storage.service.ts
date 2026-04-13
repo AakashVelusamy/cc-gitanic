@@ -1,53 +1,27 @@
-/**
- * storage.service.ts — Supabase Storage operations for the deployment pipeline
- *
- * Bucket layout:
- *   deployments/{username}/{deploymentId}/index.html
- *   deployments/{username}/{deploymentId}/assets/main.js
- *   deployments/{username}/{deploymentId}/...
- *
- * Upload strategy:
- *   - Walk output directory recursively (preserves full folder structure)
- *   - Upload files in parallel batches (UPLOAD_CONCURRENCY = 5)
- *   - upsert: true so re-deployments overwrite previous files
- *
- * Cleanup policy:
- *   - Keep the last KEEP_DEPLOYMENTS (default 5) deployments in Storage
- *   - Delete all older folders for the same user
- *   - Only deletes from Storage — NOT from DB (DB is append-only + history)
- *   - Tolerates partial failures (logs warn, never throws)
- *
- * Architecture: Service Layer (wraps Supabase Storage SDK)
- */
+// cloud storage orchestration service
+// uploads build artifacts to supabase storage
+// implements concurrent file upload scheduling
+// infers mime types based on file extensions
+// prunes old deployments to optimize space
 
 import path from 'node:path';
 import fs   from 'node:fs';
 import { supabase, DEPLOYMENTS_BUCKET, deploymentStoragePath } from './supabase';
 import { logger } from './logger';
 
-// ── Configuration ─────────────────────────────────────────────────────────────
+// configuration
 
-/** Max parallel upload requests per deployment job. */
+// max parallel upload requests
 const UPLOAD_CONCURRENCY = 5;
 
-/**
- * Number of recent deployment folders to keep in Supabase Storage.
- * Older folders are deleted after each successful deployment.
- * Range 3–5 per spec (default 5). Now overridden to 1.
- */
+// number of recent deployment folders to keep in storage
 const KEEP_DEPLOYMENTS = 1;
 
-// ── StorageService ────────────────────────────────────────────────────────────
+// storageservice implementation
 
 export const StorageService = {
 
-  /**
-   * Upload the entire output directory to Supabase Storage.
-   * Folder structure is preserved relative to outputDir.
-   *
-   * Returns the storage path prefix (without bucket name):
-   *   e.g.  "{username}/{deploymentId}"
-   */
+  // upload output directory to storage preserving folder structure
   async upload(
     outputDir:    string,
     username:     string,
@@ -59,12 +33,12 @@ export const StorageService = {
 
     await log(`[storage] Uploading ${files.length} file(s) → ${DEPLOYMENTS_BUCKET}/${storagePath}/`);
 
-    // Upload in parallel batches to avoid overwhelming the Supabase API
+    // upload in parallel batches to avoid overwhelming the supabase api
     for (let i = 0; i < files.length; i += UPLOAD_CONCURRENCY) {
       const batch = files.slice(i, i + UPLOAD_CONCURRENCY);
 
       await Promise.all(batch.map(async (filePath) => {
-        // Preserve directory structure relative to outputDir
+        // preserve directory structure relative to outputdir
         const relative  = path.relative(outputDir, filePath).replace(/\\/g, '/');
         const objectKey = `${storagePath}/${relative}`;
         const fileBuffer = fs.readFileSync(filePath);
@@ -89,34 +63,17 @@ export const StorageService = {
     return storagePath;
   },
 
-  /**
-   * Prune old deployment folders for a given user, keeping only the
-   * most recent KEEP_DEPLOYMENTS folders.
-   *
-   * This is called after a successful deployment to prevent unbounded
-   * growth in Supabase Storage.
-   *
-   * Strategy:
-   *   1. List all objects under "deployments/{username}/"
-   *   2. Extract unique deployment-ID prefixes
-   *   3. Sort by name (UUIDs with timestamp-based order aren't reliable;
-   *      we rely on the caller passing successfulDepIds in creation order)
-   *   4. Delete all objects whose prefix is NOT in the latest KEEP_DEPLOYMENTS
-   *
-   * @param username           - repo owner
-   * @param recentDepIds       - ordered list (newest → oldest) of successful deployment IDs
-   * @param activeDeploymentId - the current active_deployment_id (never deleted, even if outside keepSet)
-   */
+  // prune old deployment folders for a given user
   async pruneOldDeployments(
     username:            string,
-    recentDepIds:        string[],   // caller supplies from DB (ordered newest first)
+    recentDepIds:        string[],   // caller supplies from db (ordered newest first)
     activeDeploymentId?: string      // safety guard — never delete the live deployment
   ): Promise<void> {
-    // Keep only the first KEEP_DEPLOYMENTS IDs (newest)
+    // keep only the first keep_deployments ids (newest)
     const keepSet = new Set(recentDepIds.slice(0, KEEP_DEPLOYMENTS));
 
-    // Defense-in-depth: always protect the active deployment, even if it somehow
-    // isn't in the top N (e.g. manual pointer reset, race condition).
+    // defense-in-depth: always protect the active deployment, even if it somehow
+    // isn't in the top n (e.g. manual pointer reset, race condition).
     if (activeDeploymentId) keepSet.add(activeDeploymentId);
 
     const toDelete = recentDepIds.filter((id) => !keepSet.has(id));
@@ -135,20 +92,12 @@ export const StorageService = {
     }
   },
 
-  /**
-   * Delete ALL objects under deployments/{username}/{deploymentId}/.
-   *
-   * Supabase Storage does not have a folder-delete API — we must:
-   *   1. List objects under the prefix
-   *   2. Delete them in bulk (max 1000 per call)
-   *
-   * Errors are logged but NOT re-thrown (cleanup is best-effort).
-   */
+  // delete all objects under a deployment prefix
   async deleteDeployment(username: string, deploymentId: string): Promise<void> {
     const prefix = deploymentStoragePath(username, deploymentId);
 
     try {
-      // List everything under the prefix (paginate if needed)
+      // list everything under the prefix (paginate if needed)
       const { data: objects, error: listErr } = await supabase.storage
         .from(DEPLOYMENTS_BUCKET)
         .list(prefix, { limit: 1000, offset: 0 });
@@ -163,7 +112,7 @@ export const StorageService = {
         return;
       }
 
-      // Build full object paths for the delete call
+      // build full object paths for the delete call
       const objectPaths = objects.map((obj) => `${prefix}/${obj.name}`);
 
       const { error: delErr } = await supabase.storage
@@ -178,15 +127,15 @@ export const StorageService = {
       logger.info(`[storage] Deleted ${objectPaths.length} object(s) from ${prefix}`);
 
     } catch (err) {
-      // Never throw — pruning is best-effort
+      // never throw — pruning is best-effort
       logger.warn(`[storage] Unexpected error pruning ${prefix}: ${String(err)}`);
     }
   },
 };
 
-// ── File utilities ─────────────────────────────────────────────────────────────
+// file utilities
 
-/** Recursively collect all file paths under dir. */
+// recursively collect all file paths
 function walkDir(dir: string): string[] {
   const results: string[] = [];
   for (const entry of fs.readdirSync(dir, { withFileTypes: true })) {
@@ -197,7 +146,7 @@ function walkDir(dir: string): string[] {
   return results;
 }
 
-/** Map file extensions to MIME types. */
+// map file extensions to mime types
 function inferContentType(filePath: string): string {
   const map: Record<string, string> = {
     '.html':  'text/html; charset=utf-8',
