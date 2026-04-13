@@ -65,7 +65,7 @@ CREATE TABLE IF NOT EXISTS deployment_history (
     commit_sha     TEXT,
     commit_message TEXT,
     status         TEXT        NOT NULL DEFAULT 'pending'
-                                   CHECK (status IN ('pending', 'building', 'success', 'failed')),
+                                   CHECK (status IN ('pending', 'building', 'success', 'failed')), -- NOSONAR
     duration_ms    INTEGER,
     storage_path   TEXT,
     deployed_at    TIMESTAMPTZ NOT NULL DEFAULT now()

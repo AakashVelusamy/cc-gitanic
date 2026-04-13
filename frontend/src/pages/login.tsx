@@ -1,9 +1,8 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { useRouter } from 'next/router';
 import { fetchApi, setToken } from '@/lib/api';
 import { routes } from '@/lib/routes';
 import { useToast } from '@/contexts/toast-context';
-import Link from 'next/link';
 import { Ship, Eye, EyeOff } from 'lucide-react';
 import { BGPattern } from '@/components/ui/bg-pattern';
 
@@ -20,35 +19,8 @@ export default function LoginPage() {
   const [email, setEmail] = useState('');
   const [otp, setOtp] = useState('');
   const [otpSent, setOtpSent] = useState(false);
-  const [otpSentAt, setOtpSentAt] = useState<number | null>(null);
-  const [resendCooldown, setResendCooldown] = useState(0);
   const [step, setStep] = useState(1);
   const [loading, setLoading] = useState(false);
-
-  // 60s resend countdown, resets each time an OTP is sent
-  useEffect(() => {
-    if (otpSentAt === null) return;
-    const tick = () => {
-      const remaining = Math.max(0, 60 - Math.floor((Date.now() - otpSentAt) / 1000));
-      setResendCooldown(remaining);
-      return remaining;
-    };
-    if (tick() === 0) return;
-    const interval = setInterval(() => { if (tick() === 0) clearInterval(interval); }, 1000);
-    return () => clearInterval(interval);
-  }, [otpSentAt]);
-
-  function resetForm() {
-    setStep(1);
-    setOtpSent(false);
-    setOtpSentAt(null);
-    setResendCooldown(0);
-    setOtp('');
-    setUsername('');
-    setPassword('');
-    setConfirmPassword('');
-    setEmail('');
-  }
 
   async function handleSendOtp() {
     if (!email.trim()) {
@@ -62,7 +34,6 @@ export default function LoginPage() {
         body: JSON.stringify({ email: email.trim() }),
       });
       setOtpSent(true);
-      setOtpSentAt(Date.now());
     } catch (err: unknown) {
       toast((err as Error).message || 'Failed to send OTP', 'error');
     } finally {
@@ -179,7 +150,7 @@ export default function LoginPage() {
                         autoComplete="one-time-code"
                         disabled={!otpSent}
                         value={otp}
-                        onChange={(e) => setOtp(e.target.value.replace(/\D/g, '').slice(0, 6))}
+                        onChange={(e) => setOtp(e.target.value.replaceAll(/\D/g, '').slice(0, 6))}
                         className={`${!otpSent ? disabledInputClass : inputClass} text-center text-xl tracking-[0.5em] font-mono`}
 
                       />
@@ -189,8 +160,8 @@ export default function LoginPage() {
                   /* ── Signup Step 2: Username ─────────────────────────── */
                   <>
                     <div>
-                      <label className="block text-sm font-medium text-foreground mb-1">Email Address</label>
-                      <input type="email" disabled value={email} className={disabledInputClass} />
+                      <label className="block text-sm font-medium text-foreground mb-1" htmlFor="email-readonly">Email Address</label>
+                      <input id="email-readonly" type="email" disabled value={email} className={disabledInputClass} />
                     </div>
                     <div>
                       <label className="block text-sm font-medium text-foreground mb-1" htmlFor="signup-username">Username</label>
@@ -296,30 +267,31 @@ export default function LoginPage() {
                 </>
               )}
 
-              <button
-                type="submit"
-                disabled={
-                  loading ||
-                  (!isLogin && (
-                    (step === 1 && !otpSent && !email.trim()) ||
-                    (step === 1 && otpSent && otp.length !== 6) ||
-                    (step === 2 && !username.trim())
-                  ))
-                }
-                className="w-full btn-primary py-3 flex justify-center items-center gap-2 text-lg disabled:opacity-50 disabled:cursor-not-allowed"
-              >
-                {loading ? (
-                  <Ship className="animate-bounce" size={24} />
-                ) : isLogin ? (
-                  'Sign In'
-                ) : step === 1 ? (
-                  otpSent ? 'Next' : 'Send OTP'
-                ) : step < 3 ? (
-                  'Next'
-                ) : (
-                  'Create Account'
-                )}
-              </button>
+              {(() => {
+                let submitLabel: React.ReactNode;
+                if (loading) submitLabel = <Ship className="animate-bounce" size={24} />;
+                else if (isLogin) submitLabel = 'Sign In';
+                else if (step === 1 && otpSent) submitLabel = 'Next';
+                else if (step === 1) submitLabel = 'Send OTP';
+                else if (step < 3) submitLabel = 'Next';
+                else submitLabel = 'Create Account';
+                return (
+                  <button
+                    type="submit"
+                    disabled={
+                      loading ||
+                      (!isLogin && (
+                        (step === 1 && !otpSent && !email.trim()) ||
+                        (step === 1 && otpSent && otp.length !== 6) ||
+                        (step === 2 && !username.trim())
+                      ))
+                    }
+                    className="w-full btn-primary py-3 flex justify-center items-center gap-2 text-lg disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    {submitLabel}
+                  </button>
+                );
+              })()}
             </form>
           </div>
         </div>

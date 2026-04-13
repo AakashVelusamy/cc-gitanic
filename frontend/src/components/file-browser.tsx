@@ -30,7 +30,6 @@ type FileBrowserProps = Readonly<{
   repoName: string;
   entries: TreeEntry[];
   currentPath?: string;
-  ref?: string;
   loading?: boolean;
   onFolderDoubleClick?: (path: string) => void;
   commits?: CommitInfo[];
@@ -68,7 +67,7 @@ export function detectLanguage(entries: TreeEntry[]): string | null {
   return null;
 }
 
-export function FileBrowser({ repoName, entries, currentPath = '', ref = 'HEAD', loading, onFolderDoubleClick, commits = [], language }: FileBrowserProps) {
+export function FileBrowser({ repoName, entries, currentPath = '', loading, onFolderDoubleClick, commits = [], language }: FileBrowserProps) {
   // Sort: directories first, then files, both alphabetical
   const sorted = [...entries].sort((a, b) => {
     if (a.type !== b.type) return a.type === 'tree' ? -1 : 1;
@@ -236,6 +235,9 @@ export function FileBrowser({ repoName, entries, currentPath = '', ref = 'HEAD',
                 entry.type === 'tree'
                   ? getTreeRoute(entry.path)
                   : getBlobRoute(entry.path);
+              const entryIcon = entry.type === 'tree'
+                ? <Folder size={18} className="text-muted-foreground group-hover:text-primary/70 transition-colors" />
+                : <FileText size={18} className="text-muted-foreground/70 group-hover:text-primary/70 transition-colors" />;
 
               return (
                 <tr
@@ -250,16 +252,12 @@ export function FileBrowser({ repoName, entries, currentPath = '', ref = 'HEAD',
                   <td className="py-2.5 px-4">
                     {entry.type === 'tree' && onFolderDoubleClick ? (
                       <div className="flex items-center gap-3 text-foreground group-hover:text-primary transition-colors text-sm">
-                        <Folder size={18} className="text-muted-foreground group-hover:text-primary/70 transition-colors" />
+                        {entryIcon}
                         <span className="truncate">{entry.name}</span>
                       </div>
                     ) : (
                       <Link href={href} className="flex items-center gap-3 text-foreground group-hover:text-primary transition-colors text-sm">
-                        {entry.type === 'tree' ? (
-                          <Folder size={18} className="text-muted-foreground group-hover:text-primary/70 transition-colors" />
-                        ) : (
-                          <FileText size={18} className="text-muted-foreground/70 group-hover:text-primary/70 transition-colors" />
-                        )}
+                        {entryIcon}
                         <span className="truncate">{entry.name}</span>
                       </Link>
                     )}

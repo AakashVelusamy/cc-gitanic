@@ -40,7 +40,7 @@ export default function DashboardPage() {
   async function fetchDashboardData() {
     try {
       const data = await fetchApi<Repo[]>('/api/repos');
-      const sorted = data.sort((a, b) => new Date(b.updated_at || b.created_at).getTime() - new Date(a.updated_at || a.created_at).getTime())
+      const sorted = data.toSorted((a, b) => new Date(b.updated_at || b.created_at).getTime() - new Date(a.updated_at || a.created_at).getTime())
       setRepos(sorted);
       if (sorted.length === 0) {
         toast('No Repositories Yet', 'info');

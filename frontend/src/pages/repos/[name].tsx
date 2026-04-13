@@ -33,7 +33,7 @@ export default function RepositoryPage() {
 
   const [repo, setRepo] = useState<RepoData | null>(null);
   const [entries, setEntries] = useState<TreeEntry[]>([]);
-  const [currentPath, setCurrentPath] = useState<string>('');
+  const currentPath = '';
   const [readme, setReadme] = useState<string | null>(null);
   const [commits, setCommits] = useState<CommitInfo[]>([]);
   const [language, setLanguage] = useState<string | null>(null);

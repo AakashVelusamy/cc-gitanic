@@ -229,7 +229,7 @@ router.all('/:username/*', (req: Request, res: Response): void => {
   // Raw query string (without leading ?)
   const rawUrl      = req.url;  // includes query string
   const qIdx        = rawUrl.indexOf('?');
-  const queryString = qIdx !== -1 ? rawUrl.slice(qIdx + 1) : '';
+  const queryString = qIdx === -1 ? '' : rawUrl.slice(qIdx + 1);
 
   logger.debug(`[git] ${req.method} ${pathInfo}?${queryString}`, {
     meta: { username, repoName },

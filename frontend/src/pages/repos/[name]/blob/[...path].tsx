@@ -4,7 +4,7 @@ import { fetchApi, getToken } from '@/lib/api';
 import { routes } from '@/lib/routes';
 import { useToast } from '@/contexts/toast-context';
 import { MarkdownContent } from '@/components/markdown-content';
-import { FileText, ChevronRight, Folder, Copy, Check, Download, ArrowLeft, Image as ImageIcon, FileCode, Binary, Ship } from 'lucide-react';
+import { ChevronRight, Folder, Copy, Check, Download, ArrowLeft, Image as ImageIcon, FileCode, Binary, Ship } from 'lucide-react';
 import Link from 'next/link';
 import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter';
 import { vscDarkPlus } from 'react-syntax-highlighter/dist/cjs/styles/prism';
@@ -59,6 +59,67 @@ function formatBytes(bytes: number): string {
   return Number.parseFloat((bytes / Math.pow(k, i)).toFixed(1)) + ' ' + sizes[i];
 }
 
+function renderFileContent(
+  blob: BlobResult,
+  isImage: boolean,
+  isMarkdown: boolean,
+  language: string,
+  fileName: string,
+  handleDownload: () => void,
+): React.ReactNode {
+  if (blob.isBinary && isImage) {
+    return (
+      <div className="p-8 flex flex-col items-center justify-center bg-[#0b1528]/50">
+        <div className="rounded-lg overflow-hidden border border-white/10 shadow-xl max-w-full">
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img
+            src={`data:image/${fileName.split('.').pop()};base64,${blob.content}`}
+            alt={fileName}
+            className="max-w-full max-h-[600px] object-contain"
+          />
+        </div>
+        <p className="text-muted-foreground text-sm mt-4">{fileName} - {formatBytes(blob.size)}</p>
+      </div>
+    );
+  }
+  if (blob.isBinary) {
+    return (
+      <div className="p-16 text-center flex flex-col items-center">
+        <div className="w-16 h-16 bg-white/5 rounded-2xl flex items-center justify-center mb-4">
+          <Binary className="text-muted-foreground" size={32} />
+        </div>
+        <h3 className="text-lg font-semibold mb-2">Binary file</h3>
+        <p className="text-muted-foreground text-sm mb-4">
+          This file is {formatBytes(blob.size)} and cannot be displayed as text.
+        </p>
+        <button onClick={handleDownload} className="btn-secondary inline-flex items-center gap-2">
+          <Download size={16} />
+          Download
+        </button>
+      </div>
+    );
+  }
+  if (isMarkdown) {
+    return (
+      <div className="p-8 prose prose-invert max-w-none prose-a:text-primary hover:prose-a:text-accent prose-headings:border-white/10 prose-hr:border-white/10 prose-code:text-primary prose-code:bg-primary/10 prose-code:px-1 prose-code:rounded prose-pre:bg-[#0b1528] prose-pre:border prose-pre:border-white/5">
+        <MarkdownContent content={blob.content} />
+      </div>
+    );
+  }
+  return (
+    <SyntaxHighlighter
+      language={language}
+      style={vscDarkPlus}
+      showLineNumbers
+      wrapLongLines
+      customStyle={{ margin: 0, borderRadius: 0, background: 'transparent', fontSize: '13px', lineHeight: '1.6' }}
+      lineNumberStyle={{ minWidth: '3.5em', paddingRight: '1em', color: 'rgba(255,255,255,0.15)', userSelect: 'none' }}
+    >
+      {blob.content}
+    </SyntaxHighlighter>
+  );
+}
+
 export default function BlobPage() {
   const router = useRouter();
   const { name, path: pathSegments } = router.query;
@@ -111,7 +172,7 @@ export default function BlobPage() {
   function handleDownload() {
     if (!blob) return;
     const bytes = blob.encoding === 'base64'
-      ? Uint8Array.from(atob(blob.content), c => c.charCodeAt(0))
+      ? Uint8Array.from(atob(blob.content), c => c.codePointAt(0) ?? 0)
       : new TextEncoder().encode(blob.content);
     const blobObj = new Blob([bytes]);
     const url = URL.createObjectURL(blobObj);
@@ -241,66 +302,7 @@ export default function BlobPage() {
 
           {/* File content */}
           <div className="overflow-x-auto">
-            {blob.isBinary && isImage ? (
-              /* Image preview */
-              <div className="p-8 flex flex-col items-center justify-center bg-[#0b1528]/50">
-                <div className="rounded-lg overflow-hidden border border-white/10 shadow-xl max-w-full">
-                  {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img
-                    src={`data:image/${fileName.split('.').pop()};base64,${blob.content}`}
-                    alt={fileName}
-                    className="max-w-full max-h-[600px] object-contain"
-                  />
-                </div>
-                <p className="text-muted-foreground text-sm mt-4">{fileName} - {formatBytes(blob.size)}</p>
-              </div>
-            ) : blob.isBinary ? (
-              /* Binary file (non-image) */
-              <div className="p-16 text-center flex flex-col items-center">
-                <div className="w-16 h-16 bg-white/5 rounded-2xl flex items-center justify-center mb-4">
-                  <Binary className="text-muted-foreground" size={32} />
-                </div>
-                <h3 className="text-lg font-semibold mb-2">Binary file</h3>
-                <p className="text-muted-foreground text-sm mb-4">
-                  This file is {formatBytes(blob.size)} and cannot be displayed as text.
-                </p>
-                <button
-                  onClick={handleDownload}
-                  className="btn-secondary inline-flex items-center gap-2"
-                >
-                  <Download size={16} />
-                  Download
-                </button>
-              </div>
-            ) : isMarkdown ? (
-              /* Markdown rendered view */
-              <div className="p-8 prose prose-invert max-w-none prose-a:text-primary hover:prose-a:text-accent prose-headings:border-white/10 prose-hr:border-white/10 prose-code:text-primary prose-code:bg-primary/10 prose-code:px-1 prose-code:rounded prose-pre:bg-[#0b1528] prose-pre:border prose-pre:border-white/5">
-                <MarkdownContent content={blob.content} />
-              </div>
-            ) : (
-              /* Source code with syntax highlighting */
-              <SyntaxHighlighter
-                language={language}
-                style={vscDarkPlus}
-                showLineNumbers
-                wrapLongLines
-                customStyle={{
-                  margin: 0,
-                  borderRadius: 0,
-                  background: 'transparent',
-                  fontSize: '13px',
-                  lineHeight: '1.6',
-                }}
-                lineNumberStyle={{
-                  minWidth: '3.5em',
-                  paddingRight: '1em',
-                  color: 'rgba(255,255,255,0.15)',
-                  userSelect: 'none',
-                }}
-              >
-                {blob.content}
-              </SyntaxHighlighter>
-            )}
+            {renderFileContent(blob, isImage, isMarkdown, language, fileName, handleDownload)}
           </div>
         </div>
       </main>

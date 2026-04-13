@@ -25,18 +25,18 @@ interface AuthMeResponse {
  * headers are set in next.config.ts to reduce the XSS attack surface.
  */
 export function getToken(): string | null {
-  if (typeof window === 'undefined') return null;
+  if (typeof globalThis.window === 'undefined') return null;
   return localStorage.getItem('gitanic_token');
 }
 
 export function setToken(token: string): void {
-  if (typeof window !== 'undefined') {
+  if (typeof globalThis.window !== 'undefined') {
     localStorage.setItem('gitanic_token', token);
   }
 }
 
 export function clearToken(): void {
-  if (typeof window !== 'undefined') {
+  if (typeof globalThis.window !== 'undefined') {
     localStorage.removeItem('gitanic_token');
   }
 }
@@ -80,7 +80,8 @@ export async function fetchApi<T>(
     headers.set('Content-Type', 'application/json');
   }
 
-  const url = `${API_BASE}${path.startsWith('/') ? path : `/${path}`}`;
+  const normalizedPath = path.startsWith('/') ? path : `/${path}`;
+  const url = `${API_BASE}${normalizedPath}`;
 
   const response = await fetch(url, {
     ...options,

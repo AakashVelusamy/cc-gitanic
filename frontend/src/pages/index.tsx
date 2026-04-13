@@ -3,7 +3,6 @@ import { routes } from '@/lib/routes';
 import Link from 'next/link';
 import { ArrowDown, Code2, Rocket, Ship, Zap, ArrowRight } from 'lucide-react';
 import { getToken } from '@/lib/api';
-import { useEffect, useState } from 'react';
 import { motion } from 'framer-motion';
 import { BGPattern } from '@/components/ui/bg-pattern';
 import { GradientCard } from '@/components/ui/gradient-card';

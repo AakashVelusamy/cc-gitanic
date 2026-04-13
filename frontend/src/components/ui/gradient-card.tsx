@@ -1,12 +1,16 @@
 import React, { useState, useEffect, useRef } from 'react';
 
-export type GradientCardData = {
+export type GradientCardData = Readonly<{
   title: string;
   desc: string;
   gradientFrom: string;
   gradientTo: string;
   icon?: React.ReactNode;
-};
+}>;
+
+function renderIcon(icon: React.ReactNode, className: string) {
+  return icon ? <div className={className}>{icon}</div> : null;
+}
 
 export function GradientCard({ title, desc, gradientFrom, gradientTo, icon }: GradientCardData) {
   const gradient = `linear-gradient(315deg, ${gradientFrom}, ${gradientTo})`;
@@ -37,7 +41,7 @@ export function GradientCard({ title, desc, gradientFrom, gradientTo, icon }: Gr
           <span className="absolute bottom-0 right-0 w-0 h-0 rounded-2xl opacity-0 bg-white/10 backdrop-blur-[10px] shadow-[0_5px_15px_rgba(0,0,0,0.08)] transition-all duration-500 animate-blob animation-delay-1000 group-hover:bottom-[-50px] group-hover:right-[50px] group-hover:w-[100px] group-hover:h-[100px] group-hover:opacity-100" />
         </span>
         <div className="relative z-20 left-0 p-[20px_40px] bg-white/5 backdrop-blur-[10px] shadow-lg rounded-2xl text-white transition-all duration-500 group-hover:left-[-25px] group-hover:p-[60px_40px]">
-          {icon && <div className="mb-3 text-white/90">{icon}</div>}
+          {renderIcon(icon, 'mb-3 text-white/90')}
           <h3 className="text-2xl font-bold mb-2">{title}</h3>
           <p className="text-base leading-relaxed text-white/80">{desc}</p>
         </div>
@@ -52,7 +56,7 @@ export function GradientCard({ title, desc, gradientFrom, gradientTo, icon }: Gr
           <span className="absolute bottom-0 right-0 w-0 h-0 rounded-2xl opacity-0 bg-white/10 backdrop-blur-[10px] transition-all duration-500 animate-blob animation-delay-1000 group-hover:bottom-[-40px] group-hover:right-[38px] group-hover:w-[80px] group-hover:h-[80px] group-hover:opacity-100" />
         </span>
         <div className="relative z-20 left-0 p-[16px_28px] bg-white/5 backdrop-blur-[10px] shadow-lg rounded-2xl text-white transition-all duration-500 group-hover:left-[-20px] group-hover:p-[44px_28px]">
-          {icon && <div className="mb-3 text-white/90">{icon}</div>}
+          {renderIcon(icon, 'mb-3 text-white/90')}
           <h3 className="text-xl font-bold mb-2">{title}</h3>
           <p className="text-sm leading-relaxed text-white/80">{desc}</p>
         </div>
@@ -69,7 +73,7 @@ export function GradientCard({ title, desc, gradientFrom, gradientTo, icon }: Gr
         <span className="pointer-events-none absolute rounded-2xl bg-white/10 backdrop-blur-[10px] animate-blob transition-all duration-300" style={{ top: t ? '-30px' : '0px', left: t ? '30px' : '0px', width: t ? '60px' : '0px', height: t ? '60px' : '0px', opacity: t ? 1 : 0, zIndex: 10 }} />
         <span className="pointer-events-none absolute rounded-2xl bg-white/10 backdrop-blur-[10px] animate-blob animation-delay-1000 transition-all duration-500" style={{ bottom: t ? '-30px' : '0px', right: t ? '30px' : '0px', width: t ? '60px' : '0px', height: t ? '60px' : '0px', opacity: t ? 1 : 0, zIndex: 10 }} />
         <div className="relative z-20 h-full flex flex-row items-center gap-4 px-5 py-4 bg-white/5 backdrop-blur-xl border border-white/10 shadow-2xl rounded-2xl text-white">
-          {icon && <div className="shrink-0 text-white/90">{icon}</div>}
+          {renderIcon(icon, 'shrink-0 text-white/90')}
           <div className="flex flex-col text-left min-w-0">
             <h3 className="text-base sm:text-lg font-bold mb-1 truncate">{title}</h3>
             <p className="text-xs sm:text-sm leading-snug text-white/80 line-clamp-2">{desc}</p>

@@ -78,7 +78,7 @@ router.post('/deploy', async (req: Request, res: Response, next: NextFunction): 
 
     // Only auto-deploy for pushes to the default branch (main or master)
     const DEFAULT_BRANCHES = ['main', 'master'];
-    if (!DEFAULT_BRANCHES.includes(branch!)) {
+    if (!DEFAULT_BRANCHES.includes(branch)) {
       logger.info(`[internal/deploy] Ignored push to branch "${branch}" — only main/master triggers deploy`, {
         meta: { username, repoName },
       });

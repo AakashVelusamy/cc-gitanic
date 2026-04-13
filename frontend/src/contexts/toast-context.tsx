@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useCallback, ReactNode } from 'react';
+import React, { createContext, useContext, useState, useCallback, useMemo, ReactNode } from 'react';
 import { X, CheckCircle, AlertCircle, Info } from 'lucide-react';
 
 export type ToastType = 'success' | 'error' | 'info';
@@ -15,37 +15,40 @@ interface ToastContextType {
 
 const ToastContext = createContext<ToastContextType | undefined>(undefined);
 
-export function ToastProvider({ children }: { children: ReactNode }) {
+function removeById(id: string) {
+  return (prev: Toast[]) => prev.filter((t) => t.id !== id);
+}
+
+function toastClassName(type: ToastType): string {
+  if (type === 'error') return 'bg-destructive/20 border-destructive/30 text-destructive-foreground';
+  if (type === 'success') return 'bg-green-500/20 border-green-500/30 text-green-100';
+  return 'bg-primary/20 border-primary/30 text-primary-foreground';
+}
+
+export function ToastProvider({ children }: Readonly<{ children: ReactNode }>) {
   const [toasts, setToasts] = useState<Toast[]>([]);
 
   const addToast = useCallback((message: string, type: ToastType = 'info') => {
     const id = crypto.randomUUID();
     setToasts((prev) => [...prev, { id, message, type }]);
-    
     // Auto remove after 5 seconds
-    setTimeout(() => {
-      setToasts((prev) => prev.filter((t) => t.id !== id));
-    }, 5000);
+    setTimeout(() => { setToasts(removeById(id)); }, 5000);
   }, []);
 
   const removeToast = useCallback((id: string) => {
-    setToasts((prev) => prev.filter((t) => t.id !== id));
+    setToasts(removeById(id));
   }, []);
 
+  const contextValue = useMemo(() => ({ toast: addToast }), [addToast]);
+
   return (
-    <ToastContext.Provider value={{ toast: addToast }}>
+    <ToastContext.Provider value={contextValue}>
       {children}
       <div className="fixed bottom-24 left-1/2 -translate-x-1/2 z-[100] flex flex-col items-center gap-3 w-[calc(100vw-2rem)] sm:w-auto pointer-events-none">
         {toasts.map((t) => (
           <div
             key={t.id}
-            className={`pointer-events-auto flex items-center justify-between gap-3 p-4 rounded-xl shadow-2xl backdrop-blur-md transition-all duration-300 animate-toast-sequence border ${
-              t.type === 'error'
-                ? 'bg-destructive/20 border-destructive/30 text-destructive-foreground'
-                : t.type === 'success'
-                ? 'bg-green-500/20 border-green-500/30 text-green-100'
-                : 'bg-primary/20 border-primary/30 text-primary-foreground'
-            }`}
+            className={`pointer-events-auto flex items-center justify-between gap-3 p-4 rounded-xl shadow-2xl backdrop-blur-md transition-all duration-300 animate-toast-sequence border ${toastClassName(t.type)}`}
           >
             <div className="flex gap-3 items-center">
               {t.type === 'error' && <AlertCircle className="w-5 h-5 shrink-0 text-destructive" />}

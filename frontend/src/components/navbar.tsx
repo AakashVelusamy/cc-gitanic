@@ -94,17 +94,19 @@ export function Navbar() {
                   </>
                 );
               }
-              const showLoginLinks = !loading && !username;
-              return showLoginLinks ? (
+              if (loading || username) return null;
+              const logInClass = `text-sm font-medium transition-colors ${router.pathname === routes.login ? 'text-foreground font-bold' : 'text-muted-foreground hover:text-foreground'}`;
+              const signUpClass = `text-sm flex items-center gap-1 ${router.pathname === routes.signup ? 'btn-primary' : 'btn-secondary'}`;
+              return (
                 <div className="flex items-center gap-3">
-                  <Link href={routes.login} className={`text-sm font-medium transition-colors ${router.pathname === routes.login ? 'text-foreground font-bold' : 'text-muted-foreground hover:text-foreground'}`}>
+                  <Link href={routes.login} className={logInClass}>
                     Log in
                   </Link>
-                  <Link href={routes.signup} className={`text-sm flex items-center gap-1 ${router.pathname === routes.signup ? 'btn-primary' : 'btn-secondary'}`}>
+                  <Link href={routes.signup} className={signUpClass}>
                     Sign up
                   </Link>
                 </div>
-              ) : null;
+              );
             })()}
           </div>
         </div>

@@ -35,7 +35,7 @@ export default function NewRepositoryPage() {
     })();
   }, [router]);
 
-  async function handleSubmit(e: React.FormEvent) {
+  async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
     if (!name.trim()) return;
 
@@ -86,7 +86,7 @@ export default function NewRepositoryPage() {
                     type="text"
                     value={name}
                     onChange={(e) =>
-                      setName(e.target.value.replace(/[^a-zA-Z0-9._-]/g, ''))
+                      setName(e.target.value.replaceAll(/[^a-zA-Z0-9._-]/g, ''))
                     }
                     
                     required
