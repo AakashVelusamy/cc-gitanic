@@ -209,6 +209,14 @@ export default function BlobPage() {
   const isText = !blob.isBinary;
   const lineCount = isText ? blob.content.split('\n').length : 0;
 
+  // Pre-computed for the file info bar (avoids nested ternaries in JSX)
+  const fileTypeIcon = blob.isBinary
+    ? (isImage ? <ImageIcon size={14} /> : <Binary size={14} />)
+    : <FileCode size={14} />;
+  const fileTypeLabel = blob.isBinary
+    ? (isImage ? 'Image' : 'Binary file')
+    : `${lineCount} lines`;
+
   return (
     <div className="flex-1 flex flex-col bg-background relative overflow-x-hidden pb-12 sm:pb-20">
       <BGPattern variant="grid" mask="fade-edges" size={32} fill="rgba(255,255,255,0.05)" />
@@ -285,14 +293,7 @@ export default function BlobPage() {
           <div className="bg-secondary/20 px-4 py-2 border-b border-white/5 flex items-center justify-between text-xs text-muted-foreground">
             <div className="flex items-center gap-4">
               <span className="flex items-center gap-1.5">
-                {blob.isBinary ? (
-                  isImage ? <ImageIcon size={14} /> : <Binary size={14} />
-                ) : (
-                  <FileCode size={14} />
-                )}
-              {blob.isBinary ? (
-                isImage ? 'Image' : 'Binary file'
-              ) : `${lineCount} lines`}
+                {fileTypeIcon}{fileTypeLabel}
               </span>
               <span>{formatBytes(blob.size)}</span>
               {!blob.isBinary && (

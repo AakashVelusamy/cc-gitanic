@@ -6,45 +6,213 @@ import { useToast } from '@/contexts/toast-context';
 import { Ship, Eye, EyeOff } from 'lucide-react';
 import { BGPattern } from '@/components/ui/bg-pattern';
 
-/** Pure helper — renders the submit button label and disabled state. */
-function renderSubmitButton(
-  loading: boolean,
-  isLogin: boolean,
-  step: number,
-  otpSent: boolean,
-  email: string,
-  otp: string,
-  username: string,
-): React.ReactNode {
-  let label: React.ReactNode;
-  if (loading)                    label = <Ship className="animate-bounce" size={24} />;
-  else if (isLogin)               label = 'Sign In';
-  else if (step === 1 && otpSent) label = 'Next';
-  else if (step === 1)            label = 'Send OTP';
-  else if (step < 3)              label = 'Next';
-  else                            label = 'Create Account';
+// ── Shared style tokens ───────────────────────────────────────────────────────
 
-  const isDisabled =
-    loading ||
-    (!isLogin && (
-      (step === 1 && !otpSent && !email.trim()) ||
-      (step === 1 && otpSent  && otp.length !== 6) ||
-      (step === 2 && !username.trim())
-    ));
+const INPUT_CLASS =
+  'w-full h-11 bg-secondary/50 border border-white/10 rounded-xl px-4 text-foreground focus:outline-none focus:border-primary/50 focus:ring-1 focus:ring-primary/50 focus:bg-primary/10 transition-all';
+const DISABLED_INPUT_CLASS = `${INPUT_CLASS} opacity-50 cursor-not-allowed`;
 
+// ── Pure render helpers (extracted to reduce LoginPage cognitive complexity) ──
+
+interface LoginFieldsProps {
+  readonly username: string;
+  readonly password: string;
+  readonly showPassword: boolean;
+  readonly onUsername: (v: string) => void;
+  readonly onPassword: (v: string) => void;
+  readonly onTogglePassword: () => void;
+}
+
+function LoginFields({ username, password, showPassword, onUsername, onPassword, onTogglePassword }: Readonly<LoginFieldsProps>) {
   return (
-    <button
-      type="submit"
-      disabled={isDisabled}
-      className="w-full btn-primary py-3 flex justify-center items-center gap-2 text-lg disabled:opacity-50 disabled:cursor-not-allowed"
-    >
-      {label}
-    </button>
+    <>
+      <div>
+        <label className="block text-sm font-medium text-foreground mb-1" htmlFor="login-username">Username</label>
+        <input
+          id="login-username"
+          type="text"
+          required
+          autoComplete="username"
+          value={username}
+          onChange={(e) => onUsername(e.target.value)}
+          className={INPUT_CLASS}
+        />
+      </div>
+      <div>
+        <label className="block text-sm font-medium text-foreground mb-1" htmlFor="login-password">Password</label>
+        <div className="relative">
+          <input
+            id="login-password"
+            type={showPassword ? 'text' : 'password'}
+            required
+            autoComplete="current-password"
+            value={password}
+            onChange={(e) => onPassword(e.target.value)}
+            className={INPUT_CLASS}
+            style={{ paddingRight: '3rem' }}
+          />
+          <button type="button" onClick={onTogglePassword} className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground">
+            {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+          </button>
+        </div>
+      </div>
+    </>
   );
 }
 
-export default function LoginPage() {
+interface SignupStep1Props {
+  readonly email: string;
+  readonly otp: string;
+  readonly otpSent: boolean;
+  readonly onEmail: (v: string) => void;
+  readonly onOtp: (v: string) => void;
+}
 
+function SignupStep1({ email, otp, otpSent, onEmail, onOtp }: Readonly<SignupStep1Props>) {
+  return (
+    <>
+      <div>
+        <label className="block text-sm font-medium text-foreground mb-1" htmlFor="email">Email Address</label>
+        <input
+          id="email"
+          type="email"
+          required
+          autoComplete="email"
+          disabled={otpSent}
+          value={email}
+          onChange={(e) => onEmail(e.target.value)}
+          className={otpSent ? DISABLED_INPUT_CLASS : INPUT_CLASS}
+        />
+      </div>
+      <div>
+        <label className="block text-sm font-medium text-foreground mb-1" htmlFor="otp">Verification Code</label>
+        <input
+          id="otp"
+          type="text"
+          inputMode="numeric"
+          pattern="[0-9]{6}"
+          maxLength={6}
+          autoComplete="one-time-code"
+          disabled={!otpSent}
+          value={otp}
+          onChange={(e) => onOtp(e.target.value.replaceAll(/\D/g, '').slice(0, 6))}
+          className={`${otpSent ? INPUT_CLASS : DISABLED_INPUT_CLASS} text-center text-xl tracking-[0.5em] font-mono`}
+        />
+      </div>
+    </>
+  );
+}
+
+interface SignupStep2Props {
+  readonly email: string;
+  readonly username: string;
+  readonly onUsername: (v: string) => void;
+}
+
+function SignupStep2({ email, username, onUsername }: Readonly<SignupStep2Props>) {
+  return (
+    <>
+      <div>
+        <label className="block text-sm font-medium text-foreground mb-1" htmlFor="email-readonly">Email Address</label>
+        <input id="email-readonly" type="email" disabled value={email} className={DISABLED_INPUT_CLASS} />
+      </div>
+      <div>
+        <label className="block text-sm font-medium text-foreground mb-1" htmlFor="signup-username">Username</label>
+        <input
+          id="signup-username"
+          type="text"
+          required
+          autoComplete="username"
+          value={username}
+          onChange={(e) => onUsername(e.target.value)}
+          className={INPUT_CLASS}
+        />
+      </div>
+    </>
+  );
+}
+
+interface SignupStep3Props {
+  readonly password: string;
+  readonly confirmPassword: string;
+  readonly showPassword: boolean;
+  readonly showConfirmPassword: boolean;
+  readonly onPassword: (v: string) => void;
+  readonly onConfirmPassword: (v: string) => void;
+  readonly onTogglePassword: () => void;
+  readonly onToggleConfirmPassword: () => void;
+}
+
+function SignupStep3({
+  password, confirmPassword, showPassword, showConfirmPassword,
+  onPassword, onConfirmPassword, onTogglePassword, onToggleConfirmPassword,
+}: Readonly<SignupStep3Props>) {
+  return (
+    <>
+      <div>
+        <label className="block text-sm font-medium text-foreground mb-1" htmlFor="signup-password">Password</label>
+        <div className="relative">
+          <input
+            id="signup-password"
+            type={showPassword ? 'text' : 'password'}
+            required
+            autoComplete="new-password"
+            minLength={8}
+            value={password}
+            onChange={(e) => onPassword(e.target.value)}
+            className={INPUT_CLASS}
+            style={{ paddingRight: '3rem' }}
+          />
+          <button type="button" onClick={onTogglePassword} className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground">
+            {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+          </button>
+        </div>
+      </div>
+      <div>
+        <label className="block text-sm font-medium text-foreground mb-1" htmlFor="confirm-password">Confirm Password</label>
+        <div className="relative">
+          <input
+            id="confirm-password"
+            type={showConfirmPassword ? 'text' : 'password'}
+            required
+            autoComplete="new-password"
+            value={confirmPassword}
+            onChange={(e) => onConfirmPassword(e.target.value)}
+            className={INPUT_CLASS}
+            style={{ paddingRight: '3rem' }}
+          />
+          <button type="button" onClick={onToggleConfirmPassword} className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground">
+            {showConfirmPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+          </button>
+        </div>
+      </div>
+    </>
+  );
+}
+
+/** Determines the submit button label based on current form state. */
+function resolveSubmitLabel(loading: boolean, isLogin: boolean, step: number, otpSent: boolean): React.ReactNode {
+  if (loading)                    return <Ship className="animate-bounce" size={24} />;
+  if (isLogin)                    return 'Sign In';
+  if (step === 1 && otpSent)      return 'Next';
+  if (step === 1)                 return 'Send OTP';
+  if (step < 3)                   return 'Next';
+  return 'Create Account';
+}
+
+/** Determines whether the submit button should be disabled. */
+function isSubmitDisabled(loading: boolean, isLogin: boolean, step: number, otpSent: boolean, email: string, otp: string, username: string): boolean {
+  if (loading) return true;
+  if (isLogin) return false;
+  if (step === 1 && !otpSent) return !email.trim();
+  if (step === 1 && otpSent)  return otp.length !== 6;
+  if (step === 2)             return !username.trim();
+  return false;
+}
+
+// ── Page component ────────────────────────────────────────────────────────────
+
+export default function LoginPage() {
   const router = useRouter();
   const { toast } = useToast();
   const isLogin = router.query.mode !== 'signup';
@@ -81,12 +249,11 @@ export default function LoginPage() {
 
   async function handleNext(e: React.SyntheticEvent) {
     e.preventDefault();
-
+    if (step === 1 && !otpSent) {
+      await handleSendOtp();
+      return;
+    }
     if (step === 1) {
-      if (!otpSent) {
-        await handleSendOtp();
-        return;
-      }
       if (otp.length !== 6) {
         toast('Please enter the 6-digit verification code', 'error');
         return;
@@ -94,7 +261,6 @@ export default function LoginPage() {
       setStep(2);
       return;
     }
-
     if (step === 2) {
       if (!username.trim()) {
         toast('Please enter a username', 'error');
@@ -106,14 +272,11 @@ export default function LoginPage() {
 
   async function handleSubmit(e: React.SyntheticEvent) {
     e.preventDefault();
-
     if (!isLogin && password !== confirmPassword) {
       toast('Passwords do not match', 'error');
       return;
     }
-
     setLoading(true);
-
     try {
       if (isLogin) {
         const { token } = await fetchApi<{ token: string }>('/api/auth/login', {
@@ -136,18 +299,45 @@ export default function LoginPage() {
     }
   }
 
-  const inputClass =
-    'w-full h-11 bg-secondary/50 border border-white/10 rounded-xl px-4 text-foreground focus:outline-none focus:border-primary/50 focus:ring-1 focus:ring-primary/50 focus:bg-primary/10 transition-all';
-  const disabledInputClass = `${inputClass} opacity-50 cursor-not-allowed`;
+  function renderFormFields() {
+    if (isLogin) {
+      return (
+        <LoginFields
+          username={username} password={password} showPassword={showPassword}
+          onUsername={setUsername} onPassword={setPassword} onTogglePassword={() => setShowPassword(p => !p)}
+        />
+      );
+    }
+    if (step === 1) {
+      return <SignupStep1 email={email} otp={otp} otpSent={otpSent} onEmail={setEmail} onOtp={setOtp} />;
+    }
+    if (step === 2) {
+      return <SignupStep2 email={email} username={username} onUsername={setUsername} />;
+    }
+    return (
+      <SignupStep3
+        password={password} confirmPassword={confirmPassword}
+        showPassword={showPassword} showConfirmPassword={showConfirmPassword}
+        onPassword={setPassword} onConfirmPassword={setConfirmPassword}
+        onTogglePassword={() => setShowPassword(p => !p)}
+        onToggleConfirmPassword={() => setShowConfirmPassword(p => !p)}
+      />
+    );
+  }
 
   return (
     <div className="flex-1 flex flex-col bg-background relative overflow-x-hidden pb-12 sm:pb-20">
       <BGPattern variant="grid" mask="fade-edges" size={32} fill="rgba(255,255,255,0.05)" />
 
       <div className="flex-1 flex flex-col justify-center py-12 sm:px-6 lg:px-8 relative z-10 -mt-16">
-        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] bg-primary/10 blur-[100px] rounded-full pointer-events-none"></div>
+        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] bg-primary/10 blur-[100px] rounded-full pointer-events-none" />
 
         <div className="sm:mx-auto sm:w-full sm:max-w-md relative z-10 text-center mb-8">
+          <div className="flex justify-center mb-6">
+            <div className="w-20 h-20 bg-primary/10 rounded-2xl flex items-center justify-center text-primary shadow-[0_0_40px_rgba(0,240,255,0.3)] border border-primary/20 backdrop-blur-sm animate-pulse-slow">
+              <Ship size={48} />
+            </div>
+          </div>
           <h2 className="text-3xl font-bold tracking-tight text-foreground">
             {isLogin ? 'Welcome Back To Gitanic' : 'Join Gitanic'}
           </h2>
@@ -155,157 +345,15 @@ export default function LoginPage() {
 
         <div className="sm:mx-auto sm:w-full sm:max-w-md relative z-10">
           <div className="glass rounded-2xl py-8 px-4 sm:px-10 shadow-2xl">
-            <form
-              className="space-y-6"
-              onSubmit={isLogin || step === 3 ? handleSubmit : handleNext}
-            >
-              {isLogin ? (
-                /* ── Login form ──────────────────────────────────────── */
-                <>
-                  <div>
-                    <label className="block text-sm font-medium text-foreground mb-1" htmlFor="login-username">Username</label>
-                    <input
-                      id="login-username"
-                      type="text"
-                      required
-                      autoComplete="username"
-                      value={username}
-                      onChange={(e) => setUsername(e.target.value)}
-                      className={inputClass}
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-foreground mb-1" htmlFor="login-password">Password</label>
-                    <div className="relative">
-                      <input
-                        id="login-password"
-                        type={showPassword ? "text" : "password"}
-                        required
-                        autoComplete="current-password"
-                        value={password}
-                        onChange={(e) => setPassword(e.target.value)}
-                        className={inputClass}
-                        style={{ paddingRight: "3rem" }}
-                      />
-                      <button
-                        type="button"
-                        onClick={() => setShowPassword(!showPassword)}
-                        className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
-                      >
-                        {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
-                      </button>
-                    </div>
-                  </div>
-                </>
-              ) : (
-                step === 1 ? (
-                  /* ── Signup Step 1: Email + OTP ─────────────────────── */
-                  <>
-                    <div>
-                      <label className="block text-sm font-medium text-foreground mb-1" htmlFor="email">Email Address</label>
-                      <input
-                        id="email"
-                        type="email"
-                        required
-                        autoComplete="email"
-                        disabled={otpSent}
-                        value={email}
-                        onChange={(e) => setEmail(e.target.value)}
-                        className={otpSent ? disabledInputClass : inputClass}
-
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-sm font-medium text-foreground mb-1" htmlFor="otp">Verification Code</label>
-                      <input
-                        id="otp"
-                        type="text"
-                        inputMode="numeric"
-                        pattern="[0-9]{6}"
-                        maxLength={6}
-                        autoComplete="one-time-code"
-                        disabled={!otpSent}
-                        value={otp}
-                        onChange={(e) => setOtp(e.target.value.replaceAll(/\D/g, '').slice(0, 6))}
-                        className={`${otpSent ? inputClass : disabledInputClass} text-center text-xl tracking-[0.5em] font-mono`}
-
-                      />
-                    </div>
-                  </>
-                ) : step === 2 ? (
-                  /* ── Signup Step 2: Username ─────────────────────────── */
-                  <>
-                    <div>
-                      <label className="block text-sm font-medium text-foreground mb-1" htmlFor="email-readonly">Email Address</label>
-                      <input id="email-readonly" type="email" disabled value={email} className={disabledInputClass} />
-                    </div>
-                    <div>
-                      <label className="block text-sm font-medium text-foreground mb-1" htmlFor="signup-username">Username</label>
-                      <input
-                        id="signup-username"
-                        type="text"
-                        required
-                        autoComplete="username"
-                        value={username}
-                        onChange={(e) => setUsername(e.target.value)}
-                        className={inputClass}
-
-                      />
-                    </div>
-                  </>
-                ) : (
-                  /* ── Signup Step 3: Password ─────────────────────────── */
-                  <>
-                    <div>
-                      <label className="block text-sm font-medium text-foreground mb-1" htmlFor="signup-password">Password</label>
-                      <div className="relative">
-                        <input
-                          id="signup-password"
-                          type={showPassword ? "text" : "password"}
-                          required
-                          autoComplete="new-password"
-                          minLength={8}
-                          value={password}
-                          onChange={(e) => setPassword(e.target.value)}
-                          className={inputClass}
-                          style={{ paddingRight: "3rem" }}
-                        />
-                        <button
-                          type="button"
-                          onClick={() => setShowPassword(!showPassword)}
-                          className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
-                        >
-                          {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
-                        </button>
-                      </div>
-                    </div>
-                    <div>
-                      <label className="block text-sm font-medium text-foreground mb-1" htmlFor="confirm-password">Confirm Password</label>
-                      <div className="relative">
-                        <input
-                          id="confirm-password"
-                          type={showConfirmPassword ? "text" : "password"}
-                          required
-                          autoComplete="new-password"
-                          value={confirmPassword}
-                          onChange={(e) => setConfirmPassword(e.target.value)}
-                          className={inputClass}
-                          style={{ paddingRight: "3rem" }}
-                        />
-                        <button
-                          type="button"
-                          onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-                          className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
-                        >
-                          {showConfirmPassword ? <EyeOff size={18} /> : <Eye size={18} />}
-                        </button>
-                      </div>
-                    </div>
-                  </>
-                )
-              )}
-
-              {renderSubmitButton(loading, isLogin, step, otpSent, email, otp, username)}
+            <form className="space-y-6" onSubmit={isLogin || step === 3 ? handleSubmit : handleNext}>
+              {renderFormFields()}
+              <button
+                type="submit"
+                disabled={isSubmitDisabled(loading, isLogin, step, otpSent, email, otp, username)}
+                className="w-full btn-primary py-3 flex justify-center items-center gap-2 text-lg disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                {resolveSubmitLabel(loading, isLogin, step, otpSent)}
+              </button>
             </form>
           </div>
         </div>

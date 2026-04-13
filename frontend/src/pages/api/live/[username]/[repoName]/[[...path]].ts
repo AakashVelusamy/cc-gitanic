@@ -59,6 +59,56 @@ function rewriteHtml(html: string, basePath: string): string {
   return baseTag + rewritten;
 }
 
+/**
+ * Resolve the deployment ID from either a UUID (used directly) or a repo name
+ * (resolved via the backend API). Returns null and writes an error response
+ * on failure so the handler can return immediately.
+ */
+async function resolveDepId(
+  uname: string,
+  repoOrId: string,
+  res: NextApiResponse,
+): Promise<string | null> {
+  if (UUID_RE.test(repoOrId)) {
+    return repoOrId;
+  }
+  const apiBase = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000';
+  try {
+    const resolveRes = await fetch(`${apiBase}/api/repos/resolve/${uname}/${repoOrId}`);
+    if (!resolveRes.ok) {
+      res.status(resolveRes.status).send('Deployment not found for this repository');
+      return null;
+    }
+    const data = await resolveRes.json() as { deploymentId: string };
+    return data.deploymentId;
+  } catch (err) {
+    console.error('[live] Failed to resolve deployment:', err);
+    res.status(500).json({ error: 'Resolution failed' });
+    return null;
+  }
+}
+
+/**
+ * Parse and validate path query segments.
+ * Returns the path array, or null (and writes a 400) if any segment is unsafe.
+ */
+function parseSafePath(
+  path: string | string[] | undefined,
+  res: NextApiResponse,
+): string[] | null {
+  const pathArr: string[] = Array.isArray(path)
+    ? path
+    : typeof path === 'string' ? [path] : [];
+
+  for (const segment of pathArr) {
+    if (!isSafePathSegment(segment)) {
+      res.status(400).json({ error: 'Invalid request' });
+      return null;
+    }
+  }
+  return pathArr;
+}
+
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
   try {
     const { username, repoName, path } = req.query;
@@ -66,7 +116,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     const uname = Array.isArray(username) ? username[0] : username;
     const repoOrId = Array.isArray(repoName) ? repoName[0] : repoName;
 
-    // --- Input validation (SSRF / path-traversal guards) ---
+    // Input validation (SSRF / path-traversal guards)
     if (!uname || !USERNAME_RE.test(uname)) {
       return res.status(400).json({ error: 'Invalid request' });
     }
@@ -74,46 +124,14 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       return res.status(400).json({ error: 'Invalid request' });
     }
 
-    let depId = '';
-
-    // If it's already a UUID, use it directly (legacy support)
-    if (UUID_RE.test(repoOrId)) {
-        depId = repoOrId;
-    } else {
-        // Resolve repo name to deployment ID via backend
-        const apiBase = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000';
-        const resolveUrl = `${apiBase}/api/repos/resolve/${uname}/${repoOrId}`;
-        
-        try {
-            const resolveRes = await fetch(resolveUrl);
-            if (!resolveRes.ok) {
-                return res.status(resolveRes.status).send('Deployment not found for this repository');
-            }
-            const data = await resolveRes.json();
-            depId = data.deploymentId;
-        } catch (err) {
-            console.error('[live] Failed to resolve deployment:', err);
-            return res.status(500).json({ error: 'Resolution failed' });
-        }
-    }
-
+    const depId = await resolveDepId(uname, repoOrId, res);
     if (!depId || !UUID_RE.test(depId)) {
-      return res.status(400).json({ error: 'Invalid deployment' });
+      if (depId !== null) res.status(400).json({ error: 'Invalid deployment' });
+      return;
     }
 
-    // Parse path segments and validate each one
-    let pathArr: string[] = [];
-    if (Array.isArray(path)) {
-      pathArr = path;
-    } else if (typeof path === 'string') {
-      pathArr = [path];
-    }
-
-    for (const segment of pathArr) {
-      if (!isSafePathSegment(segment)) {
-        return res.status(400).json({ error: 'Invalid request' });
-      }
-    }
+    const pathArr = parseSafePath(path, res);
+    if (!pathArr) return;
 
     const relativePath = pathArr.length === 0 ? 'index.html' : pathArr.join('/');
 
@@ -122,30 +140,26 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       return res.status(500).json({ error: 'Internal server error' });
     }
 
-    // Construct the upstream URL strictly from validated components only 
+    // Construct the upstream URL strictly from validated components only
     const targetUrl = `${supabaseUrl}/storage/v1/object/public/deployments/${uname}/${depId}/${relativePath}`;
-
     const supabaseRes = await fetch(targetUrl);
 
     if (!supabaseRes.ok) {
-      // Do not echo back the relativePath to avoid information disclosure
       res.status(supabaseRes.status).send('Asset not found');
       return;
     }
 
     const contentType = inferContentType(relativePath);
     const buffer = await supabaseRes.arrayBuffer();
-
-    if (contentType.includes('text/html')) {
-        const htmlStr = rewriteHtml(Buffer.from(buffer).toString('utf-8'), `/api/live/${uname}/${repoOrId}`);
-        res.setHeader('Content-Type', contentType);
-        res.setHeader('Cache-Control', 'public, max-age=60');
-        res.send(htmlStr);
-        return;
-    }
-
     res.setHeader('Content-Type', contentType);
     res.setHeader('Cache-Control', 'public, max-age=60');
+
+    if (contentType.includes('text/html')) {
+      const htmlStr = rewriteHtml(Buffer.from(buffer).toString('utf-8'), `/api/live/${uname}/${repoOrId}`);
+      res.send(htmlStr);
+      return;
+    }
+
     res.send(Buffer.from(buffer));
 
   } catch {

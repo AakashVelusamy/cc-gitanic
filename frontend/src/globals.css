@@ -128,10 +128,19 @@
 }
 .animate-blob { animation: blob 2s ease-in-out infinite; }
 .animation-delay-1000 { animation-delay: -1s; }
+
 @keyframes sweep {
   0% { transform: translateX(-100%) skewX(12deg); }
   100% { transform: translateX(200%) skewX(12deg); }
 }
 .animate-sweep {
   animation: sweep 1.5s infinite;
+}
+
+@keyframes pulse-slow {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50% { opacity: 0.85; transform: scale(0.98); }
+}
+.animate-pulse-slow {
+  animation: pulse-slow 4s cubic-bezier(0.4, 0, 0.6, 1) infinite;
 }

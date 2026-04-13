@@ -10,21 +10,21 @@ import { routes } from '@/lib/routes';
 import { RepoData } from '@/hooks/useRepoPage';
 
 interface RepoHeaderProps {
-  repo: RepoData;
-  username: string;
-  deploying: boolean;
-  undeploying: boolean;
-  copied: boolean;
-  onDeploy: () => void;
-  onUndeploy: () => void;
-  onDelete: () => void;
-  onCopy: () => void;
+  readonly repo: RepoData;
+  readonly username: string;
+  readonly deploying: boolean;
+  readonly undeploying: boolean;
+  readonly copied: boolean;
+  readonly onDeploy: () => void;
+  readonly onUndeploy: () => void;
+  readonly onDelete: () => void;
+  readonly onCopy: () => void;
 }
 
 export function RepoHeader({
   repo, username, deploying, undeploying, copied,
   onDeploy, onUndeploy, onDelete, onCopy,
-}: RepoHeaderProps) {
+}: Readonly<RepoHeaderProps>) {
   return (
     <div className="bg-background border-b border-white/5 py-8 mb-8 z-40 backdrop-blur-3xl">
       <div className="max-w-[1600px] mx-auto px-4 sm:px-6 lg:px-8 flex flex-col xl:flex-row xl:items-center justify-between gap-6">

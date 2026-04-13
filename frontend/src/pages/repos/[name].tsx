@@ -3,7 +3,6 @@ import { routes } from '@/lib/routes';
 import { FileBrowser } from '@/components/file-browser';
 import { MarkdownContent } from '@/components/markdown-content';
 import { FolderCode, Ship } from 'lucide-react';
-import Link from 'next/link';
 import { BGPattern } from '@/components/ui/bg-pattern';
 import { useRepoPage } from '@/hooks/useRepoPage';
 import { RepoHeader } from '@/components/repo-header';
