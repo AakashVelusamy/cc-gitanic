@@ -46,21 +46,26 @@ COMMENT ON COLUMN repositories.auto_deploy_enabled  IS 'True after first success
 COMMENT ON COLUMN repositories.active_deployment_id IS 'FK to current LIVE deployment.';
 
 -- deployment history log
+DO $$ BEGIN
+    CREATE TYPE deployment_status AS ENUM ('pending', 'building', 'success', 'failed');
+EXCEPTION
+    WHEN duplicate_object THEN null;
+END $$;
+
 CREATE TABLE IF NOT EXISTS deployment_history (
     id             UUID        PRIMARY KEY DEFAULT gen_random_uuid(),
     repo_id        UUID        NOT NULL REFERENCES repositories(id) ON DELETE CASCADE,
     user_id        UUID        NOT NULL REFERENCES users(id) ON DELETE CASCADE,
     commit_sha     TEXT,
     commit_message TEXT,
-    status         TEXT        NOT NULL DEFAULT 'pending'
-                                    CHECK (status IN ('pending', 'building', 'success', 'failed')),
+    status         deployment_status NOT NULL DEFAULT 'pending',
     duration_ms    INTEGER,
     storage_path   TEXT,
     deployed_at    TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 
 COMMENT ON TABLE  deployment_history IS 'Pipeline run records.';
-COMMENT ON COLUMN deployment_history.status       IS 'pending | building | success | failed';
+COMMENT ON COLUMN deployment_history.status       IS 'deployment_status enum';
 COMMENT ON COLUMN deployment_history.storage_path IS 'Storage prefix: deployments/{username}/{id}/';
 COMMENT ON COLUMN deployment_history.duration_ms  IS 'Build duration in ms.';
 
