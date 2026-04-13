@@ -4,6 +4,7 @@ import { fetchApi, setToken } from '@/lib/api';
 import { routes } from '@/lib/routes';
 import { useToast } from '@/contexts/toast-context';
 import { Ship, Eye, EyeOff } from 'lucide-react';
+import Image from 'next/image';
 import { BGPattern } from '@/components/ui/bg-pattern';
 
 // ── Shared style tokens ───────────────────────────────────────────────────────
@@ -329,13 +330,20 @@ export default function LoginPage() {
     <div className="flex-1 flex flex-col bg-background relative overflow-x-hidden pb-12 sm:pb-20">
       <BGPattern variant="grid" mask="fade-edges" size={32} fill="rgba(255,255,255,0.05)" />
 
-      <div className="flex-1 flex flex-col justify-center py-12 sm:px-6 lg:px-8 relative z-10 -mt-16">
+      <div className="flex-1 flex flex-col justify-center py-12 px-4 sm:px-6 lg:px-8 relative z-10 -mt-16">
         <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] bg-primary/10 blur-[100px] rounded-full pointer-events-none" />
 
-        <div className="sm:mx-auto sm:w-full sm:max-w-md relative z-10 text-center mb-8">
+        <div className="mx-auto w-full max-w-md relative z-10 text-center mb-8">
           <div className="flex justify-center mb-6">
-            <div className="w-20 h-20 bg-primary/10 rounded-2xl flex items-center justify-center text-primary shadow-[0_0_40px_rgba(0,240,255,0.3)] border border-primary/20 backdrop-blur-sm animate-pulse-slow">
-              <Ship size={48} />
+            <div className="w-20 h-20 bg-primary/10 rounded-2xl flex items-center justify-center shadow-[0_0_40px_rgba(0,240,255,0.3)] border border-primary/20 backdrop-blur-sm animate-pulse-slow">
+              <Image 
+                src="/logo.png" 
+                alt="Gitanic Logo" 
+                width={48} 
+                height={48} 
+                priority 
+                className="w-12 h-12 object-contain" 
+              />
             </div>
           </div>
           <h2 className="text-3xl font-bold tracking-tight text-foreground">
@@ -343,8 +351,8 @@ export default function LoginPage() {
           </h2>
         </div>
 
-        <div className="sm:mx-auto sm:w-full sm:max-w-md relative z-10">
-          <div className="glass rounded-2xl py-8 px-4 sm:px-10 shadow-2xl">
+        <div className="mx-auto w-full max-w-md relative z-10">
+          <div className="glass rounded-2xl py-8 px-5 sm:px-10 shadow-2xl">
             <form className="space-y-6" onSubmit={isLogin || step === 3 ? handleSubmit : handleNext}>
               {renderFormFields()}
               <button
