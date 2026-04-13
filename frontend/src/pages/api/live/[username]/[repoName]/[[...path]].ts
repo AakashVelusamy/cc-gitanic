@@ -96,9 +96,14 @@ function parseSafePath(
   path: string | string[] | undefined,
   res: NextApiResponse,
 ): string[] | null {
-  const pathArr: string[] = Array.isArray(path)
-    ? path
-    : typeof path === 'string' ? [path] : [];
+  let pathArr: string[];
+  if (Array.isArray(path)) {
+    pathArr = path;
+  } else if (typeof path === 'string') {
+    pathArr = [path];
+  } else {
+    pathArr = [];
+  }
 
   for (const segment of pathArr) {
     if (!isSafePathSegment(segment)) {

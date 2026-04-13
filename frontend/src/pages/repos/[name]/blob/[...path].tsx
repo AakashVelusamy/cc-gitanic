@@ -210,12 +210,18 @@ export default function BlobPage() {
   const lineCount = isText ? blob.content.split('\n').length : 0;
 
   // Pre-computed for the file info bar (avoids nested ternaries in JSX)
-  const fileTypeIcon = blob.isBinary
-    ? (isImage ? <ImageIcon size={14} /> : <Binary size={14} />)
-    : <FileCode size={14} />;
-  const fileTypeLabel = blob.isBinary
-    ? (isImage ? 'Image' : 'Binary file')
-    : `${lineCount} lines`;
+  let fileTypeIcon: React.ReactNode;
+  let fileTypeLabel: string;
+  if (!blob.isBinary) {
+    fileTypeIcon = <FileCode size={14} />;
+    fileTypeLabel = `${lineCount} lines`;
+  } else if (isImage) {
+    fileTypeIcon = <ImageIcon size={14} />;
+    fileTypeLabel = 'Image';
+  } else {
+    fileTypeIcon = <Binary size={14} />;
+    fileTypeLabel = 'Binary file';
+  }
 
   return (
     <div className="flex-1 flex flex-col bg-background relative overflow-x-hidden pb-12 sm:pb-20">

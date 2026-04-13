@@ -12,8 +12,7 @@ function renderIcon(icon: React.ReactNode, className: string) {
   return icon ? <div className={className}>{icon}</div> : null;
 }
 
-export function GradientCard({ title, desc, gradientFrom, gradientTo, icon }: GradientCardData) {
-  const gradient = `linear-gradient(315deg, ${gradientFrom}, ${gradientTo})`;
+function MobileCard({ title, desc, gradient, icon }: { title: string, desc: string, gradient: string, icon?: React.ReactNode }) {
   const [touched, setTouched] = useState(false);
   const cardRef = useRef<HTMLDivElement>(null);
 
@@ -25,6 +24,30 @@ export function GradientCard({ title, desc, gradientFrom, gradientTo, icon }: Gr
     document.addEventListener('touchstart', dismiss, { passive: true });
     return () => document.removeEventListener('touchstart', dismiss);
   }, [touched]);
+
+  return (
+    <div
+      ref={cardRef}
+      className="md:hidden relative w-full max-w-[90vw] sm:max-w-[480px] h-[130px] sm:h-[150px] m-2 sm:m-3 transition-all duration-500"
+      onTouchStart={() => setTouched(true)}
+    >
+      <span className="absolute top-0 h-full rounded-2xl transition-all duration-500" style={{ background: gradient, left: touched ? '10px' : '20px', width: touched ? 'calc(100% - 40px)' : '50%', transform: touched ? 'skewX(0deg)' : 'skewX(15deg)' }} />
+      <span className="absolute top-0 h-full rounded-2xl blur-[20px] opacity-70 transition-all duration-500" style={{ background: gradient, left: touched ? '10px' : '20px', width: touched ? 'calc(100% - 40px)' : '50%', transform: touched ? 'skewX(0deg)' : 'skewX(15deg)' }} />
+      <span className="pointer-events-none absolute rounded-2xl bg-white/10 backdrop-blur-[10px] animate-blob transition-all duration-300" style={{ top: touched ? '-30px' : '0px', left: touched ? '30px' : '0px', width: touched ? '60px' : '0px', height: touched ? '60px' : '0px', opacity: touched ? 1 : 0, zIndex: 10 }} />
+      <span className="pointer-events-none absolute rounded-2xl bg-white/10 backdrop-blur-[10px] animate-blob animation-delay-1000 transition-all duration-500" style={{ bottom: touched ? '-30px' : '0px', right: touched ? '30px' : '0px', width: touched ? '60px' : '0px', height: touched ? '60px' : '0px', opacity: touched ? 1 : 0, zIndex: 10 }} />
+      <div className="relative z-20 h-full flex flex-row items-center gap-4 px-5 py-4 bg-white/5 backdrop-blur-xl border border-white/10 shadow-2xl rounded-2xl text-white">
+        {renderIcon(icon, 'shrink-0 text-white/90')}
+        <div className="flex flex-col text-left min-w-0">
+          <h3 className="text-base sm:text-lg font-bold mb-1 truncate">{title}</h3>
+          <p className="text-xs sm:text-sm leading-snug text-white/80 line-clamp-2">{desc}</p>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+export function GradientCard({ title, desc, gradientFrom, gradientTo, icon }: GradientCardData) {
+  const gradient = `linear-gradient(315deg, ${gradientFrom}, ${gradientTo})`;
 
   return (
     <>
@@ -59,23 +82,7 @@ export function GradientCard({ title, desc, gradientFrom, gradientTo, icon }: Gr
       </div>
 
       {/* ── Mobile (<md): touch-state driven horizontal pill ── */}
-      <div
-        ref={cardRef}
-        className="md:hidden relative w-full max-w-[90vw] sm:max-w-[480px] h-[130px] sm:h-[150px] m-2 sm:m-3 transition-all duration-500"
-        onTouchStart={() => setTouched(true)}
-      >
-        <span className="absolute top-0 h-full rounded-2xl transition-all duration-500" style={{ background: gradient, left: touched ? '10px' : '20px', width: touched ? 'calc(100% - 40px)' : '50%', transform: touched ? 'skewX(0deg)' : 'skewX(15deg)' }} />
-        <span className="absolute top-0 h-full rounded-2xl blur-[20px] opacity-70 transition-all duration-500" style={{ background: gradient, left: touched ? '10px' : '20px', width: touched ? 'calc(100% - 40px)' : '50%', transform: touched ? 'skewX(0deg)' : 'skewX(15deg)' }} />
-        <span className="pointer-events-none absolute rounded-2xl bg-white/10 backdrop-blur-[10px] animate-blob transition-all duration-300" style={{ top: touched ? '-30px' : '0px', left: touched ? '30px' : '0px', width: touched ? '60px' : '0px', height: touched ? '60px' : '0px', opacity: touched ? 1 : 0, zIndex: 10 }} />
-        <span className="pointer-events-none absolute rounded-2xl bg-white/10 backdrop-blur-[10px] animate-blob animation-delay-1000 transition-all duration-500" style={{ bottom: touched ? '-30px' : '0px', right: touched ? '30px' : '0px', width: touched ? '60px' : '0px', height: touched ? '60px' : '0px', opacity: touched ? 1 : 0, zIndex: 10 }} />
-        <div className="relative z-20 h-full flex flex-row items-center gap-4 px-5 py-4 bg-white/5 backdrop-blur-xl border border-white/10 shadow-2xl rounded-2xl text-white">
-          {renderIcon(icon, 'shrink-0 text-white/90')}
-          <div className="flex flex-col text-left min-w-0">
-            <h3 className="text-base sm:text-lg font-bold mb-1 truncate">{title}</h3>
-            <p className="text-xs sm:text-sm leading-snug text-white/80 line-clamp-2">{desc}</p>
-          </div>
-        </div>
-      </div>
+      <MobileCard title={title} desc={desc} gradient={gradient} icon={icon} />
     </>
   );
 }
