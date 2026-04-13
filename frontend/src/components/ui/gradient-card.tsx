@@ -17,7 +17,7 @@ function renderIcon(icon: React.ReactNode, className: string) {
   return elements[String(!!iconFallback) as 'true' | 'false'];
 }
 
-function MobileCard({ title, desc, gradient, icon }: { title: string, desc: string, gradient: string, icon?: React.ReactNode }) {
+function MobileCard({ title, desc, gradient, icon }: Readonly<{ title: string, desc: string, gradient: string, icon?: React.ReactNode }>) {
   const [touched, setTouched] = useState(false);
   const cardRef = useRef<HTMLDivElement>(null);
 
