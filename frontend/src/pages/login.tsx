@@ -335,14 +335,14 @@ export default function LoginPage() {
 
         <div className="mx-auto w-full max-w-md relative z-10 text-center mb-8">
           <div className="flex justify-center mb-6">
-            <div className="w-20 h-20 bg-primary/10 rounded-2xl flex items-center justify-center shadow-[0_0_40px_rgba(0,240,255,0.3)] border border-primary/20 backdrop-blur-sm animate-pulse-slow">
+            <div className="w-16 h-16 flex items-center justify-center drop-shadow-[0_0_15px_rgba(0,240,255,0.5)] animate-pulse-slow">
               <Image 
                 src="/logo.png" 
-                alt="Gitanic Logo" 
-                width={48} 
-                height={48} 
+                alt="Gitanic" 
+                width={64} 
+                height={64} 
                 priority 
-                className="w-12 h-12 object-contain" 
+                className="w-16 h-16 object-contain" 
               />
             </div>
           </div>
