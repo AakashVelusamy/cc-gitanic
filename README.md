@@ -1,144 +1,170 @@
 # Gitanic
 
-A distributed cloud-native Git hosting platform and static website deployment system. This project was developed as a part of our coursework for 23XT66 - Cloud Computing Lab at PSG College of Technology.
+Welcome to Gitanic, a distributed cloud-native Git hosting platform and static website deployment system. This project was developed as part of the coursework for 23XT66 - Cloud Computing Lab at PSG College of Technology.
 
-Gitanic allows developers to create Git repositories, push source code, and automatically deploy static websites from a single interface. It also includes a JavaFX desktop client that operates similarly to a lightweight version of GitHub Desktop. The desktop application of the project is packaged as a single portable executable file (`gitanic.exe`).
+Gitanic helps developers to easily create Git repositories, push source code, and deploy static websites automatically through one unified interface. We also offer a desktop client that provides a graphical interface similar to GitHub Desktop. For convenience, the package of the entire desktop application is provided as a single portable executable file.
 
 ---
 
-## Architecture of the System
+## System Architecture
 
-Gitanic is a three-service distributed system. Each free-tier cloud provider handles strictly separated responsibilities:
+Gitanic operates as a three-service distributed system. By using cloud providers, the platform separates responsibilities to maintain smooth and scalable performance. The backend uses the design of a modular monolith: it runs as a single process for simplicity but keeps the internal modules for authentication, repositories, and deployment pipelines cleanly separated.
 
-| Service            | Responsibility                                                                                                                                                         |
-| ------------------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **Vercel**   | Hosts the frontend built with Next.js 16. It handles wildcard `*.gitanic.com` subdomain routing via Edge Middleware and caches deployment details using Edge Config. |
-| **Railway**  | Runs the Express API and the Git Smart-HTTP server. It executes the deployment build pipeline and stores bare repositories on a persistent disk volume (`/repos`).   |
-| **Supabase** | Hosts the PostgreSQL database. It stores the static build files in a Storage bucket and provides Realtime log streaming.                                               |
+Furthermore, instead of relying on traditional reverse proxies for Git operations, we built a custom routing approach. This securely streams data natively through the application environment.
 
-The backend of the platform is designed as a Modular Monolith. It runs as a single Node.js process using Express.js but maintains cleanly separated internal modules.
-
-```text
-Browser ──→ Vercel (Next.js) ──→ Railway API (Express)
-                ↑                        ↓
-         *.gitanic.com           Supabase Storage
-         subdomain proxy              (files)
-                                 Supabase DB + Realtime
-                                      (state + logs)
+```mermaid
+graph TD
+    User([Developer / Visitor]) -->|Browses Dashboard| Frontend[Vercel: Core Web Application]
+    User -->|Visits Deployed Site| ProxyRoute[Vercel: Dynamic Site Router]
+  
+    Frontend -->|API Requests| Backend[Railway: App Server & Git Engine]
+    ProxyRoute -.->|Fetches Remote Files| Storage
+  
+    Backend -->|Uploads Website Assets| Storage[(Supabase: Object Storage Bucket)]
+    Backend -->|Updates State & Streams Logs| Database[(Supabase: Relational DB & Realtime)]
+  
+    Frontend -.->|Listens to Live Events| Database
 ```
+
+We distribute the workload across the following infrastructure:
+
+| Cloud Service      | Primary Responsibility                                                                                                                                                                                                                                           |
+| ------------------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Vercel**   | Hosts the primary web interface. It handles rendering and serves custom websites by dynamically fetching data on request without relying on complex wildcard domain setups.                                                                                      |
+| **Railway**  | Hosts the main application server securely within a minimal container environment. This is where background job queues run, deployments execute, and raw repository data is held.                                                                                |
+| **Supabase** | Manages the core data of the system through a relational database. It maintains data access rules so users can only access data they own. It also handles object storage for the files of the hosted site and handles a realtime connection for live build logs. |
 
 ---
 
 ## Design Patterns
 
-We effectively structure code using widely recognized design patterns.
+To ensure long-term maintainability, the core logic of the application is built using standard design patterns:
 
-| Pattern              | Application Level      | Purpose                                                                                                             |
-| -------------------- | ---------------------- | ------------------------------------------------------------------------------------------------------------------- |
-| **MVC**        | Entire web layer       | Next.js pages act as the View. Express controllers act as the Controller. Services act as the Model layer.          |
-| **Repository** | `*.repository.ts`    | All SQL queries are isolated here. The services of the application never write raw queries.                         |
-| **Strategy**   | `deploy/strategies/` | Allows switching the build algorithm at runtime using a simple `detect()` and `build()` interface.              |
-| **Observer**   | `deploy.service.ts`  | Dispatches internal events when a build starts or fails. The log service streams these events to Supabase Realtime. |
-| **Singleton**  | `lib/db.ts`          | Ensures exactly one connection pool per process to prevent memory leaks.                                            |
+| Pattern Utilized                | Application Purpose      | Conceptual Function                                                                                                                                                                                    |
+| ------------------------------- | ------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| **Model View Controller** | Overall Web Architecture | Web pages serve as the view layer, backend routers act as controllers, and dedicated internal services handle the business logic securely.                                                             |
+| **Repository Pattern**    | Database Interactions    | Data logic is entirely separated from the business logic. Server services request data abstractly while specialized database layers process the required queries securely.                             |
+| **Strategy Pattern**      | Build Automation Engine  | The system dynamically inspects incoming code. Based on the framework detected, it smoothly selects and applies the build steps required without hardcoding.                                           |
+| **Observer Pattern**      | Log Streaming Lifecycle  | During a deployment, the system broadcasts internal events whenever a stage starts or finishes. The realtime platform observes these events and forwards them instantly to the client interface.       |
+| **Singleton Pattern**     | Resource Management      | Prevents memory leaks by ensuring that heavy connections - such as database tunnels and client application state - are clearly instantiated only once across the life cycle of the entire application. |
 
 ---
 
 ## Deployment Pipeline
 
-Every deployment process follows a strict execution pipeline. This pipeline runs when a developer pushes code to the repository or clicks the manual deploy button.
+When a developer updates code or triggers a rebuild manually, the platform safely runs an execution workflow behind the scenes.
 
-1. **Enqueue** - The system creates a database record and pushes the job to a FIFO queue to ensure only one build processes at a time.
-2. **Checkout** - It safely extracts the code elements of the selected branch into an isolated temporary folder.
-3. **Detect** - It determines the build strategy representing the framework (Vite, Create React App, or Static HTML).
-4. **Build** - The system runs an isolated `execFileSync` command with a restricted system path and an empty environment to maintain strict security boundaries.
-5. **Upload** - It batches the generated files and uploads them in parallel to Supabase Storage.
-6. **Atomic Update** - The database updates the pointer of the active live site only if the build finishes without errors.
-7. **Clean Up** - The system deletes older deployments from the storage and clears out the temporary build directory.
+```mermaid
+flowchart TD
+    Initiate((Trigger Deploy)) --> Queue[1. Job Queueing]
+    Queue --> Checkout[2. Workspace Preparation]
+    Checkout --> Detection{3. Framework Analysis}
+  
+    Detection -->|Static App Detected| Sandbox[4. Sandboxed Build Execution]
+    Detection -.->|Server Required| Abort[Abort Safety Cleanup]
+  
+    Sandbox --> Upload[5. Parallel Object Upload]
+    Upload --> StateUpdate[6. Atomic Database Update]
+    StateUpdate --> Cleanup[7. Workstation Reset]
+    Cleanup --> Live((Site is Live))
+  
+    Checkout -.->|Failure| Abort
+    Sandbox -.->|Failure| Abort
+    Upload -.->|Failure| Abort
+```
 
-If any failure occurs, the pipeline instantly aborts the process. It deletes partial uploads and leaves the previous live site untouched.
+1. **Job Queueing:** The deployment request is pushed into a sequential line. This prevents the server from crashing by running only one active task at a time.
+2. **Workspace Preparation:** The server generates an isolated, temporary workstation folder. All previous dependencies are wiped out to ensure a fresh build context.
+3. **Framework Analysis:** The system completely scans the configuration files of the project to determine the necessary build sequence. If the application requires a persistent backend server, the deployment is blocked to protect the infrastructure.
+4. **Sandboxed Build Execution:** Instead of giving the build complete server access, the deployment runs inside a restricted environment. We give it zero access to system secrets, limited downloading paths, and strict time limits.
+5. **Parallel Object Upload:** After the site is packaged, the thousands of resulting files are chunked together and uploaded simultaneously to the storage servers to maximize the speed of transfer.
+6. **Atomic Database Update:** A database-level trigger executes. This creates a guarantee that the live routing link of a website instantly swaps over to the newly constructed site, but strictly only if the whole process was completely successful.
+7. **Workstation Reset:** The server scrubs the temporary data and cleans out remnants of the build container to free up server storage space.
 
 ---
 
 ## Supported Frameworks
 
-- **Vite** (React, Vue, Svelte, Vanilla JavaScript)
-- **Create React App**
-- **Static HTML/CSS/JS**
+The build system of the platform identifies projects and sets up build rules automatically. We support the following types of frameworks:
 
-Frameworks requiring Server-Side Rendering (SSR) such as Next.js or Remix are strictly rejected by the pipeline.
+| Project Type         | Framework Instances                    | Support Status     |
+| -------------------- | -------------------------------------- | ------------------ |
+| Progressive Web Apps | React, Vue, Svelte, Bundled JavaScript | Fully Supported    |
+| Single Page Apps     | Create React App, Standard SPAs        | Fully Supported    |
+| Static Websites      | Plain HTML, CSS, JavaScript files      | Fully Supported    |
+| Server Side Apps     | Next.js, Nuxt, Django, Express routing | Blocked by default |
 
----
-
-## Security Model
-
-The security implementations of the platform handle isolation and authentication rigorously:
-
-- **Web API**: Authentication relies on JWT Bearer tokens utilizing the secure HS256 algorithm.
-- **Git HTTP**: Terminal interactions decode HTTP Basic Authentication and verify them against bcrypt hashes in the database. Constant-time comparisons run natively to prevent timing attacks.
-- **Internal Routes**: Background automations are protected by a shared secret header validated using the timing-safe equalization tools of the backend framework.
-- **OTP Verification**: Randomly generated verification pins are completely hashed with SHA-256 before insertion into the database. Plaintext tokens of the verification are never stored.
+We block server frameworks intentionally to ensure the infrastructure of the platform stays dedicated to static deployments without taking heavy processing loads.
 
 ---
 
-## Subdomain Routing
+## Security
 
-Vercel intercepts all traffic hitting wildcard subdomains (`*.gitanic.com`) through Edge Middleware. The middleware code extracts the username of the request parameter, retrieves the current deployment ID from the Vercel Edge Config cache, and internally rewrites the user to proxy Supabase Storage.
+Security is integrated into the foundation of the platform, bringing safe transactions to the operations of the data persistence.
 
-This ensures live rendering of the static files. The cache clears itself fully through an API function triggered after every successful build.
+- **Data Ownership Rules:** A strict security model controls the database. Clients are structurally prevented from reading or writing information outside the boundaries of their explicit ownership.
+- **Data Hardening Triggers:** Core state swaps - such as pointing public traffic to a newly deployed site - cannot be accidentally manipulated because strict database rules govern these shifts natively.
+- **Secure Authentication:** The pipeline uses standard session tokens encrypted via high-level cryptographic operations.
+- **Terminal Smart Protocol:** Command-line interface interactions evaluate credentials automatically by performing timing-safe verifications against securely stored hashed passwords.
+- **One-Time Verification Elements:** Code sequences are cryptographically hashed local to the server prior to long-term database storage. This keeps all stored verification variables permanently unreadable.
+- **Operating Integrity Constraints:** Production containers execute workloads using limited permission profiles rather than system-wide superuser privileges. This provides a clean defense mechanism aligning with strict code vulnerability standards.
 
 ---
 
-## Desktop Client (JavaFX)
+## Deployment Routing
 
-The desktop application of the platform provides a graphical user interface wrapping the native `git` commands of the operating system.
+Whenever a visitor navigates to a public project link, they see a clean, readable pathway based on the username of the owner and the native project name of the repository. They will not see a randomized system number.
 
-**Key Controllers:**
+To achieve this, the web application intercepts the request dynamically. It evaluates the project name, safely queries the backend to determine what the newest active state of the site is, and funnels the remote files straight from the server storage bucket to the end user. To guarantee that integrated resources - like custom images or stylesheets - reconnect correctly behind the scenes, we automatically inject mapping metadata natively into the text structure right before the webpage finishes loading on the browser!
 
-- `AppState` - A singleton tracking the user state, the API connection url, and the current repository directory of the machine.
-- `EventBus` - A publish and subscribe manager resolving user interface signals like logins or directory changes.
-- `GitCommandService` - A secure process builder layer to safely execute CLI commands without shell injection vulnerabilities.
+---
+
+## Technology Stack
+
+- **Interactive User Interfaces:** Structured successfully with React using a modern routing strategy. Styling is implemented through utility-first CSS practices. The interface presents glass-like blur components and seamless interactive micro-animations.
+- **Application Server Backend:** Built cleanly by Node.js and the Express framework wrapped closely with strict Typescript configurations. It integrates naturally with PostgreSQL platforms and object storage systems.
+- **Desktop Packaging:** We assembled modern graphical tools locally using reliable enterprise Java standards combined closely with structural packaging build tools.
 
 ---
 
 ## Getting Started
 
-### Prerequisites
+Follow these steps to safely setup the systems on your local development machine.
 
-- Node.js (Version 20 or higher)
-- Java 21 and Apache Maven
-- A free-tier Supabase project
-- A Railway cloud account
-- A Vercel deployment account
+### System Prerequisites
 
-### Backend Setup
+Ensure you have Node.js installed on your platform. You will also need standard Java software development tools. Access to free-tier cloud platforms and an active PostgreSQL connection string are required to store information properly.
+
+### 1. Database Initialization
+
+Use an active database manager interface or the cloud platform to run the primary schema script. This action creates the relational foundations for repositories and deployment logs immediately.
+
+### 2. Application Server
+
+Navigate into the directory of the server implementation. Build an environment configuration matching the target database identifiers provided by the manager of the database.
 
 ```bash
 cd backend
 npm install
-npm run dev        # Run the API with hot-reloading
-npm run build      # Compile the TypeScript files
-npm start          # Run the main distribution file
+npm run dev        # Begins the backend application process with active hot-reloading
 ```
 
-You must inject environment variables defining the URL strings of the database and secure configuration tokens.
+### 3. Web Interface
 
-### Frontend Setup
+Access the primary frontend folder. Mirror the connection strings of your environment accordingly to route local application traffic precisely to the newly started development server.
 
 ```bash
 cd frontend
 npm install
-npm run dev        # Run the frontend server on port 3001
-npm run build      # Process the production Next.js build
+npm run dev        # Starts the presentation interface on your standard development port
 ```
 
-### Database Migration
+### 4. Client Desktop Compilation
 
-Apply the SQL migration files sequentially through the Supabase SQL editor located inside the `database/migrations` directory. Proper execution of the migration scripts guarantees the stability of the schema relations.
-
-### Building the Desktop Application
+To build a standalone executable application for operating straight from the machine, navigate into the desktop application workspace and trigger the comprehensive installer sequence.
 
 ```bash
 cd javafx
-mvn clean install    # Build the fat JAR and package gitanic.exe
-mvn javafx:run       # Directly run the JavaFX graphical client
+mvn clean install    # Compiles and packs the executable source material together
+mvn javafx:run       # Evaluates environment variables and initializes the graphical dashboard natively
 ```
