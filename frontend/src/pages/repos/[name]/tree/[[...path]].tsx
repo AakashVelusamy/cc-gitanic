@@ -5,7 +5,7 @@ import { routes } from '@/lib/routes';
 import { useToast } from '@/contexts/toast-context';
 import { FileBrowser, TreeEntry, detectLanguage } from '@/components/file-browser';
 import { MarkdownContent } from '@/components/markdown-content';
-import { BookOpen, Terminal, Trash2, Copy, Check, ExternalLink, Ship, PowerOff } from 'lucide-react';
+import { BookOpen, FolderCode, Terminal, Trash2, Copy, Check, ExternalLink, Ship, PowerOff } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
 import Link from 'next/link';
 import { BGPattern } from '@/components/ui/bg-pattern';
@@ -244,7 +244,7 @@ export default function RepositoryTreePage() {
         <div className="max-w-[1600px] mx-auto px-4 sm:px-6 lg:px-8 flex flex-col xl:flex-row xl:items-center justify-between gap-6">
           <div className="flex items-center gap-3">
              <div className="w-12 h-12 bg-primary/10 rounded-xl flex items-center justify-center text-primary shadow-[0_0_15px_rgba(0,240,255,0.2)] border border-primary/20 shrink-0">
-               <BookOpen size={24} />
+                <FolderCode size={24} />
              </div>
              <div className="min-w-0">
                <div className="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-3 mb-1">

@@ -3,7 +3,7 @@ import { useRouter } from 'next/router';
 import { fetchApi, getToken } from '@/lib/api';
 import { routes } from '@/lib/routes';
 import { useToast } from '@/contexts/toast-context';
-import { BookOpen, Search, PlusCircle, Ship, Clock } from 'lucide-react';
+import { Code2, Search, PlusCircle, Ship, Clock } from 'lucide-react';
 import { detectLanguage, LanguageBadge, TreeEntry } from '@/components/file-browser';
 import Link from 'next/link';
 import { BGPattern } from '@/components/ui/bg-pattern';
@@ -107,7 +107,7 @@ export default function DashboardPage() {
                   <Link key={repo.id} href={routes.repo(repo.name)} className="glass glass-hover px-5 py-4 rounded-xl border border-white/5 flex flex-col justify-between group gap-3 min-w-0">
                       <div className="flex items-center gap-2 font-semibold text-foreground group-hover:text-primary transition-colors pr-2 min-w-0 w-full justify-between"> 
                          <div className="flex items-center gap-2 min-w-0">
-                           <BookOpen size={16} className="text-muted-foreground group-hover:text-primary shrink-0" />
+                           <Code2 size={16} className="text-muted-foreground group-hover:text-primary shrink-0" />
                            <span className="truncate">{repo.name}</span>     
                          </div>
                          <span className={`w-2.5 h-2.5 rounded-full shrink-0 ${repo.auto_deploy_enabled ? 'bg-emerald-400' : 'bg-muted-foreground/50'}`}></span>
