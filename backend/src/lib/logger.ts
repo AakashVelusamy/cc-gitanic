@@ -27,7 +27,7 @@ export interface LogEvent {
   meta?: Record<string, unknown>;
 }
 
-type LogContext = LogContext;
+export type LogContext = Partial<Omit<LogEvent, 'level' | 'message' | 'timestamp'>>;
 
 // ── EventEmitter singleton ────────────────────────────────────────────────────
 
