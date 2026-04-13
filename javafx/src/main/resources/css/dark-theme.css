@@ -551,7 +551,7 @@
     -fx-background-radius: 10;
     -fx-effect:            dropshadow(gaussian, rgba(255,255,255,0.06), 16, 0, 0, 6);
 }
-.cards-scroll       { -fx-background-color: #050505; background-color: #050505; -fx-background: #050505; background: #050505; }
+.cards-scroll       { -fx-background: #050505; background: #050505; -fx-background-color: #050505; background-color: #050505; }
 .cards-container    { -fx-background-color: #050505; background-color: #050505; }
 
 /* Repo cards */
@@ -679,7 +679,7 @@
 .bar-sep .line        { -fx-border-color: #1f1f22; border-color: #1f1f22; -fx-padding: 6 0 6 0; padding: 6 0 6 0; }
 
 /* ── Scrollbars ──────────────────────────────────────────────────── */
-.scroll-bar                   { -fx-background-color: transparent; background-color: transparent; -fx-background: transparent; background: transparent; }
+.scroll-bar                   { -fx-background: transparent; background: transparent; -fx-background-color: transparent; background-color: transparent; }
 .scroll-bar .thumb            { -fx-background-color: #1f1f22; background-color: #1f1f22; -fx-background-radius: 3; }
 .scroll-bar .thumb:hover      { -fx-background-color: #2a2a2d; background-color: #2a2a2d; }
 .scroll-bar .track            { -fx-background-color: transparent; background-color: transparent; }
@@ -687,7 +687,7 @@
 .scroll-bar .decrement-button { -fx-background-color: transparent; background-color: transparent; -fx-padding: 2; padding: 2; }
 .scroll-bar .increment-arrow,
 .scroll-bar .decrement-arrow  { -fx-shape: \" \"; -fx-padding: 0; padding: 0; }
-.scroll-pane                  { -fx-background-color: transparent; background-color: transparent; -fx-background: transparent; background: transparent; }
+.scroll-pane                  { -fx-background: transparent; background: transparent; -fx-background-color: transparent; background-color: transparent; }
 .scroll-pane > .viewport      { -fx-background-color: transparent; background-color: transparent; }
 
 /* ── Dialogs (system dialogs styled via CSS) ─────────────────────── */

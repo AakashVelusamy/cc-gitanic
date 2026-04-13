@@ -16,6 +16,15 @@ interface AuthMeResponse {
 }
 
 /**
+ * Returns true when executing in a browser context (not during SSR).
+ * Uses globalThis.window rather than bare `window` to avoid ReferenceError
+ * in Node.js environments where `window` is not declared at all.
+ */
+function isClient(): boolean {
+  return globalThis.window !== undefined;
+}
+
+/**
  * SECURITY NOTE (S5042 — Sensitive data in localStorage):
  * The JWT is stored in localStorage for simplicity. This means any JavaScript
  * running on the page (including from XSS) could read it.
@@ -25,21 +34,22 @@ interface AuthMeResponse {
  * headers are set in next.config.ts to reduce the XSS attack surface.
  */
 export function getToken(): string | null {
-  if (typeof globalThis.window === 'undefined') return null;
+  if (!isClient()) return null;
   return localStorage.getItem('gitanic_token');
 }
 
 export function setToken(token: string): void {
-  if (typeof globalThis.window !== 'undefined') {
+  if (isClient()) {
     localStorage.setItem('gitanic_token', token);
   }
 }
 
 export function clearToken(): void {
-  if (typeof globalThis.window !== 'undefined') {
+  if (isClient()) {
     localStorage.removeItem('gitanic_token');
   }
 }
+
 
 export function getTokenPayload(): TokenPayload | null {
   const token = getToken();

@@ -19,11 +19,11 @@ export function GradientCard({ title, desc, gradientFrom, gradientTo, icon }: Gr
 
   useEffect(() => {
     if (!touched) return;
-    const dismiss = (e: TouchEvent) => {
-      if (cardRef.current && !cardRef.current.contains(e.target as Node)) {
+    function dismiss(e: TouchEvent) {
+      if (!cardRef.current?.contains(e.target as Node)) {
         setTouched(false);
       }
-    };
+    }
     document.addEventListener('touchstart', dismiss, { passive: true });
     return () => document.removeEventListener('touchstart', dismiss);
   }, [touched]);

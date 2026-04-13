@@ -159,7 +159,7 @@ export default function BlobPage() {
       router.push(routes.login);
       return;
     }
-    void loadBlob();
+    loadBlob().catch(() => undefined);
   }, [repoName, filePath, router, loadBlob]);
 
   function handleCopy() {
@@ -206,7 +206,8 @@ export default function BlobPage() {
   const language = getLanguage(fileName);
   const isImage = isImageFile(fileName);
   const isMarkdown = fileName.toLowerCase().endsWith('.md') || fileName.toLowerCase().endsWith('.mdx');
-  const lineCount = !blob.isBinary ? blob.content.split('\n').length : 0;
+  const isText = !blob.isBinary;
+  const lineCount = isText ? blob.content.split('\n').length : 0;
 
   return (
     <div className="flex-1 flex flex-col bg-background relative overflow-x-hidden pb-12 sm:pb-20">
@@ -289,7 +290,9 @@ export default function BlobPage() {
                 ) : (
                   <FileCode size={14} />
                 )}
-                {blob.isBinary ? (isImage ? 'Image' : 'Binary file') : `${lineCount} lines`}
+              {blob.isBinary ? (
+                isImage ? 'Image' : 'Binary file'
+              ) : `${lineCount} lines`}
               </span>
               <span>{formatBytes(blob.size)}</span>
               {!blob.isBinary && (

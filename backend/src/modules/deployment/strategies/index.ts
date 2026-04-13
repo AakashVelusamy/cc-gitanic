@@ -94,6 +94,24 @@ async function runCommand(cmd: string, args: string[], cwd: string, timeout: num
   }
 }
 
+// ── Shared build helpers ──────────────────────────────────────────────────────
+
+/** Lockfile and cached-module artefacts that must be removed before a clean install. */
+const LOCKFILES = ['package-lock.json', 'npm-shrinkwrap.json', 'yarn.lock', 'pnpm-lock.yaml', 'node_modules'] as const;
+
+/**
+ * Delete any lockfiles / node_modules present in the source directory so that
+ * the subsequent `npm install` produces a deterministic, clean dependency tree.
+ */
+function cleanupLockfiles(srcDir: string): void {
+  for (const file of LOCKFILES) {
+    const filePath = path.join(srcDir, file);
+    if (fs.existsSync(filePath)) {
+      fs.rmSync(filePath, { recursive: true, force: true });
+    }
+  }
+}
+
 // ── StaticStrategy ────────────────────────────────────────────────────────────
 
 /**
@@ -160,14 +178,7 @@ export const ReactStrategy: DeployStrategy = {
   },
 
   async build(srcDir, log) {
-    // ── pre-install cleanup ──────────────────────────────────────────────────
-    const lockfiles = ['package-lock.json', 'npm-shrinkwrap.json', 'yarn.lock', 'pnpm-lock.yaml', 'node_modules'];
-    for (const file of lockfiles) {
-      const filePath = path.join(srcDir, file);
-      if (fs.existsSync(filePath)) {
-        fs.rmSync(filePath, { recursive: true, force: true });
-      }
-    }
+    cleanupLockfiles(srcDir);
 
     // ── npm install ─────────────────────────────────────────────────────────
     await log('[build:react] npm install (timeout 300 s)');
@@ -222,14 +233,7 @@ export const ViteStrategy: DeployStrategy = {
   },
 
   async build(srcDir, log) {
-    // ── pre-install cleanup ──────────────────────────────────────────────────
-    const lockfiles = ['package-lock.json', 'npm-shrinkwrap.json', 'yarn.lock', 'pnpm-lock.yaml', 'node_modules'];
-    for (const file of lockfiles) {
-      const filePath = path.join(srcDir, file);
-      if (fs.existsSync(filePath)) {
-        fs.rmSync(filePath, { recursive: true, force: true });
-      }
-    }
+    cleanupLockfiles(srcDir);
 
     // ── npm install ─────────────────────────────────────────────────────────
     await log('[build:vite] npm install (timeout 300 s)');
@@ -325,3 +329,4 @@ export function detectStrategy(srcDir: string): DeployStrategy {
     { statusCode: 422 }
   );
 }
+

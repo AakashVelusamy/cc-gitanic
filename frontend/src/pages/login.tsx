@@ -6,7 +6,45 @@ import { useToast } from '@/contexts/toast-context';
 import { Ship, Eye, EyeOff } from 'lucide-react';
 import { BGPattern } from '@/components/ui/bg-pattern';
 
+/** Pure helper — renders the submit button label and disabled state. */
+function renderSubmitButton(
+  loading: boolean,
+  isLogin: boolean,
+  step: number,
+  otpSent: boolean,
+  email: string,
+  otp: string,
+  username: string,
+): React.ReactNode {
+  let label: React.ReactNode;
+  if (loading)                    label = <Ship className="animate-bounce" size={24} />;
+  else if (isLogin)               label = 'Sign In';
+  else if (step === 1 && otpSent) label = 'Next';
+  else if (step === 1)            label = 'Send OTP';
+  else if (step < 3)              label = 'Next';
+  else                            label = 'Create Account';
+
+  const isDisabled =
+    loading ||
+    (!isLogin && (
+      (step === 1 && !otpSent && !email.trim()) ||
+      (step === 1 && otpSent  && otp.length !== 6) ||
+      (step === 2 && !username.trim())
+    ));
+
+  return (
+    <button
+      type="submit"
+      disabled={isDisabled}
+      className="w-full btn-primary py-3 flex justify-center items-center gap-2 text-lg disabled:opacity-50 disabled:cursor-not-allowed"
+    >
+      {label}
+    </button>
+  );
+}
+
 export default function LoginPage() {
+
   const router = useRouter();
   const { toast } = useToast();
   const isLogin = router.query.mode !== 'signup';
@@ -49,7 +87,7 @@ export default function LoginPage() {
         await handleSendOtp();
         return;
       }
-      if (!otp || otp.length !== 6) {
+      if (otp.length !== 6) {
         toast('Please enter the 6-digit verification code', 'error');
         return;
       }
@@ -119,9 +157,47 @@ export default function LoginPage() {
           <div className="glass rounded-2xl py-8 px-4 sm:px-10 shadow-2xl">
             <form
               className="space-y-6"
-              onSubmit={isLogin ? handleSubmit : (step === 3 ? handleSubmit : handleNext)}
+              onSubmit={isLogin || step === 3 ? handleSubmit : handleNext}
             >
-              {!isLogin ? (
+              {isLogin ? (
+                /* ── Login form ──────────────────────────────────────── */
+                <>
+                  <div>
+                    <label className="block text-sm font-medium text-foreground mb-1" htmlFor="login-username">Username</label>
+                    <input
+                      id="login-username"
+                      type="text"
+                      required
+                      autoComplete="username"
+                      value={username}
+                      onChange={(e) => setUsername(e.target.value)}
+                      className={inputClass}
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-foreground mb-1" htmlFor="login-password">Password</label>
+                    <div className="relative">
+                      <input
+                        id="login-password"
+                        type={showPassword ? "text" : "password"}
+                        required
+                        autoComplete="current-password"
+                        value={password}
+                        onChange={(e) => setPassword(e.target.value)}
+                        className={inputClass}
+                        style={{ paddingRight: "3rem" }}
+                      />
+                      <button
+                        type="button"
+                        onClick={() => setShowPassword(!showPassword)}
+                        className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                      >
+                        {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                      </button>
+                    </div>
+                  </div>
+                </>
+              ) : (
                 step === 1 ? (
                   /* ── Signup Step 1: Email + OTP ─────────────────────── */
                   <>
@@ -151,7 +227,7 @@ export default function LoginPage() {
                         disabled={!otpSent}
                         value={otp}
                         onChange={(e) => setOtp(e.target.value.replaceAll(/\D/g, '').slice(0, 6))}
-                        className={`${!otpSent ? disabledInputClass : inputClass} text-center text-xl tracking-[0.5em] font-mono`}
+                        className={`${otpSent ? inputClass : disabledInputClass} text-center text-xl tracking-[0.5em] font-mono`}
 
                       />
                     </div>
@@ -227,71 +303,9 @@ export default function LoginPage() {
                     </div>
                   </>
                 )
-              ) : (
-                /* ── Login form ──────────────────────────────────────── */
-                <>
-                  <div>
-                    <label className="block text-sm font-medium text-foreground mb-1" htmlFor="login-username">Username</label>
-                    <input
-                      id="login-username"
-                      type="text"
-                      required
-                      autoComplete="username"
-                      value={username}
-                      onChange={(e) => setUsername(e.target.value)}
-                      className={inputClass}
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-foreground mb-1" htmlFor="login-password">Password</label>
-                    <div className="relative">
-                      <input
-                        id="login-password"
-                        type={showPassword ? "text" : "password"}
-                        required
-                        autoComplete="current-password"
-                        value={password}
-                        onChange={(e) => setPassword(e.target.value)}
-                        className={inputClass}
-                        style={{ paddingRight: "3rem" }}
-                      />
-                      <button
-                        type="button"
-                        onClick={() => setShowPassword(!showPassword)}
-                        className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
-                      >
-                        {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
-                      </button>
-                    </div>
-                  </div>
-                </>
               )}
 
-              {(() => {
-                let submitLabel: React.ReactNode;
-                if (loading) submitLabel = <Ship className="animate-bounce" size={24} />;
-                else if (isLogin) submitLabel = 'Sign In';
-                else if (step === 1 && otpSent) submitLabel = 'Next';
-                else if (step === 1) submitLabel = 'Send OTP';
-                else if (step < 3) submitLabel = 'Next';
-                else submitLabel = 'Create Account';
-                return (
-                  <button
-                    type="submit"
-                    disabled={
-                      loading ||
-                      (!isLogin && (
-                        (step === 1 && !otpSent && !email.trim()) ||
-                        (step === 1 && otpSent && otp.length !== 6) ||
-                        (step === 2 && !username.trim())
-                      ))
-                    }
-                    className="w-full btn-primary py-3 flex justify-center items-center gap-2 text-lg disabled:opacity-50 disabled:cursor-not-allowed"
-                  >
-                    {submitLabel}
-                  </button>
-                );
-              })()}
+              {renderSubmitButton(loading, isLogin, step, otpSent, email, otp, username)}
             </form>
           </div>
         </div>

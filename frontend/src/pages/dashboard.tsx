@@ -23,14 +23,14 @@ export default function DashboardPage() {
   const [repoLanguages, setRepoLanguages] = useState<Record<string, string>>({});
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState('');
-  const [, setTick] = useState(0);
+  const [tick, setTick] = useState(0);
 
   useEffect(() => {
     if (!getToken()) {
       router.push(routes.login);
       return;
     }
-    void fetchDashboardData();
+    fetchDashboardData().catch(() => undefined);
 
     // Auto-update time display every minute
     const timer = setInterval(() => setTick(t => t + 1), 60000);
@@ -45,8 +45,8 @@ export default function DashboardPage() {
       if (sorted.length === 0) {
         toast('No Repositories Yet', 'info');
       } else {
-        // Fetch languages in parallel
-        Promise.all(sorted.map(async (repo) => {
+        // Fetch languages in parallel (fire-and-forget: each card updates independently)
+        void Promise.all(sorted.map(async (repo) => {
            try {
               const tree = await fetchApi<TreeEntry[]>(`/api/repos/${repo.name}/tree?ref=HEAD&path=`);
               const lang = detectLanguage(tree);
@@ -54,7 +54,7 @@ export default function DashboardPage() {
                  setRepoLanguages(prev => ({...prev, [repo.id]: lang}));
               }
            } catch {
-              // ignore
+              // ignore individual repo language fetch failures
            }
         }));
       }
@@ -69,6 +69,18 @@ export default function DashboardPage() {
     const q = filter.trim().toLowerCase();
     return q ? repos.filter((r) => r.name.toLowerCase().includes(q)) : repos;
   }, [filter, repos]);
+
+  /**
+   * Memoised map of repo.id → human-readable time-ago string.
+   * tick is included as a dependency so this recomputes every minute
+   * (setInterval raises tick) — making all timestamp labels stay current.
+   */
+  const repoTimes = useMemo(
+    () => Object.fromEntries(
+      repos.map(r => [r.id, timeAgo(r.updated_at || r.created_at)])
+    ),
+    [repos, tick],  // tick intentionally causes 60-second refresh of labels
+  );
 
   if (loading) {
     return (
@@ -102,7 +114,7 @@ export default function DashboardPage() {
         </div>
 
         {repos.length > 0 && (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
              {filteredRepos.map((repo) => (
                   <Link key={repo.id} href={routes.repo(repo.name)} className="glass glass-hover px-5 py-4 rounded-xl border border-white/5 flex flex-col justify-between group gap-3 min-w-0">
                       <div className="flex items-center gap-2 font-semibold text-foreground group-hover:text-primary transition-colors pr-2 min-w-0 w-full justify-between"> 
@@ -115,7 +127,7 @@ export default function DashboardPage() {
                       <div className="flex items-center justify-between mt-1">
                          <div className="flex items-center gap-2 text-xs text-muted-foreground shrink-0">
                             <Clock size={12} />
-                            <span className="whitespace-nowrap">{timeAgo(repo.updated_at || repo.created_at)}</span>
+                             <span className="whitespace-nowrap">{repoTimes[repo.id]}</span>
                          </div>
                          {repoLanguages[repo.id] && (
                             <LanguageBadge language={repoLanguages[repo.id]} size="sm" />
@@ -136,10 +148,10 @@ function numToWords(n: number): string {
   const b = ['', '', 'twenty', 'thirty', 'forty', 'fifty', 'sixty', 'seventy', 'eighty', 'ninety'];
   
   if (n < 20) return a[n];
-  if (n < 100) return b[Math.floor(n / 10)] + (n % 10 !== 0 ? ' ' + a[n % 10] : '');
+  if (n < 100) return b[Math.floor(n / 10)] + (n % 10 === 0 ? '' : ' ' + a[n % 10]);
   
   // Basic thousands/hundreds mapping just in case, though max needed is likely < 100
-  if (n < 1000) return a[Math.floor(n / 100)] + ' hundred' + (n % 100 !== 0 ? ' ' + numToWords(n % 100) : '');
+  if (n < 1000) return a[Math.floor(n / 100)] + ' hundred' + (n % 100 === 0 ? '' : ' ' + numToWords(n % 100));
   return n.toString();
 }
 

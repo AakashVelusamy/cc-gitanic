@@ -48,7 +48,20 @@ function assertSafePath(resolvedPath: string, base: string): void {
   }
 }
 
-
+/**
+ * Assert that `repo` exists and is owned by `userId`.
+ * Throws 403 with `message` if either check fails.
+ * Centralises the repeated ownership guard used across the pipeline and API.
+ */
+function assertRepoOwner(
+  repo: { owner_id: string } | null | undefined,
+  userId: string,
+  message = 'Access denied',
+): asserts repo is { owner_id: string } {
+  if (repo?.owner_id !== userId) {
+    throw createError(403, message);
+  }
+}
 
 // ── Log helper ────────────────────────────────────────────────────────────────
 
@@ -150,9 +163,7 @@ async function runPipeline(
     await log('[validate] Checking repository and auto_deploy status');
     const repo = await RepoRepository.findById(repoId);
 
-    if (!repo || repo.owner_id !== userId) {
-      throw createError(403, 'Repository not found or access denied');
-    }
+    assertRepoOwner(repo, userId, 'Repository not found or access denied');
 
     // First-time push: auto_deploy_enabled is still false.
     // We allow it — the DB trigger will flip the flag on first success.
@@ -336,7 +347,7 @@ export const DeploymentService = {
     const dep = await DeploymentRepository.findById(deploymentId);
     if (!dep) throw createError(404, 'Deployment not found');
     const repo = await RepoRepository.findById(dep.repo_id);
-    if (!repo || repo.owner_id !== userId) throw createError(403, 'Access denied');
+    assertRepoOwner(repo, userId);
     return dep;
   },
 
@@ -345,7 +356,7 @@ export const DeploymentService = {
     const dep = await DeploymentRepository.findById(deploymentId);
     if (!dep) throw createError(404, 'Deployment not found');
     const repo = await RepoRepository.findById(dep.repo_id);
-    if (!repo || repo.owner_id !== userId) throw createError(403, 'Access denied');
+    assertRepoOwner(repo, userId);
     return LogRepository.findByDeployment(deploymentId);
   },
 

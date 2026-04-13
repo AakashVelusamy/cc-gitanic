@@ -344,8 +344,7 @@ export const RepoService = {
    */
   async resolveDeploymentId(username: string, repoName: string): Promise<string | null> {
     const row = await RepoRepository.findByUsernameAndRepoName(username, repoName);
-    if (!row || !row.active_deployment_id) return null;
-    return row.active_deployment_id;
+    return row?.active_deployment_id ?? null;
   },
 
   /**

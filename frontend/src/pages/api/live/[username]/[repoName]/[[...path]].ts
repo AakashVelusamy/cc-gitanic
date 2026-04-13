@@ -43,6 +43,22 @@ function inferContentType(filePath: string): string {
   return ext ? map[ext] || 'application/octet-stream' : 'application/octet-stream';
 }
 
+/** Rewrite HTML asset paths and inject a <base> tag so relative resources resolve correctly. */
+function rewriteHtml(html: string, basePath: string): string {
+  const baseTag = `<base href="${basePath}/" />`;
+  const rewritten = html
+    .replaceAll(/(src|href)="\/([^"]+)"/g, `$1="${basePath}/$2"`)
+    .replaceAll(/(src|href)='\/([^']+)'/g, `$1='${basePath}/$2'`);
+
+  if (rewritten.includes('<head>')) {
+    return rewritten.replace('<head>', `<head>${baseTag}`);
+  }
+  if (rewritten.includes('<HEAD>')) {
+    return rewritten.replace('<HEAD>', `<HEAD>${baseTag}`);
+  }
+  return baseTag + rewritten;
+}
+
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
   try {
     const { username, repoName, path } = req.query;
@@ -121,21 +137,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     const buffer = await supabaseRes.arrayBuffer();
 
     if (contentType.includes('text/html')) {
-        let htmlStr = Buffer.from(buffer).toString('utf-8');
-        const basePath = `/api/live/${uname}/${repoOrId}`;
-        const baseTag = `<base href="${basePath}/" />`;
-        
-        // Rewrite absolute asset paths to point to the proxy base path
-        htmlStr = htmlStr.replace(/(src|href)="\/([^"]+)"/g, `$1="${basePath}/$2"`);
-        htmlStr = htmlStr.replace(/(src|href)='\/([^']+)'/g, `$1='${basePath}/$2'`);
-
-        if (htmlStr.includes('<head>')) {
-            htmlStr = htmlStr.replace('<head>', `<head>${baseTag}`);
-        } else if (htmlStr.includes('<HEAD>')) {
-            htmlStr = htmlStr.replace('<HEAD>', `<HEAD>${baseTag}`);
-        } else {
-            htmlStr = baseTag + htmlStr;
-        }
+        const htmlStr = rewriteHtml(Buffer.from(buffer).toString('utf-8'), `/api/live/${uname}/${repoOrId}`);
         res.setHeader('Content-Type', contentType);
         res.setHeader('Cache-Control', 'public, max-age=60');
         res.send(htmlStr);
