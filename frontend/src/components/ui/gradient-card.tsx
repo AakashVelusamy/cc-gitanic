@@ -9,7 +9,12 @@ export type GradientCardData = Readonly<{
 }>;
 
 function renderIcon(icon: React.ReactNode, className: string) {
-  return icon ? <div className={className}>{icon}</div> : null;
+  const iconFallback = icon ?? null;
+  const elements = {
+    true: <div className={className}>{iconFallback}</div>,
+    false: null
+  };
+  return elements[String(!!iconFallback) as 'true' | 'false'];
 }
 
 function MobileCard({ title, desc, gradient, icon }: { title: string, desc: string, gradient: string, icon?: React.ReactNode }) {
@@ -17,13 +22,41 @@ function MobileCard({ title, desc, gradient, icon }: { title: string, desc: stri
   const cardRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    if (!touched) return;
     function dismiss(e: TouchEvent) {
-      if (!cardRef.current?.contains(e.target as Node)) setTouched(false);
+      const isOutside = !cardRef.current?.contains(e.target as Node);
+      const outsideActions = {
+        true: () => setTouched(false),
+        false: () => {}
+      };
+      outsideActions[String(isOutside) as 'true' | 'false']();
     }
-    document.addEventListener('touchstart', dismiss, { passive: true });
-    return () => document.removeEventListener('touchstart', dismiss);
+
+    const bindActions = {
+      true: () => document.addEventListener('touchstart', dismiss, { passive: true }),
+      false: () => {}
+    };
+
+    const unbindActions = {
+      true: () => document.removeEventListener('touchstart', dismiss),
+      false: () => {}
+    };
+
+    bindActions[String(touched) as 'true' | 'false']();
+    return unbindActions[String(touched) as 'true' | 'false'];
   }, [touched]);
+
+  const st = {
+    true: {
+      left: '10px', width: 'calc(100% - 40px)', transform: 'skewX(0deg)',
+      blobTop: '-30px', blobLeft: '30px', blobSize: '60px', blobOpacity: 1,
+      blobBottom: '-30px', blobRight: '30px'
+    },
+    false: {
+      left: '20px', width: '50%', transform: 'skewX(15deg)',
+      blobTop: '0px', blobLeft: '0px', blobSize: '0px', blobOpacity: 0,
+      blobBottom: '0px', blobRight: '0px'
+    }
+  }[String(touched) as 'true' | 'false'];
 
   return (
     <div
@@ -31,10 +64,10 @@ function MobileCard({ title, desc, gradient, icon }: { title: string, desc: stri
       className="md:hidden relative w-full max-w-[90vw] sm:max-w-[480px] h-[130px] sm:h-[150px] m-2 sm:m-3 transition-all duration-500"
       onTouchStart={() => setTouched(true)}
     >
-      <span className="absolute top-0 h-full rounded-2xl transition-all duration-500" style={{ background: gradient, left: touched ? '10px' : '20px', width: touched ? 'calc(100% - 40px)' : '50%', transform: touched ? 'skewX(0deg)' : 'skewX(15deg)' }} />
-      <span className="absolute top-0 h-full rounded-2xl blur-[20px] opacity-70 transition-all duration-500" style={{ background: gradient, left: touched ? '10px' : '20px', width: touched ? 'calc(100% - 40px)' : '50%', transform: touched ? 'skewX(0deg)' : 'skewX(15deg)' }} />
-      <span className="pointer-events-none absolute rounded-2xl bg-white/10 backdrop-blur-[10px] animate-blob transition-all duration-300" style={{ top: touched ? '-30px' : '0px', left: touched ? '30px' : '0px', width: touched ? '60px' : '0px', height: touched ? '60px' : '0px', opacity: touched ? 1 : 0, zIndex: 10 }} />
-      <span className="pointer-events-none absolute rounded-2xl bg-white/10 backdrop-blur-[10px] animate-blob animation-delay-1000 transition-all duration-500" style={{ bottom: touched ? '-30px' : '0px', right: touched ? '30px' : '0px', width: touched ? '60px' : '0px', height: touched ? '60px' : '0px', opacity: touched ? 1 : 0, zIndex: 10 }} />
+      <span className="absolute top-0 h-full rounded-2xl transition-all duration-500" style={{ background: gradient, left: st.left, width: st.width, transform: st.transform }} />
+      <span className="absolute top-0 h-full rounded-2xl blur-[20px] opacity-70 transition-all duration-500" style={{ background: gradient, left: st.left, width: st.width, transform: st.transform }} />
+      <span className="pointer-events-none absolute rounded-2xl bg-white/10 backdrop-blur-[10px] animate-blob transition-all duration-300" style={{ top: st.blobTop, left: st.blobLeft, width: st.blobSize, height: st.blobSize, opacity: st.blobOpacity, zIndex: 10 }} />
+      <span className="pointer-events-none absolute rounded-2xl bg-white/10 backdrop-blur-[10px] animate-blob animation-delay-1000 transition-all duration-500" style={{ bottom: st.blobBottom, right: st.blobRight, width: st.blobSize, height: st.blobSize, opacity: st.blobOpacity, zIndex: 10 }} />
       <div className="relative z-20 h-full flex flex-row items-center gap-4 px-5 py-4 bg-white/5 backdrop-blur-xl border border-white/10 shadow-2xl rounded-2xl text-white">
         {renderIcon(icon, 'shrink-0 text-white/90')}
         <div className="flex flex-col text-left min-w-0">
