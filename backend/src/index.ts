@@ -1,4 +1,4 @@
-﻿import 'dotenv/config';
+import 'dotenv/config';
 import express from 'express';
 import { requestLogger } from './middleware/requestLogger';
 import { errorHandler }  from './middleware/errorHandler';
@@ -16,6 +16,7 @@ import internalRouter from './routes/internal';
 initLogSubscribers();
 
 const app = express();
+app.disable('x-powered-by');
 const PORT = Number.parseInt(process.env.PORT ?? '3000', 10);
 
 // CORS: restrict to frontend origin; credentials require explicit origin (not wildcard)

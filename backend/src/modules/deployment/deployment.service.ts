@@ -21,6 +21,7 @@
 
 import path       from 'node:path';
 import fs         from 'node:fs';
+import os         from 'node:os';
 import { execFileSync } from 'node:child_process';
 import { DeploymentRepository, LogRepository, DeploymentRow, LogRow }   from './deployment.repository';
 import { RepoRepository }                        from '../repos/repo.repository';
@@ -36,8 +37,11 @@ import { bustDeploymentCache, bustLocalServeCache } from '../../lib/cacheBust';
 
 // ── Constants ─────────────────────────────────────────────────────────────────
 
-/** Ephemeral build workspaces live under /tmp/build */
-const BUILD_ROOT = '/tmp/build';
+/** Ephemeral build workspaces live under safe temp dir */
+const BUILD_ROOT = process.env.BUILD_DIR || path.join(os.tmpdir(), 'gitanic-build');
+
+/** Path to trusted git binary, allowing local Windows machines to execute via PATH gracefully. */
+const GIT_BIN = process.env.GIT_BIN_PATH || (os.platform() === 'win32' ? 'git' : '/usr/bin/git');
 
 /** Validate a path stays within a base directory to prevent traversal (S2083). */
 function assertSafePath(resolvedPath: string, base: string): void {
@@ -67,10 +71,10 @@ function assertRepoOwner(
 
 function makeLog(deploymentId: string, repoId: string, userId: string) {
   return async (text: string): Promise<void> => {
-    // Parse "[step] message" — pipeline calls use lowercase step names
-    const stepMatch = /^\[([a-zA-Z0-9:_]+)\][ \t]*(.*)$/.exec(text);
-    const step      = stepMatch?.[1].toLowerCase() ?? 'info';
-    const msgBody   = stepMatch?.[2] ?? text;
+    // Parse "[step] message" safely to avoid RegExp ReDOS (super-linear runtime)
+    const prefixMatch = /^\[([a-zA-Z0-9:_]+)\]/.exec(text);
+    const step      = prefixMatch?.[1].toLowerCase() ?? 'info';
+    const msgBody   = prefixMatch ? text.slice(prefixMatch[0].length).trimStart() : text;
 
     logger.info(`[pipeline:${deploymentId.slice(0, 8)}] ${text}`, {
       userId, repoId, deploymentId,
@@ -105,7 +109,7 @@ function stepCheckout(
   fs.mkdirSync(workDir, { recursive: true });
 
   execFileSync(
-    'git',
+    GIT_BIN,
     [
       `--git-dir=${repoPath}`,
       `--work-tree=${workDir}`,
@@ -128,11 +132,11 @@ function stepCheckout(
 function getCommitInfo(repoPath: string): { sha: string; message: string } {
   try {
     const sha = execFileSync(
-      'git', ['--git-dir', repoPath, 'rev-parse', 'HEAD'],
+      GIT_BIN, ['--git-dir', repoPath, 'rev-parse', 'HEAD'],
       { encoding: 'utf8', timeout: 5_000 }
     ).trim();
     const message = execFileSync(
-      'git', ['--git-dir', repoPath, 'log', '-1', '--pretty=%s'],
+      GIT_BIN, ['--git-dir', repoPath, 'log', '-1', '--pretty=%s'],
       { encoding: 'utf8', timeout: 5_000 }
     ).trim();
     return { sha, message };

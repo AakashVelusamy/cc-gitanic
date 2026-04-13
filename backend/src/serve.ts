@@ -72,6 +72,7 @@ async function resolveDeployment(username: string): Promise<string | null> {
 const SAFE_USERNAME_RE = /^[a-z0-9][a-z0-9-]{0,62}[a-z0-9]$|^[a-z0-9]$/;
 
 const app = express();
+app.disable('x-powered-by');
 app.use(express.json());
 
 // Health check
