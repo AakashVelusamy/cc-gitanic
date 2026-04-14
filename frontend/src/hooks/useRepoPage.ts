@@ -7,9 +7,9 @@ import { useState, useCallback, useEffect } from 'react';
 import { useRouter } from 'next/router';
 import { fetchApi, getCanonicalUsername, getToken, getTokenPayload } from '@/lib/api';
 import { routes } from '@/lib/routes';
-import { useToast } from '@/contexts/toast-context';
+import { useToast } from '@/contexts/toastContext';
 import { supabase } from '@/lib/supabase';
-import { detectLanguage, TreeEntry } from '@/components/file-browser';
+import { detectLanguage, TreeEntry } from '@/components/fileBrowser';
 
 export interface RepoData {
   id: string;
@@ -35,19 +35,19 @@ export interface CommitInfo {
  * earlier entries take priority over later ones (first-match wins).
  */
 const DEPLOY_STEP_LABELS: ReadonlyArray<readonly [string, string]> = [
-  ['strategy selected',    'Strategized' ],
-  ['running vite build',   'Building'    ],
-  ['npm run build',        'Building'    ],
-  ['build:',               'Building'    ],
-  ['compiled successfully','Built'       ],
-  ['built in',             'Built'       ],
-  ['output directory:',    'Built'       ],
-  ['workspace removed',    'Cleaned'     ],
-  ['cleanup',              'Cleaned'     ],
-  ['upload complete',      'Uploaded'    ],
-  ['uploading',            'Uploading'   ],  // after "upload complete" to avoid false match
-  ['transferred',          'Transferred' ],
-  ['transferring',         'Transferring'],  // after "transferred" to avoid false match
+  ['strategy selected', 'Strategized'],
+  ['running vite build', 'Building'],
+  ['npm run build', 'Building'],
+  ['build:', 'Building'],
+  ['compiled successfully', 'Built'],
+  ['built in', 'Built'],
+  ['output directory:', 'Built'],
+  ['workspace removed', 'Cleaned'],
+  ['cleanup', 'Cleaned'],
+  ['upload complete', 'Uploaded'],
+  ['uploading', 'Uploading'],  // after "upload complete" to avoid false match
+  ['transferred', 'Transferred'],
+  ['transferring', 'Transferring'],  // after "transferred" to avoid false match
 ] satisfies Array<[string, string]>;
 
 /**

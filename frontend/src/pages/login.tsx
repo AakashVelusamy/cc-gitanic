@@ -8,10 +8,10 @@ import { useState } from 'react';
 import { useRouter } from 'next/router';
 import { fetchApi, setToken } from '@/lib/api';
 import { routes } from '@/lib/routes';
-import { useToast } from '@/contexts/toast-context';
+import { useToast } from '@/contexts/toastContext';
 import { Ship, Eye, EyeOff } from 'lucide-react';
 import Image from 'next/image';
-import { BGPattern } from '@/components/ui/bg-pattern';
+import { BGPattern } from '@/components/ui/bgPattern';
 
 
 const INPUT_CLASS =
@@ -197,11 +197,11 @@ function SignupStep3({
 
 // resolve submit button label
 function resolveSubmitLabel(loading: boolean, isLogin: boolean, step: number, otpSent: boolean): React.ReactNode {
-  if (loading)                    return <Ship className="animate-bounce" size={24} />;
-  if (isLogin)                    return 'Sign In';
-  if (step === 1 && otpSent)      return 'Next';
-  if (step === 1)                 return 'Send OTP';
-  if (step < 3)                   return 'Next';
+  if (loading) return <Ship className="animate-bounce" size={24} />;
+  if (isLogin) return 'Sign In';
+  if (step === 1 && otpSent) return 'Next';
+  if (step === 1) return 'Send OTP';
+  if (step < 3) return 'Next';
   return 'Create Account';
 }
 
@@ -210,8 +210,8 @@ function isSubmitDisabled(loading: boolean, isLogin: boolean, step: number, otpS
   if (loading) return true;
   if (isLogin) return false;
   if (step === 1 && !otpSent) return !email.trim();
-  if (step === 1 && otpSent)  return otp.length !== 6;
-  if (step === 2)             return !username.trim();
+  if (step === 1 && otpSent) return otp.length !== 6;
+  if (step === 2) return !username.trim();
   return false;
 }
 
@@ -340,13 +340,13 @@ export default function LoginPage() {
         <div className="mx-auto w-full max-w-md relative z-10 text-center mb-8">
           <div className="flex justify-center mb-6">
             <div className="w-16 h-16 flex items-center justify-center drop-shadow-[0_0_15px_rgba(0,240,255,0.5)] animate-pulse-slow">
-              <Image 
-                src="/logo.png" 
-                alt="Gitanic" 
-                width={64} 
-                height={64} 
-                priority 
-                className="w-16 h-16 object-contain" 
+              <Image
+                src="/logo.png"
+                alt="Gitanic"
+                width={64}
+                height={64}
+                priority
+                className="w-16 h-16 object-contain"
               />
             </div>
           </div>

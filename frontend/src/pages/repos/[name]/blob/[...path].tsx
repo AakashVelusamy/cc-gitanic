@@ -7,13 +7,13 @@ import { useEffect, useState, useCallback } from 'react';
 import { useRouter } from 'next/router';
 import { fetchApi, getToken } from '@/lib/api';
 import { routes } from '@/lib/routes';
-import { useToast } from '@/contexts/toast-context';
-import { MarkdownContent } from '@/components/markdown-content';
+import { useToast } from '@/contexts/toastContext';
+import { MarkdownContent } from '@/components/markdownContent';
 import { ChevronRight, Folder, Copy, Check, Download, ArrowLeft, Image as ImageIcon, FileCode, Binary, Ship } from 'lucide-react';
 import Link from 'next/link';
 import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter';
 import { vscDarkPlus } from 'react-syntax-highlighter/dist/cjs/styles/prism';
-import { BGPattern } from '@/components/ui/bg-pattern';
+import { BGPattern } from '@/components/ui/bgPattern';
 
 interface BlobResult {
   content: string;

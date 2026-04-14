@@ -5,12 +5,12 @@
 // orchestrates clone url copying and deletion actions
 import { useRouter } from 'next/router';
 import { routes } from '@/lib/routes';
-import { FileBrowser } from '@/components/file-browser';
-import { MarkdownContent } from '@/components/markdown-content';
+import { FileBrowser } from '@/components/fileBrowser';
+import { MarkdownContent } from '@/components/markdownContent';
 import { FolderCode, Ship } from 'lucide-react';
-import { BGPattern } from '@/components/ui/bg-pattern';
+import { BGPattern } from '@/components/ui/bgPattern';
 import { useRepoPage } from '@/hooks/useRepoPage';
-import { RepoHeader } from '@/components/repo-header';
+import { RepoHeader } from '@/components/repoHeader';
 
 export default function RepositoryPage() {
   const router = useRouter();

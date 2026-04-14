@@ -9,9 +9,9 @@ import Link from 'next/link';
 import { ArrowDown, Code2, Rocket, Ship, Zap, ArrowRight } from 'lucide-react';
 import { getToken } from '@/lib/api';
 import { motion } from 'framer-motion';
-import { BGPattern } from '@/components/ui/bg-pattern';
-import { GradientCard } from '@/components/ui/gradient-card';
-import { ContainerScroll } from '@/components/ui/container-scroll-animation';
+import { BGPattern } from '@/components/ui/bgPattern';
+import { GradientCard } from '@/components/ui/gradientCard';
+import { ContainerScroll } from '@/components/ui/containerScrollAnimation';
 
 const cards = [
   {
@@ -87,7 +87,7 @@ export default function Home() {
                 transition={{ delay: 0.3, duration: 0.6 }}
                 className="mx-auto mb-10 max-w-2xl text-xl md:text-2xl text-muted-foreground font-light"
               >
-                
+
               </motion.p>
 
               <motion.div
@@ -125,14 +125,14 @@ export default function Home() {
           >
             <ArrowDown className="h-6 w-6 text-muted-foreground" />
           </motion.div>
-        <hr className="absolute bottom-0 border-t border-white/10 w-full z-30 m-0" />
+          <hr className="absolute bottom-0 border-t border-white/10 w-full z-30 m-0" />
         </section>
 
         <section id="features" className="relative flex flex-col items-center lg:justify-center justify-start h-auto lg:h-[calc(100dvh-114px)] min-h-0 lg:min-h-[calc(100dvh-114px)] pt-32 pb-16 md:pt-16 md:pb-8 lg:py-8 w-full px-4 md:snap-start lg:snap-start md:snap-always shrink-0">
           <BGPattern variant="grid" mask="fade-edges" size={32} fill="rgba(255,255,255,0.07)" />
           <div className="relative z-50 max-w-6xl mx-auto text-center mb-12 md:mb-10 lg:mb-12">
             <h2 className="text-4xl md:text-6xl font-black text-white glow-text mb-4">How It Works?</h2>
-            
+
           </div>
           <div className="md:hidden flex flex-col items-center w-full mt-8">
             {cards.map((c) => <GradientCard key={c.title} {...c} />)}
@@ -148,7 +148,7 @@ export default function Home() {
           <div className="hidden lg:flex justify-center flex-wrap">
             {cards.map((c) => <GradientCard key={c.title} {...c} />)}
           </div>
-        <hr className="absolute bottom-0 border-t border-white/10 w-full z-30 m-0" />
+          <hr className="absolute bottom-0 border-t border-white/10 w-full z-30 m-0" />
         </section>
 
         <section className="relative md:snap-start md:snap-always h-auto md:h-[calc(100dvh-114px)] min-h-0 md:min-h-[calc(100dvh-114px)] py-16 md:py-0 w-full flex flex-col md:flex-row items-center justify-center shrink-0 overflow-hidden">
@@ -170,7 +170,7 @@ export default function Home() {
               <p className="text-sm font-mono uppercase tracking-widest"></p>
             </div>
           </ContainerScroll>
-        <hr className="absolute bottom-0 border-t border-white/10 w-full z-30 m-0" />
+          <hr className="absolute bottom-0 border-t border-white/10 w-full z-30 m-0" />
         </section>
 
         <section className="relative flex flex-col items-center justify-center h-auto md:h-[calc(100dvh-114px)] min-h-0 md:min-h-[calc(100dvh-114px)] py-16 md:py-8 w-full px-4 overflow-hidden md:snap-start md:snap-always shrink-0">

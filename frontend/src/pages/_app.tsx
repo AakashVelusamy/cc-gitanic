@@ -7,9 +7,9 @@ import '@/globals.css';
 import type { AppProps } from 'next/app';
 import { Footer } from '@/components/footer';
 import { Navbar } from '@/components/navbar';
-import { ToastProvider } from '@/contexts/toast-context';
+import { ToastProvider } from '@/contexts/toastContext';
 import Head from 'next/head';
-import { BGPattern } from '@/components/ui/bg-pattern';
+import { BGPattern } from '@/components/ui/bgPattern';
 
 export default function App({ Component, pageProps }: AppProps) {
   return (
