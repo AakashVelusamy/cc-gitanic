@@ -91,6 +91,10 @@ function stepCheckout(
     {
       stdio: 'pipe',
       timeout: 60_000,
+      env: {
+        ...process.env,
+        GIT_INDEX_FILE: path.join(workDir, '.git-index-' + Math.random().toString(36).slice(2)),
+      }
     }
   );
 }

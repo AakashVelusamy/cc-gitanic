@@ -56,7 +56,7 @@ export const RepoRepository = {
       `SELECT r.id, r.name, r.owner_id, r.auto_deploy_enabled, r.active_deployment_id, r.created_at,
               COALESCE((SELECT MAX(h.deployed_at) FROM deployment_history h WHERE h.repo_id = r.id), r.created_at) AS updated_at
          FROM repositories r
-        WHERE r.owner_id = $1 AND r.name = $2
+        WHERE r.owner_id = $1 AND LOWER(r.name) = LOWER($2)
         LIMIT 1`,
       [ownerId, name]
     );
@@ -69,7 +69,7 @@ export const RepoRepository = {
       `SELECT r.id, r.name, r.owner_id, r.auto_deploy_enabled, r.active_deployment_id, r.created_at
          FROM repositories r
          JOIN users u ON u.id = r.owner_id
-        WHERE u.username = $1 AND r.name = $2
+        WHERE LOWER(u.username) = LOWER($1) AND LOWER(r.name) = LOWER($2)
         LIMIT 1`,
       [username, repoName]
     );
