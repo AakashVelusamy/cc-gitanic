@@ -83,7 +83,7 @@ export default function App({ Component, pageProps }: AppProps) {
     return () => container.removeEventListener('scroll', onScroll);
   }, [isHomePage]);
 
-  const isLoggedIn = typeof globalThis.window === 'undefined' ? false : !!getToken();
+  const isLoggedIn = globalThis.window === undefined ? false : !!getToken();
 
   return (
     <ToastProvider>
