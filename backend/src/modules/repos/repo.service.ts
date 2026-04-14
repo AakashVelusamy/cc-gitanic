@@ -391,7 +391,7 @@ export const RepoService = {
       try {
         RepoFactory.rename(username, normalizedNewName, normalizedOldName);
       } catch (e) {
-        logger.error(`[RepoService] FS rollback failed after DB fail for ${normalizedOldName}->${normalizedNewName}`, { error: e });
+        logger.error(`[RepoService] FS rollback failed after DB fail for ${normalizedOldName}->${normalizedNewName}`, { meta: { error: String(e) } });
       }
       throw createError(500, `Failed to update database record: ${err instanceof Error ? err.message : String(err)}`);
     }
