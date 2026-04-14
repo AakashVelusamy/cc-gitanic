@@ -52,6 +52,16 @@ app.use(errorHandler);
 app.listen(PORT, async () => {
   console.log(`[HTTP] Server listening on port ${PORT}`);
 
+  // log environment context
+  try {
+    const { execSync } = await import('node:child_process');
+    const whoami = execSync('whoami', { encoding: 'utf8' }).trim();
+    const id = execSync('id', { encoding: 'utf8' }).trim();
+    console.log(`[System] Running as user: ${whoami} (${id})`);
+  } catch {
+    console.log('[System] Could not determine current user');
+  }
+
   // fix git dubious ownership errors on linux (Railway volumes)
   try {
     const { execFileSync } = await import('node:child_process');
