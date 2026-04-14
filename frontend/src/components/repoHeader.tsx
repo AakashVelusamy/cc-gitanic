@@ -95,14 +95,14 @@ export function RepoHeader({
                   <button
                     onClick={onEdit}
                     className="bg-secondary/50 text-foreground hover:bg-white/10 transition-colors rounded-lg flex-1 lg:w-[46px] flex items-center justify-center border border-white/10 hover:border-white/20 shadow-lg h-full"
-                    title="Edit repo name"
+                    title="Edit Repository Name"
                   >
                     <Edit2 size={16} />
                   </button>
                   <button
                     onClick={onDelete}
                     className="bg-destructive/10 text-destructive hover:bg-destructive hover:text-destructive-foreground transition-colors rounded-lg flex-1 lg:w-[46px] flex items-center justify-center border border-destructive/20 hover:border-destructive shadow-lg h-full"
-                    title="Delete repository"
+                    title="Delete Repository"
                   >
                     <Trash2 size={16} />
                   </button>
@@ -122,14 +122,14 @@ export function RepoHeader({
                   <button
                     onClick={onEdit}
                     className="bg-secondary/50 text-foreground hover:bg-white/10 transition-colors rounded-lg flex-1 lg:w-[46px] flex items-center justify-center border border-white/10 hover:border-white/20 shadow-lg h-full"
-                    title="Edit repo name"
+                    title="Edit Repository Name"
                   >
                     <Edit2 size={16} />
                   </button>
                   <button
                     onClick={onDelete}
                     className="bg-destructive/10 text-destructive hover:bg-destructive hover:text-destructive-foreground transition-colors rounded-lg flex-1 lg:w-[46px] flex items-center justify-center border border-destructive/20 hover:border-destructive shadow-lg h-full"
-                    title="Delete repository"
+                    title="Delete Repository"
                   >
                     <Trash2 size={16} />
                   </button>
