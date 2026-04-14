@@ -8,6 +8,7 @@
 import { execFileSync } from 'node:child_process';
 import path from 'node:path';
 import { createError } from '../../middleware/errorHandler';
+import { logger } from '../../lib/logger';
 
 const REPOS_ROOT = process.env.REPOS_ROOT ?? '/repos';
 
@@ -28,7 +29,7 @@ function repoPath(username: string, repoName: string): string {
   const resolved = path.join(REPOS_ROOT, username, `${repoName}.git`);
   // final sanity check: ensure constructed path stays within repos_root
   const normalBase = path.resolve(REPOS_ROOT);
-  if (!path.resolve(resolved).startsWith(normalBase + path.sep)) {
+  if (!path.resolve(resolved).startsWith(normalBase + path.sep) && path.resolve(resolved) !== normalBase) {
     throw createError(400, 'Path traversal detected');
   }
   return resolved;
@@ -79,7 +80,7 @@ export interface CommitInfo {
 }
 
 import os from 'node:os';
-const GIT_BIN = process.env.GIT_BIN_PATH || (os.platform() === 'win32' ? 'git' : '/usr/bin/git');
+const GIT_BIN = process.env.GIT_BIN_PATH || 'git';
 
 function gitRun(args: string[], cwd: string): Buffer {
   return execFileSync(GIT_BIN, args, {
@@ -101,8 +102,14 @@ export const RepoGitService = {
     let raw: string;
     try {
       raw = gitRun(['ls-tree', treeRef], cwd).toString('utf8');
-    } catch {
+    } catch (err: any) {
       // repo is empty or path doesn't exist
+      if (err.message?.includes('Not a valid object name') || err.message?.includes('fatal: Not a git repository')) {
+          return [];
+      }
+      logger.error(`[RepoGitService] listTree failed for ${username}/${repoName}: ${err.message}`, {
+          meta: { treeRef, cwd, errorCode: err.code }
+      });
       return [];
     }
 

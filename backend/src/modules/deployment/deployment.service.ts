@@ -26,7 +26,7 @@ import { bustDeploymentCache, bustLocalServeCache } from '../../lib/cacheBust';
 const BUILD_ROOT = process.env.BUILD_DIR || path.join(os.tmpdir(), 'gitanic-build');
 
 // git binary path
-const GIT_BIN = process.env.GIT_BIN_PATH || (os.platform() === 'win32' ? 'git' : '/usr/bin/git');
+const GIT_BIN = process.env.GIT_BIN_PATH || 'git';
 
 // assert that path remains within base directory
 function assertSafePath(resolvedPath: string, base: string): void {

@@ -10,7 +10,7 @@ import os from 'node:os';
 import { execFileSync } from 'node:child_process';
 import crypto from 'node:crypto';
 
-const GIT_BIN = process.env.GIT_BIN_PATH || (os.platform() === 'win32' ? 'git' : '/usr/bin/git');
+const GIT_BIN = process.env.GIT_BIN_PATH || 'git';
 
 import { RepoRepository, RepoRow } from './repo.repository';
 import { createError } from '../../middleware/errorHandler';

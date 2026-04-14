@@ -45,7 +45,7 @@ function buildCgiEnv(
     REMOTE_ADDR: req.socket.remoteAddress ?? '127.0.0.1',
     REMOTE_USER: username,
 
-    PATH: process.env.PATH ?? '/usr/bin:/bin',
+    PATH: process.env.PATH,
     HOME: '/tmp',
 
     GITANIC_REPO:     repoName,
@@ -182,7 +182,7 @@ router.all('/:username/*', (req: Request, res: Response): void => {
   // spawn backend
   const env = buildCgiEnv(req, username, repoName, pathInfo, queryString);
 
-  const GIT_BIN = process.env.GIT_BIN_PATH || (require('node:os').platform() === 'win32' ? 'git' : '/usr/bin/git');
+  const GIT_BIN = process.env.GIT_BIN_PATH || 'git';
 
   const backend = spawn(GIT_BIN, ['http-backend'], {
     env,
