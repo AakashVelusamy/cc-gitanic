@@ -139,7 +139,7 @@ export default function App({ Component, pageProps }: AppProps) {
           <div className="h-16 shrink-0" />
           <Component {...pageProps} />
           {/* bottom spacer: compensates for fixed footer height */}
-          <div className="h-12 md:h-20 shrink-0" />
+          <div className="h-10 md:h-14 shrink-0" />
         </main>
       </div>
     </ToastProvider>

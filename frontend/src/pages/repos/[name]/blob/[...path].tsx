@@ -228,7 +228,7 @@ export default function BlobPage() {
   }
 
   return (
-    <div className="flex-1 flex flex-col bg-background relative overflow-x-hidden pb-12 sm:pb-20">
+    <div className="flex-1 flex flex-col bg-background relative overflow-x-hidden">
       <BGPattern variant="grid" mask="fade-edges" size={32} fill="rgba(255,255,255,0.05)" />
 
       <main className="flex-1 w-full max-w-[1600px] mx-auto px-4 sm:px-6 lg:px-8 mt-6 pb-6">

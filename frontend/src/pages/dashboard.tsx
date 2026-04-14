@@ -98,7 +98,7 @@ export default function DashboardPage() {
   return (
     <div className="flex-1 flex flex-col bg-background relative overflow-x-hidden">
       <BGPattern variant="grid" mask="fade-edges" size={32} fill="rgba(255,255,255,0.05)" />
-      <div className="flex-1 w-full max-w-[1600px] mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      <div className="flex-1 w-full max-w-[1600px] mx-auto px-4 sm:px-6 lg:px-8 pt-8 pb-2">
         <div className="flex flex-col sm:flex-row items-center justify-between gap-4 mb-6">
           <div className="relative w-full md:w-[calc((100%-1rem)/2)] lg:w-[calc((100%-3rem)/4)] shrink-0">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" size={16} />

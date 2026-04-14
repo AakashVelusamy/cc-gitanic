@@ -41,3 +41,5 @@ Thumbs.db
 # We keep the seed data but ignore actual clones in the dev environment
 /tmp/
 *.tsbuildinfo
+
+.claude/

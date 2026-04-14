@@ -334,7 +334,7 @@ export default function LoginPage() {
     <div className="flex-1 flex flex-col bg-background relative overflow-x-hidden">
       <BGPattern variant="grid" mask="fade-edges" size={32} fill="rgba(255,255,255,0.05)" />
 
-      <div className="flex-1 flex flex-col justify-center py-12 px-4 sm:px-6 lg:px-8 relative z-10">
+      <div className="flex-1 flex flex-col justify-center py-6 px-4 sm:px-6 lg:px-8 relative z-10">
         <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] bg-primary/10 blur-[100px] rounded-full pointer-events-none" />
 
         <div className="mx-auto w-full max-w-md relative z-10 text-center mb-8">
