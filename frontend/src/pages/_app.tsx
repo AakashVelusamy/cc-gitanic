@@ -125,8 +125,7 @@ export default function App({ Component, pageProps }: AppProps) {
 
         {/* fixed footer — always visible on inner pages; reveals on scroll-down on homepage */}
         <div
-          className="fixed bottom-0 left-0 right-0 z-50 transition-transform duration-300 ease-in-out"
-          style={{ transform: footerVisible ? 'translateY(0)' : 'translateY(100%)' }}
+          className="fixed bottom-0 left-0 right-0 z-[100]"
         >
           <Footer />
         </div>
@@ -140,7 +139,7 @@ export default function App({ Component, pageProps }: AppProps) {
           <div className="h-16 shrink-0" />
           <Component {...pageProps} />
           {/* bottom spacer: compensates for fixed footer height */}
-          <div className="h-20 shrink-0" />
+          <div className="h-12 md:h-20 shrink-0" />
         </main>
       </div>
     </ToastProvider>

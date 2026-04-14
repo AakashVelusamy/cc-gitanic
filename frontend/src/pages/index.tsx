@@ -51,7 +51,7 @@ export default function Home() {
   return (
     <div className="flex-1 bg-background selection:bg-white/20 w-full overflow-x-hidden relative flex flex-col md:snap-y md:snap-mandatory">
       <div className="relative flex-1 flex flex-col">
-        <section className="relative flex flex-col items-center justify-center overflow-hidden h-[calc(100dvh-112px)] min-h-[calc(100dvh-112px)] py-12 md:py-0 w-full px-4 md:snap-start md:snap-always shrink-0">
+        <section className="relative flex flex-col items-center justify-center overflow-hidden h-[calc(100dvh-112px)] min-h-[calc(100dvh-112px)] pt-20 pb-12 md:py-0 w-full px-4 md:snap-start md:snap-always shrink-0">
           <BGPattern variant="grid" mask="fade-edges" size={32} fill="rgba(255,255,255,0.06)" />
 
           <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[800px] h-[800px] rounded-full pointer-events-none blur-[120px]"
@@ -62,15 +62,15 @@ export default function Home() {
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.6 }}
-              className="flex flex-col items-center relative -translate-y-12"
+              className="flex flex-col items-center relative md:-translate-y-12"
             >
               <motion.div
                 initial={{ opacity: 0, scale: 0.8 }}
                 animate={{ opacity: 1, scale: 1 }}
                 transition={{ delay: 0.1, duration: 0.6 }}
-                className="absolute bottom-full mb-12"
+                className="absolute bottom-full mb-8 md:mb-12"
               >
-                <img src="/logo.png" alt="Gitanic Logo" className="w-24 h-24 object-contain drop-shadow-[0_0_20px_rgba(255,255,255,0.8)]" />
+                <img src="/logo.png" alt="Gitanic Logo" className="w-16 h-16 md:w-24 md:h-24 object-contain drop-shadow-[0_0_20px_rgba(255,255,255,0.8)]" />
               </motion.div>
 
               <motion.h1
