@@ -235,7 +235,7 @@ export default function LoginPage() {
 
   async function handleSendOtp() {
     if (!email.trim()) {
-      toast('Please enter an email address', 'error');
+      toast('Please Enter Your Email Address', 'error');
       return;
     }
     setLoading(true);
@@ -246,7 +246,7 @@ export default function LoginPage() {
       });
       setOtpSent(true);
     } catch (err: unknown) {
-      toast((err as Error).message || 'Failed to send OTP', 'error');
+      toast((err as Error).message || 'Failed To Send OTP', 'error');
     } finally {
       setLoading(false);
     }
@@ -260,7 +260,7 @@ export default function LoginPage() {
     }
     if (step === 1) {
       if (otp.length !== 6) {
-        toast('Please enter the 6-digit verification code', 'error');
+        toast('Please Enter The Recieved Verification Code', 'error');
         return;
       }
       setStep(2);
@@ -268,7 +268,7 @@ export default function LoginPage() {
     }
     if (step === 2) {
       if (!username.trim()) {
-        toast('Please enter a username', 'error');
+        toast('Please Enter Your Username', 'error');
         return;
       }
       setStep(3);
@@ -298,7 +298,7 @@ export default function LoginPage() {
       }
       router.push(routes.dashboard);
     } catch (err: unknown) {
-      toast((err as Error).message || 'An error occurred', 'error');
+      toast((err as Error).message || 'An Error Occurred', 'error');
     } finally {
       setLoading(false);
     }

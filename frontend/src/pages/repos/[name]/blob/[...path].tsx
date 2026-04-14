@@ -93,9 +93,8 @@ function renderFileContent(
         <div className="w-16 h-16 bg-white/5 rounded-2xl flex items-center justify-center mb-4">
           <Binary className="text-muted-foreground" size={32} />
         </div>
-        <h3 className="text-lg font-semibold mb-2">Binary file</h3>
+        <h3 className="text-lg font-semibold mb-2">Binary File</h3>
         <p className="text-muted-foreground text-sm mb-4">
-          This file is {formatBytes(blob.size)} and cannot be displayed as text.
         </p>
         <button onClick={handleDownload} className="btn-secondary inline-flex items-center gap-2">
           <Download size={16} />
@@ -150,7 +149,7 @@ export default function BlobPage() {
       if (e.status === 401) {
         router.push(routes.login);
       } else {
-        toast(e.message || 'Failed to load file', 'error');
+        toast(e.message || 'Failed To Load File', 'error');
         router.push(routes.repo(repoName));
       }
     } finally {
@@ -225,7 +224,7 @@ export default function BlobPage() {
     fileTypeLabel = 'Image';
   } else {
     fileTypeIcon = <Binary size={14} />;
-    fileTypeLabel = 'Binary file';
+    fileTypeLabel = 'Binary File';
   }
 
   return (
@@ -285,7 +284,7 @@ export default function BlobPage() {
                 <button
                   onClick={handleCopy}
                   className="p-2 rounded-lg text-muted-foreground hover:text-primary hover:bg-white/5 transition-all"
-                  title="Copy file content"
+                  title="Copy File Content"
                 >
                   {copied ? <Check size={16} className="text-green-400" /> : <Copy size={16} />}
                 </button>
@@ -293,7 +292,7 @@ export default function BlobPage() {
               <button
                 onClick={handleDownload}
                 className="p-2 rounded-lg text-muted-foreground hover:text-primary hover:bg-white/5 transition-all"
-                title="Download file"
+                title="Download File"
               >
                 <Download size={16} />
               </button>

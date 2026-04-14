@@ -120,7 +120,7 @@ export function useRepoPage(repoName: string, treePath: string = '') {
       if (error.status === 401) {
         router.push(routes.login);
       } else {
-        toast('Repository not found', 'error');
+        toast('Repository Not Found', 'error');
         router.push(routes.dashboard);
       }
     } finally {
@@ -216,51 +216,51 @@ export function useRepoPage(repoName: string, treePath: string = '') {
       const res = await fetchApi<{ deploymentId: string }>(`/api/repos/${repoName}/deploy`, {
         method: 'POST',
       });
-      toast('Deployment enqueued...', 'info');
+      toast('Deployment Enqueued...', 'info');
       setActiveDeploymentTask(res.deploymentId);
     } catch (err: unknown) {
-      toast((err as Error).message || 'Something went wrong with the deployment', 'error');
+      toast((err as Error).message || 'Something Went Wrong With The Deployment', 'error');
       setDeploying(false);
     }
   }
 
   async function handleUndeploy(currentPath: string = '') {
-    if (!confirm('This will take your site offline. Are you sure?')) return;
+    if (!confirm('This Will Take Down Your Hosting. Are You Sure?')) return;
     setUndeploying(true);
     try {
       await fetchApi(`/api/repos/${repoName}/deploy`, { method: 'DELETE' });
-      toast('Site undeployed successfully', 'success');
+      toast('Site Undeployed Successfully', 'success');
       loadRepoData(repoName, currentPath);
     } catch (err: unknown) {
-      toast((err as Error).message || 'Failed to undeploy', 'error');
+      toast((err as Error).message || 'Failed To Undeploy', 'error');
     } finally {
       setUndeploying(false);
     }
   }
 
   async function handleDelete() {
-    if (!confirm('This will permanently delete this repository and all its deployments. Are you sure?')) return;
+    if (!confirm('This Will Permanently Delete This Repository. Are You Sure?')) return;
     try {
       await fetchApi(`/api/repos/${repoName}`, { method: 'DELETE' });
-      toast('Repository deleted', 'success');
+      toast('Repository Deleted', 'success');
       router.push(routes.dashboard);
     } catch (err: unknown) {
-      toast((err as Error).message || 'Failed to delete', 'error');
+      toast((err as Error).message || 'Failed To Delete', 'error');
     }
   }
 
   async function handleEdit() {
-    const newName = prompt('Enter new repository name:', repoName);
+    const newName = prompt('Enter New Repository Name:', repoName);
     if (!newName || newName === repoName) return;
     try {
       await fetchApi(`/api/repos/${repoName}`, {
         method: 'PATCH',
         body: JSON.stringify({ name: newName }),
       });
-      toast('Repository renamed', 'success');
+      toast('Repository Renamed', 'success');
       router.push(routes.repo(newName));
     } catch (err: unknown) {
-      toast((err as Error).message || 'Endpoint not implemented yet', 'error');
+      toast((err as Error).message || 'Endpoint Not Implemented Yet', 'error');
     }
   }
 

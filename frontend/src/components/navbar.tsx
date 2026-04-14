@@ -105,10 +105,10 @@ export function Navbar() {
               return (
                 <div className="flex items-center gap-3">
                   <Link href={routes.login} className={logInClass}>
-                    Log in
+                    Log In
                   </Link>
                   <Link href={routes.signup} className={signUpClass}>
-                    Sign up
+                    Sign Up
                   </Link>
                 </div>
               );

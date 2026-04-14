@@ -65,7 +65,7 @@ export default function DashboardPage() {
         }));
       }
     } catch {
-      toast('Failed to load repositories', 'error');
+      toast('Failed To Load Repositories', 'error');
     } finally {
       setLoading(false);
     }

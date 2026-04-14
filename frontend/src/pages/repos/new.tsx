@@ -53,7 +53,7 @@ export default function NewRepositoryPage() {
       router.push(routes.repo(repo.name));
     } catch (err: unknown) {
       const e = err as { message?: string };
-      toast(e.message || 'Failed to create repository', 'error');
+      toast(e.message || 'Failed To Create Repository', 'error');
       setCreating(false);
     }
   }
