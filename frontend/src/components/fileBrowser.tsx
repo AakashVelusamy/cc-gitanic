@@ -7,6 +7,8 @@
 import Link from 'next/link';
 import { Folder, FileText, Clock, Ship } from 'lucide-react';
 import { routes } from '@/lib/routes';
+import { useWebHaptics } from 'web-haptics/react';
+import { triggerDefaultHaptic } from '@/lib/haptics';
 import {
   Breadcrumb,
   BreadcrumbItem,
@@ -74,6 +76,7 @@ export function detectLanguage(entries: TreeEntry[]): string | null {
 }
 
 export function FileBrowser({ repoName, entries, currentPath = '', loading, onFolderDoubleClick, commits = [], language }: FileBrowserProps) {
+  const { trigger } = useWebHaptics();
   // sort: directories first, then files, both alphabetical
   const sorted = [...entries].sort((a, b) => {
     if (a.type !== b.type) return a.type === 'tree' ? -1 : 1;
@@ -132,7 +135,13 @@ export function FileBrowser({ repoName, entries, currentPath = '', loading, onFo
                   }
                   const rootContent = onFolderDoubleClick ? (
                     <BreadcrumbLink asChild>
-                      <button onClick={() => onFolderDoubleClick('')} className="flex items-center gap-1 sm:gap-1.5 bg-transparent border-none p-0 cursor-pointer">
+                      <button 
+                        onClick={() => {
+                          triggerDefaultHaptic(trigger);
+                          onFolderDoubleClick('');
+                        }} 
+                        className="flex items-center gap-1 sm:gap-1.5 bg-transparent border-none p-0 cursor-pointer"
+                      >
                         <Folder size={12} className="sm:hidden" />
                         <Folder size={14} className="hidden sm:block" />
                         <span className="max-w-[60px] sm:max-w-none truncate">{repoName}</span>
@@ -140,7 +149,11 @@ export function FileBrowser({ repoName, entries, currentPath = '', loading, onFo
                     </BreadcrumbLink>
                   ) : (
                     <BreadcrumbLink asChild>
-                      <Link href={getTreeRoute()} className="flex items-center gap-1 sm:gap-1.5">
+                      <Link 
+                        href={getTreeRoute()} 
+                        className="flex items-center gap-1 sm:gap-1.5"
+                        onClick={() => triggerDefaultHaptic(trigger)}
+                      >
                         <Folder size={12} className="sm:hidden" />
                         <Folder size={14} className="hidden sm:block" />
                         <span className="max-w-[60px] sm:max-w-none truncate">{repoName}</span>
@@ -155,11 +168,25 @@ export function FileBrowser({ repoName, entries, currentPath = '', loading, onFo
                 const isLast = i === parts.length - 1;
                 const partLink = onFolderDoubleClick ? (
                   <BreadcrumbLink asChild>
-                    <button onClick={() => onFolderDoubleClick(partPath)} className="bg-transparent border-none p-0 cursor-pointer max-w-[50px] sm:max-w-[100px] truncate block">{part}</button>
+                    <button 
+                      onClick={() => {
+                        triggerDefaultHaptic(trigger);
+                        onFolderDoubleClick(partPath);
+                      }} 
+                      className="bg-transparent border-none p-0 cursor-pointer max-w-[50px] sm:max-w-[100px] truncate block"
+                    >
+                      {part}
+                    </button>
                   </BreadcrumbLink>
                 ) : (
                   <BreadcrumbLink asChild>
-                    <Link href={getTreeRoute(partPath)} className="max-w-[50px] sm:max-w-[100px] truncate block">{part}</Link>
+                    <Link 
+                      href={getTreeRoute(partPath)} 
+                      className="max-w-[50px] sm:max-w-[100px] truncate block"
+                      onClick={() => triggerDefaultHaptic(trigger)}
+                    >
+                      {part}
+                    </Link>
                   </BreadcrumbLink>
                 );
                 return (
@@ -207,6 +234,7 @@ export function FileBrowser({ repoName, entries, currentPath = '', loading, onFo
               <tr
                 className="border-b border-white/5 hover:bg-white/5 transition-colors group cursor-pointer"
                 onClick={() => {
+                  triggerDefaultHaptic(trigger);
                   if (onFolderDoubleClick) {
                     onFolderDoubleClick(parts.length > 1 ? parts.slice(0, -1).join('/') : '');
                   }
@@ -226,6 +254,7 @@ export function FileBrowser({ repoName, entries, currentPath = '', loading, onFo
                           : getTreeRoute()
                       }
                       className="flex items-center gap-3 text-primary group-hover:text-accent transition-colors font-medium text-sm"
+                      onClick={() => triggerDefaultHaptic(trigger)}
                     >
                       <Folder size={18} className="text-muted-foreground" />
                       ..
@@ -250,6 +279,7 @@ export function FileBrowser({ repoName, entries, currentPath = '', loading, onFo
                   key={entry.sha + entry.name}
                   className="border-b border-white/5 last:border-0 hover:bg-white/5 transition-colors group cursor-pointer"
                   onClick={() => {
+                      triggerDefaultHaptic(trigger);
                       if (entry.type === 'tree' && onFolderDoubleClick) {
                           onFolderDoubleClick(entry.path);
                       }
@@ -262,7 +292,11 @@ export function FileBrowser({ repoName, entries, currentPath = '', loading, onFo
                         <span className="truncate">{entry.name}</span>
                       </div>
                     ) : (
-                      <Link href={href} className="flex items-center gap-3 text-foreground group-hover:text-primary transition-colors text-sm">
+                      <Link 
+                        href={href} 
+                        className="flex items-center gap-3 text-foreground group-hover:text-primary transition-colors text-sm"
+                        onClick={() => triggerDefaultHaptic(trigger)}
+                      >
                         {entryIcon}
                         <span className="truncate">{entry.name}</span>
                       </Link>

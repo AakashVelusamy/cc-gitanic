@@ -128,29 +128,22 @@ DROP FUNCTION IF EXISTS enforce_deployment_immutability();
 -- status transition control
 CREATE OR REPLACE FUNCTION validate_status_transition()
 RETURNS TRIGGER AS $$
-DECLARE
-    enums deployment_status[] := enum_range(NULL::deployment_status);
-    s_pending CONSTANT deployment_status := enums[1];
-    s_building CONSTANT deployment_status := enums[2];
-    s_success CONSTANT deployment_status := enums[3];
-    s_failed CONSTANT deployment_status := enums[4];
 BEGIN
-    -- if status is not changing, it's not a transition; allow all such updates
-    IF OLD.status = NEW.status THEN
+    -- if status is not changing, allow all updates
+    IF OLD.status::text = NEW.status::text THEN
         RETURN NEW;
     END IF;
 
     -- restrict transitions from 'pending'
-    IF OLD.status = s_pending AND NEW.status NOT IN (s_building, s_failed) THEN
-        RAISE EXCEPTION 'Invalid transition';
+    IF OLD.status::text = 'pending' AND NEW.status::text NOT IN ('building', 'failed') THEN
+        RAISE EXCEPTION 'Invalid transition from pending to %', NEW.status;
     END IF;
 
     -- restrict transitions from 'building'
-    IF OLD.status = s_building AND NEW.status NOT IN (s_success, s_failed) THEN
-        RAISE EXCEPTION 'Invalid transition';
+    IF OLD.status::text = 'building' AND NEW.status::text NOT IN ('success', 'failed') THEN
+        RAISE EXCEPTION 'Invalid transition from building to %', NEW.status;
     END IF;
 
-    -- allow other transitions (like re-running from success or failed)
     RETURN NEW;
 END;
 $$ LANGUAGE plpgsql;
@@ -163,10 +156,9 @@ FOR EACH ROW EXECUTE FUNCTION validate_status_transition();
 -- auto deploy trigger
 CREATE OR REPLACE FUNCTION auto_deploy_on_success()
 RETURNS TRIGGER AS $$
-DECLARE
-    s_success CONSTANT deployment_status := (enum_range(NULL::deployment_status))[3];
 BEGIN
-    IF NEW.status = s_success AND OLD.status <> s_success THEN
+    -- atomically update repository active deployment when a build succeeds
+    IF NEW.status::text = 'success' AND OLD.status::text <> 'success' THEN
         UPDATE repositories
         SET active_deployment_id = NEW.id,
             auto_deploy_enabled  = true

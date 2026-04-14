@@ -11,7 +11,10 @@ import { routes } from '@/lib/routes';
 import { useToast } from '@/contexts/toastContext';
 import { Ship, Eye, EyeOff } from 'lucide-react';
 import Image from 'next/image';
+import { useWebHaptics } from 'web-haptics/react';
+import { HapticInput, TriggerOptions } from 'web-haptics';
 import { BGPattern } from '@/components/ui/bgPattern';
+import { triggerDefaultHaptic } from '@/lib/haptics';
 
 
 const INPUT_CLASS =
@@ -26,9 +29,10 @@ interface LoginFieldsProps {
   readonly onUsername: (v: string) => void;
   readonly onPassword: (v: string) => void;
   readonly onTogglePassword: () => void;
+  readonly trigger: (input?: HapticInput, options?: TriggerOptions) => unknown;
 }
 
-function LoginFields({ username, password, showPassword, onUsername, onPassword, onTogglePassword }: Readonly<LoginFieldsProps>) {
+function LoginFields({ username, password, showPassword, onUsername, onPassword, onTogglePassword, trigger }: Readonly<LoginFieldsProps>) {
   return (
     <>
       <div>
@@ -56,7 +60,7 @@ function LoginFields({ username, password, showPassword, onUsername, onPassword,
             className={INPUT_CLASS}
             style={{ paddingRight: '3rem' }}
           />
-          <button type="button" onClick={onTogglePassword} className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground">
+          <button type="button" onClick={() => { triggerDefaultHaptic(trigger); onTogglePassword(); }} className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground">
             {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
           </button>
         </div>
@@ -146,11 +150,13 @@ interface SignupStep3Props {
   readonly onConfirmPassword: (v: string) => void;
   readonly onTogglePassword: () => void;
   readonly onToggleConfirmPassword: () => void;
+  readonly trigger: (input?: HapticInput, options?: TriggerOptions) => unknown;
 }
 
 function SignupStep3({
   password, confirmPassword, showPassword, showConfirmPassword,
   onPassword, onConfirmPassword, onTogglePassword, onToggleConfirmPassword,
+  trigger
 }: Readonly<SignupStep3Props>) {
   return (
     <>
@@ -168,7 +174,7 @@ function SignupStep3({
             className={INPUT_CLASS}
             style={{ paddingRight: '3rem' }}
           />
-          <button type="button" onClick={onTogglePassword} className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground">
+          <button type="button" onClick={() => { triggerDefaultHaptic(trigger); onTogglePassword(); }} className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground">
             {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
           </button>
         </div>
@@ -186,7 +192,7 @@ function SignupStep3({
             className={INPUT_CLASS}
             style={{ paddingRight: '3rem' }}
           />
-          <button type="button" onClick={onToggleConfirmPassword} className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground">
+          <button type="button" onClick={() => { triggerDefaultHaptic(trigger); onToggleConfirmPassword(); }} className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground">
             {showConfirmPassword ? <EyeOff size={18} /> : <Eye size={18} />}
           </button>
         </div>
@@ -218,6 +224,7 @@ function isSubmitDisabled(loading: boolean, isLogin: boolean, step: number, otpS
 // page component
 
 export default function LoginPage() {
+  const { trigger } = useWebHaptics();
   const router = useRouter();
   const { toast } = useToast();
   const isLogin = router.query.mode !== 'signup';
@@ -234,8 +241,10 @@ export default function LoginPage() {
   const [loading, setLoading] = useState(false);
 
   async function handleSendOtp() {
+    triggerDefaultHaptic(trigger);
     if (!email.trim()) {
       toast('Please Enter Your Email Address', 'error');
+      triggerDefaultHaptic(trigger);
       return;
     }
     setLoading(true);
@@ -245,8 +254,10 @@ export default function LoginPage() {
         body: JSON.stringify({ email: email.trim() }),
       });
       setOtpSent(true);
+      triggerDefaultHaptic(trigger);
     } catch (err: unknown) {
       toast((err as Error).message || 'Failed To Send OTP', 'error');
+      triggerDefaultHaptic(trigger);
     } finally {
       setLoading(false);
     }
@@ -277,8 +288,10 @@ export default function LoginPage() {
 
   async function handleSubmit(e: React.SyntheticEvent) {
     e.preventDefault();
+    triggerDefaultHaptic(trigger);
     if (!isLogin && password !== confirmPassword) {
       toast('Passwords do not match', 'error');
+      triggerDefaultHaptic(trigger);
       return;
     }
     setLoading(true);
@@ -296,9 +309,11 @@ export default function LoginPage() {
         });
         setToken(token);
       }
+      triggerDefaultHaptic(trigger);
       router.push(routes.dashboard);
     } catch (err: unknown) {
       toast((err as Error).message || 'An Error Occurred', 'error');
+      triggerDefaultHaptic(trigger);
     } finally {
       setLoading(false);
     }
@@ -310,6 +325,7 @@ export default function LoginPage() {
         <LoginFields
           username={username} password={password} showPassword={showPassword}
           onUsername={setUsername} onPassword={setPassword} onTogglePassword={() => setShowPassword(p => !p)}
+          trigger={trigger}
         />
       );
     }
@@ -326,6 +342,7 @@ export default function LoginPage() {
         onPassword={setPassword} onConfirmPassword={setConfirmPassword}
         onTogglePassword={() => setShowPassword(p => !p)}
         onToggleConfirmPassword={() => setShowConfirmPassword(p => !p)}
+        trigger={trigger}
       />
     );
   }

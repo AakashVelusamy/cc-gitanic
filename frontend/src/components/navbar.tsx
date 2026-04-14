@@ -9,9 +9,12 @@ import { routes } from '@/lib/routes';
 import { LogOut } from 'lucide-react';
 import Image from 'next/image';
 import Link from 'next/link';
+import { useWebHaptics } from 'web-haptics/react';
 import { useEffect, useState } from 'react';
+import { triggerDefaultHaptic } from '@/lib/haptics';
 
 export function Navbar() {
+  const { trigger } = useWebHaptics();
   const router = useRouter();
   const [username, setUsername] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
@@ -51,6 +54,7 @@ export function Navbar() {
   }, [router.asPath]);
 
   const handleLogout = () => {
+    triggerDefaultHaptic(trigger);
     clearToken();
     setUsername(null);
     setIsLoggedIn(false);
@@ -63,7 +67,11 @@ export function Navbar() {
         <div className="flex justify-between items-center h-16">
           {/* logo & brand */}
           <div className="flex items-center gap-3">
-            <Link href={isLoggedIn ? routes.dashboard : routes.home} className="flex items-center gap-2 group">
+            <Link 
+              href={isLoggedIn ? routes.dashboard : routes.home} 
+              className="flex items-center gap-2 group"
+              onClick={() => triggerDefaultHaptic(trigger)}
+            >
               <div className="w-8 h-8 flex items-center justify-center group-hover:drop-shadow-[0_0_10px_rgba(255,255,255,0.8)] transition-all duration-300">
                 <Image
                   src="/logo.png"
@@ -104,10 +112,18 @@ export function Navbar() {
               const signUpClass = `text-sm flex items-center gap-1 ${router.pathname === routes.signup ? 'btn-primary' : 'btn-secondary'}`;
               return (
                 <div className="flex items-center gap-3">
-                  <Link href={routes.login} className={logInClass}>
+                  <Link 
+                    href={routes.login} 
+                    className={logInClass}
+                    onClick={() => triggerDefaultHaptic(trigger)}
+                  >
                     Log In
                   </Link>
-                  <Link href={routes.signup} className={signUpClass}>
+                  <Link 
+                    href={routes.signup} 
+                    className={signUpClass}
+                    onClick={() => triggerDefaultHaptic(trigger)}
+                  >
                     Sign Up
                   </Link>
                 </div>

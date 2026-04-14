@@ -9,7 +9,9 @@ import { fetchApi, getCanonicalUsername, getToken, getTokenPayload } from '@/lib
 import { routes } from '@/lib/routes';
 import { useToast } from '@/contexts/toastContext';
 import { PlusCircle, Ship } from 'lucide-react';
+import { useWebHaptics } from 'web-haptics/react';
 import { BGPattern } from '@/components/ui/bgPattern';
+import { triggerDefaultHaptic } from '@/lib/haptics';
 
 interface Repo {
   id: string;
@@ -17,6 +19,7 @@ interface Repo {
 }
 
 export default function NewRepositoryPage() {
+  const { trigger } = useWebHaptics();
   const router = useRouter();
   const { toast } = useToast();
   const [username, setUsername] = useState('');
@@ -42,6 +45,7 @@ export default function NewRepositoryPage() {
 
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
+    triggerDefaultHaptic(trigger);
     if (!name.trim()) return;
 
     setCreating(true);
@@ -51,9 +55,11 @@ export default function NewRepositoryPage() {
         body: JSON.stringify({ name }),
       });
       router.push(routes.repo(repo.name));
+      triggerDefaultHaptic(trigger);
     } catch (err: unknown) {
       const e = err as { message?: string };
       toast(e.message || 'Failed To Create Repository', 'error');
+      triggerDefaultHaptic(trigger);
       setCreating(false);
     }
   }
@@ -106,7 +112,10 @@ export default function NewRepositoryPage() {
                 <div className="border-t border-white/10 pt-6 sm:pt-8 flex flex-col-reverse sm:flex-row justify-end items-stretch sm:items-center gap-3">
                   <button
                     type="button"
-                    onClick={() => router.push(routes.dashboard)}
+                    onClick={() => {
+                      triggerDefaultHaptic(trigger);
+                      router.push(routes.dashboard);
+                    }}
                     className="h-[42px] px-4 sm:px-6 text-sm font-medium rounded-xl bg-secondary/80 text-foreground hover:bg-secondary transition-colors order-2 sm:order-1"
                   >
                     Cancel

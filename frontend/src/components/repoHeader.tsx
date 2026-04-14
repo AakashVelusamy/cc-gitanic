@@ -8,7 +8,9 @@ import React from 'react';
 import Link from 'next/link';
 import { FolderCode, Terminal, Trash2, Copy, Check, ExternalLink, Ship, PowerOff, Edit2 } from 'lucide-react';
 import { routes } from '@/lib/routes';
+import { useWebHaptics } from 'web-haptics/react';
 import { RepoData } from '@/hooks/useRepoPage';
+import { triggerDefaultHaptic } from '@/lib/haptics';
 
 interface RepoHeaderProps {
   readonly repo: RepoData;
@@ -27,8 +29,34 @@ export function RepoHeader({
   repo, username, deploying, undeploying, copied,
   onDeploy, onUndeploy, onDelete, onEdit, onCopy,
 }: Readonly<RepoHeaderProps>) {
+  const { trigger } = useWebHaptics();
+
+  const handleCopy = () => {
+    triggerDefaultHaptic(trigger);
+    onCopy();
+  };
+
+  const handleDeploy = () => {
+    triggerDefaultHaptic(trigger);
+    onDeploy();
+  };
+
+  const handleUndeploy = () => {
+    triggerDefaultHaptic(trigger);
+    onUndeploy();
+  };
+
+  const handleDelete = () => {
+    triggerDefaultHaptic(trigger);
+    onDelete();
+  };
+
+  const handleEdit = () => {
+    triggerDefaultHaptic(trigger);
+    onEdit();
+  };
   return (
-    <div className="bg-background border-b border-white/5 py-8 mb-8 z-40 backdrop-blur-3xl">
+    <div className="relative bg-background/80 border-b border-white/5 py-8 mb-8 z-10 backdrop-blur-3xl">
       <div className="max-w-[1600px] mx-auto px-4 sm:px-6 lg:px-8 flex flex-col xl:flex-row xl:items-center justify-between gap-6">
         <div className="flex items-center gap-3">
           <div className="w-12 h-12 bg-primary/10 rounded-xl flex items-center justify-center text-primary shadow-[0_0_15px_rgba(255,255,255,0.1)] border border-primary/20 shrink-0">
@@ -49,7 +77,7 @@ export function RepoHeader({
           <div className="flex-1 sm:min-w-[320px] min-w-0 w-full">
             <button
               className="w-full bg-background border border-primary/20 rounded-lg h-[42px] px-3 flex justify-between items-center gap-3 hover:border-primary transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50 cursor-pointer text-left"
-              onClick={onCopy}
+              onClick={handleCopy}
             >
               <div className="flex-1 flex items-center gap-2 min-w-0 overflow-hidden">
                 <Terminal size={14} className="text-primary shrink-0"/>
@@ -70,38 +98,39 @@ export function RepoHeader({
                   href={`/api/live/${username}/${repo.name}/`}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="btn-primary flex items-center justify-center gap-2 shadow-lg shadow-primary/20 h-[42px] px-4 w-full lg:w-auto shrink-0 overflow-hidden text-sm"
+                  className="btn-primary flex items-center justify-center gap-2 shadow-lg shadow-primary/20 h-[42px] px-4 w-full lg:w-auto shrink-0 overflow-hidden text-sm active:scale-95 transition-all"
+                  onClick={() => triggerDefaultHaptic(trigger)}
                 >
                   <ExternalLink size={16} className="shrink-0" />
                   <span className="truncate">View Live</span>
                 </a>
                 <button
-                  onClick={onDeploy}
+                  onClick={handleDeploy}
                   disabled={deploying}
-                  className="btn-primary flex items-center justify-center gap-2 shadow-lg shadow-primary/20 h-[42px] px-4 w-full lg:w-auto shrink-0 overflow-hidden text-sm"
+                  className="btn-primary flex items-center justify-center gap-2 shadow-lg shadow-primary/20 h-[42px] px-4 w-full lg:w-auto shrink-0 overflow-hidden text-sm active:scale-95 transition-all"
                 >
                   <Ship className={`shrink-0 ${deploying ? 'animate-bounce' : ''}`} size={16} />
                   <span className="truncate">{deploying ? 'Deploying' : 'Redeploy'}</span>
                 </button>
                 <button
-                  onClick={onUndeploy}
+                  onClick={handleUndeploy}
                   disabled={undeploying}
-                  className="bg-destructive/10 text-destructive hover:bg-destructive hover:text-destructive-foreground transition-colors px-4 rounded-lg flex items-center justify-center gap-2 text-sm font-medium border border-destructive/20 hover:border-destructive shadow-lg h-[42px] w-full lg:w-auto shrink-0 overflow-hidden"
+                  className="bg-destructive/10 text-destructive hover:bg-destructive hover:text-destructive-foreground transition-all px-4 rounded-lg flex items-center justify-center gap-2 text-sm font-medium border border-destructive/20 hover:border-destructive shadow-lg h-[42px] w-full lg:w-auto shrink-0 overflow-hidden active:scale-95"
                 >
                   {undeploying ? <Ship className="animate-bounce shrink-0" size={16} /> : <PowerOff size={16} className="shrink-0" />}
                   <span className="truncate">Undeploy</span>
                 </button>
                 <div className="flex items-center gap-2 h-[42px] w-full lg:w-auto shrink-0">
                   <button
-                    onClick={onEdit}
-                    className="bg-secondary/50 text-foreground hover:bg-white/10 transition-colors rounded-lg flex-1 lg:w-[46px] flex items-center justify-center border border-white/10 hover:border-white/20 shadow-lg h-full"
+                    onClick={handleEdit}
+                    className="bg-secondary/50 text-foreground hover:bg-white/10 active:bg-white/20 active:scale-95 transition-all rounded-lg flex-1 lg:w-[46px] flex items-center justify-center border border-white/10 hover:border-white/20 shadow-lg h-full"
                     title="Edit Repository Name"
                   >
                     <Edit2 size={16} />
                   </button>
                   <button
-                    onClick={onDelete}
-                    className="bg-destructive/10 text-destructive hover:bg-destructive hover:text-destructive-foreground transition-colors rounded-lg flex-1 lg:w-[46px] flex items-center justify-center border border-destructive/20 hover:border-destructive shadow-lg h-full"
+                    onClick={handleDelete}
+                    className="bg-destructive/10 text-destructive hover:bg-destructive hover:text-destructive-foreground active:scale-95 transition-all rounded-lg flex-1 lg:w-[46px] flex items-center justify-center border border-destructive/20 hover:border-destructive shadow-lg h-full"
                     title="Delete Repository"
                   >
                     <Trash2 size={16} />
@@ -111,7 +140,7 @@ export function RepoHeader({
             ) : (
               <>
                 <button
-                  onClick={onDeploy}
+                  onClick={handleDeploy}
                   disabled={deploying}
                   className="btn-primary flex items-center justify-center gap-2 shadow-lg shadow-primary/20 h-[42px] px-4 w-full lg:w-auto shrink-0"
                 >
@@ -121,14 +150,14 @@ export function RepoHeader({
                 <div className="flex items-center gap-2 h-[42px] w-full lg:w-auto shrink-0">
                   <button
                     onClick={onEdit}
-                    className="bg-secondary/50 text-foreground hover:bg-white/10 transition-colors rounded-lg flex-1 lg:w-[46px] flex items-center justify-center border border-white/10 hover:border-white/20 shadow-lg h-full"
+                    className="bg-secondary/50 text-foreground hover:bg-white/10 active:bg-white/20 active:scale-95 transition-all rounded-lg flex-1 lg:w-[46px] flex items-center justify-center border border-white/10 hover:border-white/20 shadow-lg h-full"
                     title="Edit Repository Name"
                   >
                     <Edit2 size={16} />
                   </button>
                   <button
                     onClick={onDelete}
-                    className="bg-destructive/10 text-destructive hover:bg-destructive hover:text-destructive-foreground transition-colors rounded-lg flex-1 lg:w-[46px] flex items-center justify-center border border-destructive/20 hover:border-destructive shadow-lg h-full"
+                    className="bg-destructive/10 text-destructive hover:bg-destructive hover:text-destructive-foreground active:scale-95 transition-all rounded-lg flex-1 lg:w-[46px] flex items-center justify-center border border-destructive/20 hover:border-destructive shadow-lg h-full"
                     title="Delete Repository"
                   >
                     <Trash2 size={16} />

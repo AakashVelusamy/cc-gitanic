@@ -12,7 +12,9 @@ import { useToast } from '@/contexts/toastContext';
 import { Code2, Search, PlusCircle, Ship, Clock } from 'lucide-react';
 import { detectLanguage, LanguageBadge, TreeEntry } from '@/components/fileBrowser';
 import Link from 'next/link';
+import { useWebHaptics } from 'web-haptics/react';
 import { BGPattern } from '@/components/ui/bgPattern';
+import { triggerDefaultHaptic } from '@/lib/haptics';
 
 interface Repo {
   id: string;
@@ -23,6 +25,7 @@ interface Repo {
 }
 
 export default function DashboardPage() {
+  const { trigger } = useWebHaptics();
   const router = useRouter();
   const { toast } = useToast();
   const [repos, setRepos] = useState<Repo[]>([]);
@@ -110,7 +113,11 @@ export default function DashboardPage() {
               className="w-full bg-secondary/30 border border-white/10 rounded-lg h-[42px] pl-10 pr-4 text-sm focus:outline-none focus:border-primary/50 focus:bg-secondary/50 transition-colors"
             />
           </div>
-          <Link href={routes.newRepo} className="w-full sm:w-auto btn-primary h-[42px] px-4 shadow-md items-center justify-center text-sm font-medium gap-2 hidden sm:flex shrink-0">
+          <Link 
+            href={routes.newRepo} 
+            className="w-full sm:w-auto btn-primary h-[42px] px-4 shadow-md items-center justify-center text-sm font-medium gap-2 hidden sm:flex shrink-0"
+            onClick={() => triggerDefaultHaptic(trigger)}
+          >
             <PlusCircle size={16} /> New Repository
           </Link>
         </div>
@@ -118,7 +125,12 @@ export default function DashboardPage() {
         {repos.length > 0 && (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
             {filteredRepos.map((repo) => (
-              <Link key={repo.id} href={routes.repo(repo.name)} className="glass glass-hover px-5 py-4 rounded-xl border border-white/5 flex flex-col justify-between group gap-3 min-w-0">
+              <Link 
+                key={repo.id} 
+                href={routes.repo(repo.name)} 
+                className="glass glass-hover px-5 py-4 rounded-xl border border-white/5 flex flex-col justify-between group gap-3 min-w-0"
+                onClick={() => triggerDefaultHaptic(trigger)}
+              >
                 <div className="flex items-center gap-2 font-semibold text-foreground group-hover:text-primary transition-colors pr-2 min-w-0 w-full justify-between">
                   <div className="flex items-center gap-2 min-w-0">
                     <Code2 size={16} className="text-muted-foreground group-hover:text-primary shrink-0" />
@@ -147,6 +159,7 @@ export default function DashboardPage() {
           href={routes.newRepo}
           className="btn-primary w-12 h-12 rounded-full flex items-center justify-center shadow-lg shadow-black/40"
           title="New Repository"
+          onClick={() => triggerDefaultHaptic(trigger)}
         >
           <PlusCircle size={28} />
         </Link>
