@@ -4,7 +4,7 @@
 // provides smooth motion transitions via framer-motion
 // integrates with global scroll containers for orchestration
 import React, { useRef, useState, useEffect } from "react";
-import { useScroll, useTransform, motion, MotionValue } from "framer-motion";   
+import { useTransform, motion, useMotionValue, MotionValue } from "framer-motion";
 
 export const ContainerScroll = ({
   titleComponent,
@@ -15,6 +15,8 @@ export const ContainerScroll = ({
 }) => {
   const containerRef = useRef<HTMLDivElement>(null);
   const [isMobile, setIsMobile] = useState(false);
+  // manual scroll progress: 0 = element entering bottom, 1 = fully scrolled in
+  const scrollYProgress = useMotionValue(0);
 
   useEffect(() => {
     const checkMobile = () => setIsMobile(window.innerWidth <= 768);
@@ -23,38 +25,32 @@ export const ContainerScroll = ({
     return () => window.removeEventListener("resize", checkMobile);
   }, []);
 
-  const [scrollEl, setScrollEl] = useState<HTMLElement | null>(null);
-
   useEffect(() => {
-    let active = true;
-    const timeout = setTimeout(() => {
-      const el = document.getElementById("main-scroll-container");
-      if (active && el && window.innerWidth >= 768) {
-        setScrollEl(el);
-      }
-    }, 0);
-    return () => {
-      active = false;
-      clearTimeout(timeout);
-    };
-  }, []);
+    const scrollEl = document.getElementById("main-scroll-container");
+    if (!scrollEl) return;
 
-  const refFallback = useRef<HTMLElement | null>(null);
-  
-  useEffect(() => {
-    refFallback.current = scrollEl;
-  }, [scrollEl]);
+    function updateProgress() {
+      if (!containerRef.current || !scrollEl) return;
+      // getBoundingClientRect gives position relative to the viewport.
+      // Since #main-scroll-container IS the scroll viewport, its top = 64px (spacer)
+      // and bottom = window innerHeight. We use the element's rect directly.
+      const rect = containerRef.current.getBoundingClientRect();
+      const viewportH = scrollEl.clientHeight;
+      // progress 0: rect.top === viewportH  (element just entered from bottom)
+      // progress 1: rect.bottom === viewportH  (element fully scrolled up into view)
+      const progress = (viewportH - rect.top) / rect.height;
+      scrollYProgress.set(Math.min(1, Math.max(0, progress)));
+    }
 
-  const { scrollYProgress } = useScroll(
-    scrollEl 
-      ? { target: containerRef, container: refFallback, offset: ["start end", "end end"] }
-      : { target: containerRef, offset: ["start end", "end end"] }
-  );
+    scrollEl.addEventListener("scroll", updateProgress, { passive: true });
+    // seed value on mount
+    updateProgress();
+    return () => scrollEl.removeEventListener("scroll", updateProgress);
+  }, [scrollYProgress]);
 
-  const scaleDimensions = (): [number, number] => (isMobile ? [0.7, 0.9] : [1.05, 1]);
-
+  const scaleDimensions: [number, number] = isMobile ? [0.7, 0.9] : [1.05, 1];
   const rotate = useTransform(scrollYProgress, [0, 1], [20, 0]);
-  const scale = useTransform(scrollYProgress, [0, 1], scaleDimensions());       
+  const scale = useTransform(scrollYProgress, [0, 1], scaleDimensions);
   const translate = useTransform(scrollYProgress, [0, 1], [0, -40]);
 
   return (
@@ -62,19 +58,20 @@ export const ContainerScroll = ({
       className="h-full flex items-center justify-center relative p-2 md:p-8 w-full"
       ref={containerRef}
     >
-      <div className="py-4 md:py-8 w-full relative h-full flex flex-col items-center justify-center" style={{ perspective: "1000px" }}>
-        <Header translate={translate} titleComponent={titleComponent} />        
-        <Card rotate={rotate} scale={scale}>{children}</Card>
+      <div
+        className="py-4 md:py-8 w-full relative h-full flex flex-col items-center justify-center"
+        style={{ perspective: "1000px" }}
+      >
+        <motion.div style={{ translateY: translate }} className="max-w-5xl mx-auto text-center relative z-20">
+          {titleComponent}
+        </motion.div>
+        <Card rotate={rotate} scale={scale}>
+          {children}
+        </Card>
       </div>
     </div>
   );
 };
-
-const Header = ({ translate, titleComponent }: { translate: MotionValue<number>; titleComponent: React.ReactNode }) => (
-  <motion.div style={{ translateY: translate }} className="max-w-5xl mx-auto text-center relative z-20">
-    {titleComponent}
-  </motion.div>
-);
 
 const Card = ({
   rotate, scale, children,

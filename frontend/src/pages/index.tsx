@@ -51,7 +51,7 @@ export default function Home() {
   return (
     <div className="flex-1 bg-background selection:bg-white/20 w-full overflow-x-hidden relative flex flex-col md:snap-y md:snap-mandatory">
       <div className="relative flex-1 flex flex-col">
-        <section className="relative flex flex-col items-center justify-center overflow-hidden h-[100dvh] min-h-[100dvh] py-12 md:py-0 w-full px-4 md:snap-start md:snap-always shrink-0">
+        <section className="relative flex flex-col items-center justify-center overflow-hidden h-[calc(100dvh-112px)] min-h-[calc(100dvh-112px)] py-12 md:py-0 w-full px-4 md:snap-start md:snap-always shrink-0">
           <BGPattern variant="grid" mask="fade-edges" size={32} fill="rgba(255,255,255,0.06)" />
 
           <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[800px] h-[800px] rounded-full pointer-events-none blur-[120px]"
@@ -128,7 +128,7 @@ export default function Home() {
           <hr className="absolute bottom-0 border-t border-white/10 w-full z-30 m-0" />
         </section>
 
-        <section id="features" className="relative flex flex-col items-center lg:justify-center justify-start h-auto lg:h-[100dvh] min-h-0 lg:min-h-[100dvh] pt-32 pb-16 md:pt-16 md:pb-8 lg:py-8 w-full px-4 md:snap-start lg:snap-start md:snap-always shrink-0">
+        <section id="features" className="relative flex flex-col items-center lg:justify-center justify-start h-auto lg:h-[calc(100dvh-112px)] min-h-0 lg:min-h-[calc(100dvh-112px)] pt-32 pb-16 md:pt-16 md:pb-8 lg:py-8 w-full px-4 md:snap-start lg:snap-start md:snap-always shrink-0">
           <BGPattern variant="grid" mask="fade-edges" size={32} fill="rgba(255,255,255,0.07)" />
           <div className="relative z-50 max-w-6xl mx-auto text-center mb-12 md:mb-10 lg:mb-12">
             <h2 className="text-4xl md:text-6xl font-black text-white glow-text mb-4">How It Works?</h2>
@@ -151,7 +151,7 @@ export default function Home() {
           <hr className="absolute bottom-0 border-t border-white/10 w-full z-30 m-0" />
         </section>
 
-        <section className="relative md:snap-start md:snap-always h-auto md:h-[100dvh] min-h-0 md:min-h-[100dvh] py-16 md:py-0 w-full flex flex-col md:flex-row items-center justify-center shrink-0 overflow-hidden">
+        <section className="relative md:snap-start md:snap-always h-auto md:h-[calc(100dvh-112px)] min-h-0 md:min-h-[calc(100dvh-112px)] py-16 md:py-0 w-full flex flex-col md:flex-row items-center justify-center shrink-0 overflow-hidden">
           <BGPattern variant="grid" mask="fade-edges" size={32} fill="rgba(255,255,255,0.05)" />
           <ContainerScroll
             titleComponent={
@@ -173,7 +173,7 @@ export default function Home() {
           <hr className="absolute bottom-0 border-t border-white/10 w-full z-30 m-0" />
         </section>
 
-        <section className="relative flex flex-col items-center justify-center h-auto md:h-[100dvh] min-h-0 md:min-h-[100dvh] py-16 md:py-8 w-full px-4 overflow-hidden md:snap-start md:snap-always shrink-0">
+        <section className="relative flex flex-col items-center justify-center h-auto md:h-[calc(100dvh-112px)] min-h-0 md:min-h-[calc(100dvh-112px)] py-16 md:py-8 w-full px-4 overflow-hidden md:snap-start md:snap-always shrink-0">
           <BGPattern variant="grid" mask="fade-edges" size={32} fill="rgba(255,255,255,0.08)" />
           <div className="relative max-w-3xl mx-auto text-center">
             <h2 className="text-4xl md:text-6xl font-black mb-6 md:mb-8 glow-text">Ready To Ship?</h2>
