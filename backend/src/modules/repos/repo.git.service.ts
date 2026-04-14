@@ -79,7 +79,6 @@ export interface CommitInfo {
   date: string;
 }
 
-import os from 'node:os';
 const GIT_BIN = process.env.GIT_BIN_PATH || 'git';
 
 function gitRun(args: string[], cwd: string): Buffer {
