@@ -142,13 +142,13 @@ export default function DashboardPage() {
       </div>
 
       {/* mobile fab for new repo */}
-      <div className="fixed bottom-24 right-4 z-40 sm:hidden">
+      <div className="fixed bottom-16 right-4 z-40 sm:hidden">
         <Link
           href={routes.newRepo}
           className="btn-primary w-12 h-12 rounded-full flex items-center justify-center shadow-lg shadow-black/40"
           title="New Repository"
         >
-          <PlusCircle size={22} />
+          <PlusCircle size={28} />
         </Link>
       </div>
     </div>
