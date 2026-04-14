@@ -83,7 +83,7 @@ const Card = ({
       boxShadow:
         "0 0 #0000004d, 0 9px 20px #0000004a, 0 37px 37px #00000042, 0 84px 50px #00000026, 0 149px 60px #0000000a, 0 233px 65px #00000003",
     }}
-    className="max-w-4xl -mt-4 md:-mt-8 mx-auto h-[24rem] md:h-[28rem] lg:h-[32rem] w-full border border-white/15 p-2 bg-[#0a0a0a] rounded-[30px] shadow-2xl relative z-10"
+    className="max-w-4xl -mt-4 md:-mt-8 mx-auto h-[28rem] md:h-[32rem] lg:h-[36rem] w-full border border-white/15 p-2 bg-[#0a0a0a] rounded-[30px] shadow-2xl relative z-10"
   >
     <div className="h-full w-full overflow-hidden rounded-2xl bg-gradient-to-br from-white/5 to-white/[0.02] border border-white/5 md:rounded-2xl flex items-center justify-center">
       {children}

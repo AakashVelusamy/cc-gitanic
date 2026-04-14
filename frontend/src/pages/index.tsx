@@ -86,18 +86,18 @@ export default function Home() {
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: 0.5, duration: 0.6 }}
-                className="absolute top-full mt-12 flex flex-wrap justify-center gap-4 w-max"
+                className="absolute top-full mt-12 flex flex-wrap justify-center gap-3 md:gap-4 w-max"
               >
                 <Link
                   href={isAuthenticated ? routes.dashboard : routes.login}
-                  className="btn-primary text-base inline-flex items-center gap-2"
+                  className="btn-primary text-sm md:text-base px-5 py-2.5 md:px-[1.1rem] md:py-[0.6rem] inline-flex items-center gap-2"
                 >
                   {isAuthenticated ? 'Go To Dashboard' : 'Get Started'}
                   <ArrowRight className="h-4 w-4" />
                 </Link>
                 <Link
                   href="#features"
-                  className="btn-secondary text-base inline-flex items-center gap-2"
+                  className="btn-secondary text-sm md:text-base px-5 py-2.5 md:px-[1.1rem] md:py-[0.6rem] inline-flex items-center gap-2"
                 >
                   Learn More
                   <ArrowDown className="h-4 w-4" />
@@ -143,7 +143,7 @@ export default function Home() {
           <hr className="absolute bottom-0 border-t border-white/10 w-full z-30 m-0" />
         </section>
 
-        <section className="relative md:snap-start md:snap-always h-auto md:h-[calc(100dvh-112px)] min-h-0 md:min-h-[calc(100dvh-112px)] py-16 md:py-0 w-full flex flex-col md:flex-row items-center justify-center shrink-0 overflow-hidden">
+        <section className="relative h-[calc(100dvh-112px)] min-h-[calc(100dvh-112px)] md:snap-start md:snap-always py-8 md:py-0 w-full flex flex-col md:flex-row items-center justify-center shrink-0 overflow-hidden">
           <BGPattern variant="grid" mask="fade-edges" size={32} fill="rgba(255,255,255,0.05)" />
           <ContainerScroll
             titleComponent={
@@ -171,7 +171,7 @@ export default function Home() {
             <h2 className="text-4xl md:text-6xl font-black mb-6 md:mb-8 glow-text">Ready To Ship?</h2>
             <Link
               href={isAuthenticated ? routes.dashboard : routes.login}
-              className="btn-primary text-lg inline-flex items-center gap-2"
+              className="btn-primary text-base md:text-lg px-6 py-3 md:px-8 md:py-4 inline-flex items-center gap-2"
             >
               {isAuthenticated ? 'Go To Dashboard' : 'Start Gitanic Now'}
               <ArrowRight className="h-4 w-4" />
