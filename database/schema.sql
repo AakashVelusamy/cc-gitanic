@@ -143,16 +143,21 @@ FOR EACH ROW EXECUTE FUNCTION enforce_deployment_immutability();
 -- status transition control
 CREATE OR REPLACE FUNCTION validate_status_transition()
 RETURNS TRIGGER AS $$
+DECLARE
+    s_pending CONSTANT deployment_status := 'pending';
+    s_building CONSTANT deployment_status := 'building';
+    s_success CONSTANT deployment_status := 'success';
+    s_failed CONSTANT deployment_status := 'failed';
 BEGIN
-    IF OLD.status = 'success' THEN
+    IF OLD.status = s_success THEN
         RAISE EXCEPTION 'Cannot modify completed deployment';
     END IF;
 
-    IF OLD.status = 'pending' AND NEW.status NOT IN ('building', 'failed') THEN
+    IF OLD.status = s_pending AND NEW.status NOT IN (s_building, s_failed) THEN
         RAISE EXCEPTION 'Invalid transition';
     END IF;
 
-    IF OLD.status = 'building' AND NEW.status NOT IN ('success', 'failed') THEN
+    IF OLD.status = s_building AND NEW.status NOT IN (s_success, s_failed) THEN
         RAISE EXCEPTION 'Invalid transition';
     END IF;
 
@@ -168,8 +173,10 @@ FOR EACH ROW EXECUTE FUNCTION validate_status_transition();
 -- auto deploy trigger
 CREATE OR REPLACE FUNCTION auto_deploy_on_success()
 RETURNS TRIGGER AS $$
+DECLARE
+    s_success CONSTANT deployment_status := 'success';
 BEGIN
-    IF NEW.status = 'success' AND OLD.status <> 'success' THEN
+    IF NEW.status = s_success AND OLD.status <> s_success THEN
         UPDATE repositories
         SET active_deployment_id = NEW.id,
             auto_deploy_enabled  = true
@@ -183,7 +190,6 @@ DROP TRIGGER IF EXISTS trg_auto_deploy ON deployment_history;
 CREATE TRIGGER trg_auto_deploy
 AFTER UPDATE ON deployment_history
 FOR EACH ROW
-WHEN (NEW.status = 'success' AND OLD.status <> 'success')
 EXECUTE FUNCTION auto_deploy_on_success();
 
 -- realtime optimization

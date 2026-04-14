@@ -32,16 +32,16 @@ export default function App({ Component, pageProps }: AppProps) {
 
   // when the route changes away from / reset bars to their non-homepage defaults
   useEffect(() => {
-    if (!isHomePage) {
-      setNavVisible(true);
-      setFooterVisible(true);
-      setShowMiniLogo(false);
-    } else {
+    if (isHomePage) {
       // entering homepage: reset to initial state (nav shown, footer hidden)
       setNavVisible(true);
       setFooterVisible(false);
       setShowMiniLogo(false);
       lastScrollRef.current = 0;
+    } else {
+      setNavVisible(true);
+      setFooterVisible(true);
+      setShowMiniLogo(false);
     }
   }, [isHomePage]);
 
@@ -83,7 +83,7 @@ export default function App({ Component, pageProps }: AppProps) {
     return () => container.removeEventListener('scroll', onScroll);
   }, [isHomePage]);
 
-  const isLoggedIn = typeof window !== 'undefined' ? !!getToken() : false;
+  const isLoggedIn = typeof globalThis.window === 'undefined' ? false : !!getToken();
 
   return (
     <ToastProvider>

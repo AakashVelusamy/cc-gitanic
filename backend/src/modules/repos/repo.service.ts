@@ -196,18 +196,33 @@ exit 0
   rename(username: string, oldName: string, newName: string): void {
     const oldPath = RepoFactory.repoPath(username, oldName);
     const newPath = RepoFactory.repoPath(username, newName);
-    if (!fs.existsSync(oldPath)) {
-      throw createError(404, `Repository directory not found`);
-    }
-    if (fs.existsSync(newPath)) {
+    
+    // Use statSync instead of existsSync to avoid TOCTOU on the destination directory check
+    try {
+      fs.statSync(newPath);
       throw createError(409, `Destination directory already exists`);
+    } catch (err: any) {
+      if (err.status === 409) throw err;
+      // If it throws ENOENT or something else, destination does not exist (expected)
     }
-    fs.renameSync(oldPath, newPath);
+
+    // Try-catch the direct rename to securely assess file operations
+    try {
+      fs.renameSync(oldPath, newPath);
+    } catch (err: any) {
+      if (err.code === 'ENOENT') {
+        throw createError(404, `Repository directory not found`);
+      }
+      throw err;
+    }
 
     const postHookPath = path.join(newPath, 'hooks', 'post-receive');
-    if (fs.existsSync(postHookPath)) {
+    try {
+      fs.accessSync(postHookPath, fs.constants.F_OK);
       const postHookScript = buildPostReceiveHook(username, newName);
       fs.writeFileSync(postHookPath, postHookScript, { encoding: 'utf8', mode: 0o755 });
+    } catch {
+      // ignore if hook path does not exist
     }
 
     logger.info(`[RepoFactory] Renamed repo directory ${oldPath} to ${newPath}`, {
@@ -217,6 +232,12 @@ exit 0
 
   // absolute filesystem path for a repo
   repoPath(username: string, repoName: string): string {
+    if (!/^[a-zA-Z0-9._-]+$/.test(repoName)) {
+      throw createError(400, 'Invalid repository name format');
+    }
+    if (!/^[a-zA-Z0-9-]+$/.test(username)) {
+      throw createError(400, 'Invalid username format');
+    }
     const p = path.join(REPOS_ROOT, username.toLowerCase(), `${repoName.toLowerCase()}.git`);
     assertSafePath(p, REPOS_ROOT);
     return p;
@@ -370,9 +391,9 @@ export const RepoService = {
       try {
         RepoFactory.rename(username, normalizedNewName, normalizedOldName);
       } catch (e) {
-        logger.error(`[RepoService] FS rollback failed after DB fail for ${normalizedOldName}->${normalizedNewName}`);
+        logger.error(`[RepoService] FS rollback failed after DB fail for ${normalizedOldName}->${normalizedNewName}`, { error: e });
       }
-      throw createError(500, `Failed to update database record`);
+      throw createError(500, `Failed to update database record: ${err instanceof Error ? err.message : String(err)}`);
     }
 
     bustDeploymentCache(username).catch(() => undefined);
