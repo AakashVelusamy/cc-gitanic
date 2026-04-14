@@ -136,4 +136,13 @@ export const RepoRepository = {
       [id, ownerId]
     );
   },
+
+  // rename repo
+  async updateName(id: string, ownerId: string, newName: string): Promise<boolean> {
+    const result = await pool.query(
+      `UPDATE repositories SET name = $1 WHERE id = $2 AND owner_id = $3`,
+      [newName, id, ownerId]
+    );
+    return (result.rowCount ?? 0) > 0;
+  },
 };

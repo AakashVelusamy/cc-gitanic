@@ -28,6 +28,9 @@ router.get('/:repoName', RepoController.getOne);
 // delete /api/repos/:reponame  → delete a repo
 router.delete('/:repoName', RepoController.remove);
 
+// patch /api/repos/:reponame  → rename a repo
+router.patch('/:repoName', RepoController.rename);
+
 // get /api/repos/:reponame/tree   → list tree entries
 router.get('/:repoName/tree', RepoController.getTree);
 

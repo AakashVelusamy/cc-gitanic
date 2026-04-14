@@ -19,7 +19,7 @@ export default function RepositoryPage() {
   const {
     repo, entries, readme, commits, language,
     loading, username, deploying, undeploying, copied,
-    handleDeploy, handleUndeploy, handleDelete, handleCopyCloneUrl,
+    handleDeploy, handleUndeploy, handleDelete, handleEdit, handleCopyCloneUrl,
   } = useRepoPage(name, '');
 
   if (loading) {
@@ -48,6 +48,7 @@ export default function RepositoryPage() {
         onDeploy={handleDeploy}
         onUndeploy={() => handleUndeploy('')}
         onDelete={handleDelete}
+        onEdit={handleEdit}
         onCopy={handleCopyCloneUrl}
       />
 

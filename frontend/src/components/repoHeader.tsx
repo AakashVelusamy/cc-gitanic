@@ -6,7 +6,7 @@
 
 import React from 'react';
 import Link from 'next/link';
-import { FolderCode, Terminal, Trash2, Copy, Check, ExternalLink, Ship, PowerOff } from 'lucide-react';
+import { FolderCode, Terminal, Trash2, Copy, Check, ExternalLink, Ship, PowerOff, Edit2 } from 'lucide-react';
 import { routes } from '@/lib/routes';
 import { RepoData } from '@/hooks/useRepoPage';
 
@@ -19,18 +19,19 @@ interface RepoHeaderProps {
   readonly onDeploy: () => void;
   readonly onUndeploy: () => void;
   readonly onDelete: () => void;
+  readonly onEdit: () => void;
   readonly onCopy: () => void;
 }
 
 export function RepoHeader({
   repo, username, deploying, undeploying, copied,
-  onDeploy, onUndeploy, onDelete, onCopy,
+  onDeploy, onUndeploy, onDelete, onEdit, onCopy,
 }: Readonly<RepoHeaderProps>) {
   return (
     <div className="bg-background border-b border-white/5 py-8 mb-8 z-40 backdrop-blur-3xl">
       <div className="max-w-[1600px] mx-auto px-4 sm:px-6 lg:px-8 flex flex-col xl:flex-row xl:items-center justify-between gap-6">
         <div className="flex items-center gap-3">
-          <div className="w-12 h-12 bg-primary/10 rounded-xl flex items-center justify-center text-primary shadow-[0_0_15px_rgba(0,240,255,0.2)] border border-primary/20 shrink-0">
+          <div className="w-12 h-12 bg-primary/10 rounded-xl flex items-center justify-center text-primary shadow-[0_0_15px_rgba(255,255,255,0.1)] border border-primary/20 shrink-0">
             <FolderCode size={24} />
           </div>
           <div className="min-w-0">
@@ -90,13 +91,22 @@ export function RepoHeader({
                   {undeploying ? <Ship className="animate-bounce shrink-0" size={16} /> : <PowerOff size={16} className="shrink-0" />}
                   <span className="truncate">Undeploy</span>
                 </button>
-                <button
-                  onClick={onDelete}
-                  className="bg-destructive/10 text-destructive hover:bg-destructive hover:text-destructive-foreground transition-colors px-4 rounded-lg flex items-center justify-center gap-2 text-sm font-medium border border-destructive/20 hover:border-destructive shadow-lg h-[42px] w-full lg:w-auto shrink-0 overflow-hidden"
-                >
-                  <Trash2 size={16} className="shrink-0" />
-                  <span className="truncate">Delete</span>
-                </button>
+                <div className="flex items-center gap-2 h-[42px] w-full lg:w-auto shrink-0">
+                  <button
+                    onClick={onEdit}
+                    className="bg-secondary/50 text-foreground hover:bg-white/10 transition-colors rounded-lg flex-1 lg:w-[46px] flex items-center justify-center border border-white/10 hover:border-white/20 shadow-lg h-full"
+                    title="Edit repo name"
+                  >
+                    <Edit2 size={16} />
+                  </button>
+                  <button
+                    onClick={onDelete}
+                    className="bg-destructive/10 text-destructive hover:bg-destructive hover:text-destructive-foreground transition-colors rounded-lg flex-1 lg:w-[46px] flex items-center justify-center border border-destructive/20 hover:border-destructive shadow-lg h-full"
+                    title="Delete repository"
+                  >
+                    <Trash2 size={16} />
+                  </button>
+                </div>
               </>
             ) : (
               <>
@@ -108,13 +118,22 @@ export function RepoHeader({
                   <Ship className={deploying ? 'animate-bounce' : ''} size={16} />
                   Deploy
                 </button>
-                <button
-                  onClick={onDelete}
-                  className="bg-destructive/10 text-destructive hover:bg-destructive hover:text-destructive-foreground transition-colors px-4 rounded-lg flex items-center justify-center gap-2 text-sm font-medium border border-destructive/20 hover:border-destructive shadow-lg h-[42px] w-full lg:w-auto shrink-0"
-                >
-                  <Trash2 size={16} />
-                  Delete
-                </button>
+                <div className="flex items-center gap-2 h-[42px] w-full lg:w-auto shrink-0">
+                  <button
+                    onClick={onEdit}
+                    className="bg-secondary/50 text-foreground hover:bg-white/10 transition-colors rounded-lg flex-1 lg:w-[46px] flex items-center justify-center border border-white/10 hover:border-white/20 shadow-lg h-full"
+                    title="Edit repo name"
+                  >
+                    <Edit2 size={16} />
+                  </button>
+                  <button
+                    onClick={onDelete}
+                    className="bg-destructive/10 text-destructive hover:bg-destructive hover:text-destructive-foreground transition-colors rounded-lg flex-1 lg:w-[46px] flex items-center justify-center border border-destructive/20 hover:border-destructive shadow-lg h-full"
+                    title="Delete repository"
+                  >
+                    <Trash2 size={16} />
+                  </button>
+                </div>
               </>
             )}
           </div>

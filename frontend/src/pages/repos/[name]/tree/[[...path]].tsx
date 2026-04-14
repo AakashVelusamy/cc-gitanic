@@ -21,7 +21,7 @@ export default function RepositoryTreePage() {
   const {
     repo, entries, readme, commits, language,
     loading, username, deploying, undeploying, copied,
-    handleDeploy, handleUndeploy, handleDelete, handleCopyCloneUrl,
+    handleDeploy, handleUndeploy, handleDelete, handleEdit, handleCopyCloneUrl,
   } = useRepoPage(repoName, currentPath);
 
   if (loading) {
@@ -48,6 +48,7 @@ export default function RepositoryTreePage() {
         onDeploy={handleDeploy}
         onUndeploy={() => handleUndeploy(currentPath)}
         onDelete={handleDelete}
+        onEdit={handleEdit}
         onCopy={handleCopyCloneUrl}
       />
 

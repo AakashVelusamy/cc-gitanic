@@ -14,6 +14,7 @@ const GIT_BIN = process.env.GIT_BIN_PATH || 'git';
 import { RepoRepository, RepoRow } from './repo.repository';
 import { createError } from '../../middleware/errorHandler';
 import { logger } from '../../lib/logger';
+import { bustDeploymentCache, bustLocalServeCache } from '../../lib/cacheBust';
 
 
 const REPOS_ROOT = process.env.REPOS_ROOT ?? '/repos';
@@ -191,6 +192,29 @@ exit 0
     });
   },
 
+  // rename bare repo directory
+  rename(username: string, oldName: string, newName: string): void {
+    const oldPath = RepoFactory.repoPath(username, oldName);
+    const newPath = RepoFactory.repoPath(username, newName);
+    if (!fs.existsSync(oldPath)) {
+      throw createError(404, `Repository directory not found`);
+    }
+    if (fs.existsSync(newPath)) {
+      throw createError(409, `Destination directory already exists`);
+    }
+    fs.renameSync(oldPath, newPath);
+
+    const postHookPath = path.join(newPath, 'hooks', 'post-receive');
+    if (fs.existsSync(postHookPath)) {
+      const postHookScript = buildPostReceiveHook(username, newName);
+      fs.writeFileSync(postHookPath, postHookScript, { encoding: 'utf8', mode: 0o755 });
+    }
+
+    logger.info(`[RepoFactory] Renamed repo directory ${oldPath} to ${newPath}`, {
+      meta: { username, oldName, newName },
+    });
+  },
+
   // absolute filesystem path for a repo
   repoPath(username: string, repoName: string): string {
     const p = path.join(REPOS_ROOT, username.toLowerCase(), `${repoName.toLowerCase()}.git`);
@@ -308,6 +332,51 @@ export const RepoService = {
         repoId: row.id,
       });
     }
+  },
+
+  // rename repository
+  async rename(userId: string, username: string, oldName: string, newName: string): Promise<void> {
+    const normalizedOldName = oldName.toLowerCase();
+    const normalizedNewName = newName.toLowerCase();
+
+    if (normalizedOldName === normalizedNewName) return;
+
+    if (!normalizedNewName || !REPO_NAME_RE.test(normalizedNewName)) {
+      throw createError(
+        400,
+        'Repository name must be 1–100 characters and contain only letters, numbers, hyphens, underscores, or dots'
+      );
+    }
+    if (normalizedNewName.startsWith('.') || normalizedNewName.endsWith('.')) {
+      throw createError(400, 'Repository name cannot start or end with a dot');
+    }
+
+    const repo = await RepoRepository.findByOwnerAndName(userId, normalizedOldName);
+    if (!repo) throw createError(404, `Repository "${normalizedOldName}" not found`);
+
+    const existingNew = await RepoRepository.findByOwnerAndName(userId, normalizedNewName);
+    if (existingNew) throw createError(409, `Repository "${normalizedNewName}" already exists`);
+
+    try {
+      RepoFactory.rename(username, normalizedOldName, normalizedNewName);
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : String(err);
+      throw createError(500, `Failed to rename git directory: ${msg}`);
+    }
+
+    try {
+      await RepoRepository.updateName(repo.id, userId, normalizedNewName);
+    } catch (err: unknown) {
+      try {
+        RepoFactory.rename(username, normalizedNewName, normalizedOldName);
+      } catch (e) {
+        logger.error(`[RepoService] FS rollback failed after DB fail for ${normalizedOldName}->${normalizedNewName}`);
+      }
+      throw createError(500, `Failed to update database record`);
+    }
+
+    bustDeploymentCache(username).catch(() => undefined);
+    bustLocalServeCache(username).catch(() => undefined);
   },
 };
 

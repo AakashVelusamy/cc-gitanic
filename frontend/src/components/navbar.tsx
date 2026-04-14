@@ -58,13 +58,13 @@ export function Navbar() {
   };
 
   return (
-    <nav className="glass sticky top-0 z-50 w-full m-0 rounded-none rounded-b-2xl border-x-0 border-t-0 backdrop-blur-xl glow-border">
+    <nav className="glass w-full m-0 rounded-none rounded-b-2xl border-x-0 border-t-0 backdrop-blur-xl glow-border">
       <div className="max-w-[1600px] mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between items-center h-16">
           {/* logo & brand */}
           <div className="flex items-center gap-3">
             <Link href={isLoggedIn ? routes.dashboard : routes.home} className="flex items-center gap-2 group">
-              <div className="w-8 h-8 flex items-center justify-center group-hover:drop-shadow-[0_0_10px_rgba(0,240,255,0.8)] transition-all duration-300">
+              <div className="w-8 h-8 flex items-center justify-center group-hover:drop-shadow-[0_0_10px_rgba(255,255,255,0.8)] transition-all duration-300">
                 <Image
                   src="/logo.png"
                   alt="Gitanic"

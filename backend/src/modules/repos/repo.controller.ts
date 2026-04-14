@@ -55,6 +55,23 @@ export const RepoController = {
     }
   },
 
+  // patch /api/repos/:reponame
+  async rename(req: Request, res: Response, next: NextFunction): Promise<void> {
+    try {
+      const { sub: userId, username } = res.locals.user;
+      const oldName = req.params['repoName'] as string;
+      const { name: newName } = req.body as { name?: string };
+      if (!newName) {
+        res.status(400).json({ error: 'New repository name is required' });
+        return;
+      }
+      await RepoService.rename(userId, username, oldName, newName);
+      res.status(200).json({ success: true, name: newName });
+    } catch (err) {
+      next(err);
+    }
+  },
+
   // get /api/repos/:reponame/tree
   async getTree(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {

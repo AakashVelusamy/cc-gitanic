@@ -96,7 +96,7 @@ export default function DashboardPage() {
   }
 
   return (
-    <div className="flex-1 flex flex-col bg-background relative overflow-x-hidden pb-12 sm:pb-20">
+    <div className="flex-1 flex flex-col bg-background relative overflow-x-hidden">
       <BGPattern variant="grid" mask="fade-edges" size={32} fill="rgba(255,255,255,0.05)" />
       <div className="flex-1 w-full max-w-[1600px] mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <div className="flex flex-col sm:flex-row items-center justify-between gap-4 mb-6">
@@ -139,6 +139,17 @@ export default function DashboardPage() {
             ))}
           </div>
         )}
+      </div>
+
+      {/* mobile fab for new repo */}
+      <div className="fixed bottom-6 right-4 z-40 sm:hidden">
+        <Link
+          href={routes.newRepo}
+          className="btn-primary w-12 h-12 rounded-full flex items-center justify-center shadow-lg shadow-black/40"
+          title="New Repository"
+        >
+          <PlusCircle size={22} />
+        </Link>
       </div>
     </div>
   );

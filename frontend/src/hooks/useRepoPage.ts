@@ -249,6 +249,21 @@ export function useRepoPage(repoName: string, treePath: string = '') {
     }
   }
 
+  async function handleEdit() {
+    const newName = prompt('Enter new repository name:', repoName);
+    if (!newName || newName === repoName) return;
+    try {
+      await fetchApi(`/api/repos/${repoName}`, {
+        method: 'PATCH',
+        body: JSON.stringify({ name: newName }),
+      });
+      toast('Repository renamed', 'success');
+      router.push(routes.repo(newName));
+    } catch (err: unknown) {
+      toast((err as Error).message || 'Endpoint not implemented yet', 'error');
+    }
+  }
+
   function handleCopyCloneUrl() {
     if (!repo) return;
     navigator.clipboard.writeText(repo.git_url).catch(console.error);
@@ -260,6 +275,6 @@ export function useRepoPage(repoName: string, treePath: string = '') {
     repo, entries, readme, commits, language,
     loading, username, deploying, undeploying, copied,
     loadRepoData,
-    handleDeploy, handleUndeploy, handleDelete, handleCopyCloneUrl,
+    handleDeploy, handleUndeploy, handleDelete, handleEdit, handleCopyCloneUrl,
   };
 }
