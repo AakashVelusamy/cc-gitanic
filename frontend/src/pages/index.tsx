@@ -12,6 +12,8 @@ import { motion } from 'framer-motion';
 import { BGPattern } from '@/components/ui/bgPattern';
 import { GradientCard } from '@/components/ui/gradientCard';
 import { ContainerScroll } from '@/components/ui/containerScrollAnimation';
+import { useWebHaptics } from 'web-haptics/react';
+import { triggerDefaultHaptic } from '@/lib/haptics';
 
 const cards = [
   {
@@ -40,6 +42,7 @@ const cards = [
 
 
 export default function Home() {
+  const { trigger } = useWebHaptics();
   const [isMounted, setIsMounted] = React.useState(false);
 
   React.useEffect(() => {
@@ -91,6 +94,7 @@ export default function Home() {
                 <Link
                   href={isAuthenticated ? routes.dashboard : routes.login}
                   className="btn-primary text-sm md:text-base px-5 py-2.5 md:px-[1.1rem] md:py-[0.6rem] inline-flex items-center gap-2"
+                  onClick={() => triggerDefaultHaptic(trigger)}
                 >
                   {isAuthenticated ? 'Go To Dashboard' : 'Get Started'}
                   <ArrowRight className="h-4 w-4" />
@@ -98,6 +102,7 @@ export default function Home() {
                 <Link
                   href="#features"
                   className="btn-secondary text-sm md:text-base px-5 py-2.5 md:px-[1.1rem] md:py-[0.6rem] inline-flex items-center gap-2"
+                  onClick={() => triggerDefaultHaptic(trigger)}
                 >
                   Learn More
                   <ArrowDown className="h-4 w-4" />
@@ -172,6 +177,7 @@ export default function Home() {
             <Link
               href={isAuthenticated ? routes.dashboard : routes.login}
               className="btn-primary text-base md:text-lg px-6 py-3 md:px-8 md:py-4 inline-flex items-center gap-2"
+              onClick={() => triggerDefaultHaptic(trigger)}
             >
               {isAuthenticated ? 'Go To Dashboard' : 'Start Gitanic Now'}
               <ArrowRight className="h-4 w-4" />

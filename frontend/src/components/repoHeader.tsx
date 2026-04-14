@@ -65,7 +65,13 @@ export function RepoHeader({
           <div className="min-w-0">
             <div className="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-3 mb-1">
               <h1 className="text-2xl md:text-3xl font-bold flex flex-wrap items-center">
-                <Link href={routes.dashboard} className="text-white break-all hover:text-primary transition-colors">{username}</Link>
+                <Link 
+                  href={routes.dashboard} 
+                  className="text-white break-all hover:text-primary transition-colors"
+                  onClick={() => triggerDefaultHaptic(trigger)}
+                >
+                  {username}
+                </Link>
                 <span className="text-muted-foreground/30 mx-2 font-normal shrink-0">/</span>
                 <span className="text-primary break-all">{repo.name}</span>
               </h1>
@@ -149,14 +155,20 @@ export function RepoHeader({
                 </button>
                 <div className="flex items-center gap-2 h-[42px] w-full lg:w-auto shrink-0">
                   <button
-                    onClick={onEdit}
+                    onClick={() => {
+                      triggerDefaultHaptic(trigger);
+                      onEdit();
+                    }}
                     className="bg-secondary/50 text-foreground hover:bg-white/10 active:bg-white/20 active:scale-95 transition-all rounded-lg flex-1 lg:w-[46px] flex items-center justify-center border border-white/10 hover:border-white/20 shadow-lg h-full"
                     title="Edit Repository Name"
                   >
                     <Edit2 size={16} />
                   </button>
                   <button
-                    onClick={onDelete}
+                    onClick={() => {
+                      triggerDefaultHaptic(trigger);
+                      onDelete();
+                    }}
                     className="bg-destructive/10 text-destructive hover:bg-destructive hover:text-destructive-foreground active:scale-95 transition-all rounded-lg flex-1 lg:w-[46px] flex items-center justify-center border border-destructive/20 hover:border-destructive shadow-lg h-full"
                     title="Delete Repository"
                   >

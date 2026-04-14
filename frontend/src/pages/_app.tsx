@@ -25,8 +25,6 @@ export default function App({ Component, pageProps }: AppProps) {
   const [showMiniLogo, setShowMiniLogo] = useState(false);
   // on homepage: driven by scroll direction. on other pages: always true
   const [navVisible, setNavVisible] = useState(true);
-  // on homepage: driven by scroll direction. on other pages: always true
-  const [footerVisible, setFooterVisible] = useState(true);
   const lastScrollRef = useRef(0);
   const navbarRef = useRef<HTMLElement>(null);
 
@@ -35,12 +33,10 @@ export default function App({ Component, pageProps }: AppProps) {
     if (isHomePage) {
       // entering homepage: reset to initial state
       setNavVisible(true);
-      setFooterVisible(true);
       setShowMiniLogo(false);
       lastScrollRef.current = 0;
     } else {
       setNavVisible(true);
-      setFooterVisible(true);
       setShowMiniLogo(false);
     }
   }, [isHomePage]);
@@ -68,11 +64,9 @@ export default function App({ Component, pageProps }: AppProps) {
         if (delta > 0) {
           // scrolling down — hide navbar
           setNavVisible(false);
-          setFooterVisible(true);
         } else {
           // scrolling up — reveal navbar
           setNavVisible(true);
-          setFooterVisible(true);
         }
       }
 

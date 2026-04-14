@@ -3,7 +3,7 @@
 // provides glassmorphic hover and tilt effects
 // supports custom icon and gradient configurations
 // handles touch-based interaction for mobile devices
-import React, { useState, useEffect, useRef } from 'react';
+import React from 'react';
 
 export type GradientCardData = Readonly<{
   title: string;

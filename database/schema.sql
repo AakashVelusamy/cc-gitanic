@@ -128,6 +128,11 @@ DROP FUNCTION IF EXISTS enforce_deployment_immutability();
 -- status transition control
 CREATE OR REPLACE FUNCTION validate_status_transition()
 RETURNS TRIGGER AS $$
+DECLARE
+    STATUS_PENDING  TEXT := 'pending';
+    STATUS_BUILDING TEXT := 'building';
+    STATUS_SUCCESS  TEXT := 'success';
+    STATUS_FAILED   TEXT := 'failed';
 BEGIN
     -- if status is not changing, allow all updates
     IF OLD.status::text = NEW.status::text THEN
@@ -135,12 +140,12 @@ BEGIN
     END IF;
 
     -- restrict transitions from 'pending'
-    IF OLD.status::text = 'pending' AND NEW.status::text NOT IN ('building', 'failed') THEN
+    IF OLD.status::text = STATUS_PENDING AND NEW.status::text NOT IN (STATUS_BUILDING, STATUS_FAILED) THEN
         RAISE EXCEPTION 'Invalid transition from pending to %', NEW.status;
     END IF;
 
     -- restrict transitions from 'building'
-    IF OLD.status::text = 'building' AND NEW.status::text NOT IN ('success', 'failed') THEN
+    IF OLD.status::text = STATUS_BUILDING AND NEW.status::text NOT IN (STATUS_SUCCESS, STATUS_FAILED) THEN
         RAISE EXCEPTION 'Invalid transition from building to %', NEW.status;
     END IF;
 
@@ -156,9 +161,11 @@ FOR EACH ROW EXECUTE FUNCTION validate_status_transition();
 -- auto deploy trigger
 CREATE OR REPLACE FUNCTION auto_deploy_on_success()
 RETURNS TRIGGER AS $$
+DECLARE
+    STATUS_SUCCESS TEXT := 'success';
 BEGIN
     -- atomically update repository active deployment when a build succeeds
-    IF NEW.status::text = 'success' AND OLD.status::text <> 'success' THEN
+    IF NEW.status::text = STATUS_SUCCESS AND OLD.status::text <> STATUS_SUCCESS THEN
         UPDATE repositories
         SET active_deployment_id = NEW.id,
             auto_deploy_enabled  = true

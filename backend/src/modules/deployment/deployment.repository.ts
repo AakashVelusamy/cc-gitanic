@@ -8,7 +8,14 @@ import { query, pool } from '../../lib/db';
 
 // deployment types
 
-export type DeployStatus = 'pending' | 'building' | 'success' | 'failed';
+export const DEPLOY_STATUS = {
+  PENDING:  'pending',
+  BUILDING: 'building',
+  SUCCESS:  'success',
+  FAILED:   'failed',
+} as const;
+
+export type DeployStatus = typeof DEPLOY_STATUS[keyof typeof DEPLOY_STATUS];
 
 export interface DeploymentRow {
   id: string;
@@ -56,8 +63,8 @@ export const DeploymentRepository = {
   // mark as building
   async markBuilding(id: string): Promise<void> {
     await query(
-      `UPDATE deployment_history SET status = 'building' WHERE id = $1 AND status = 'pending'`,
-      [id]
+      `UPDATE deployment_history SET status = $2 WHERE id = $1 AND status = $3`,
+      [id, DEPLOY_STATUS.BUILDING, DEPLOY_STATUS.PENDING]
     );
   },
 
@@ -65,9 +72,9 @@ export const DeploymentRepository = {
   async markSuccess(id: string, durationMs: number, storagePath: string): Promise<void> {
     await query(
       `UPDATE deployment_history
-          SET status = 'success', duration_ms = $2, storage_path = $3
+          SET status = $4, duration_ms = $2, storage_path = $3
         WHERE id = $1`,
-      [id, durationMs, storagePath]
+      [id, durationMs, storagePath, DEPLOY_STATUS.SUCCESS]
     );
   },
 
@@ -75,9 +82,9 @@ export const DeploymentRepository = {
   async markFailed(id: string, durationMs: number): Promise<void> {
     await query(
       `UPDATE deployment_history
-          SET status = 'failed', duration_ms = $2
+          SET status = $3, duration_ms = $2
         WHERE id = $1`,
-      [id, durationMs]
+      [id, durationMs, DEPLOY_STATUS.FAILED]
     );
   },
 
@@ -120,9 +127,9 @@ export const DeploymentRepository = {
   async findSuccessfulDepIds(repoId: string): Promise<string[]> {
     const rows = await query<{ id: string }>(
       `SELECT id FROM deployment_history
-        WHERE repo_id = $1 AND status = 'success'
+        WHERE repo_id = $1 AND status = $2
         ORDER BY deployed_at DESC`,
-      [repoId]
+      [repoId, DEPLOY_STATUS.SUCCESS]
     );
     return rows.map((r) => r.id);
   },

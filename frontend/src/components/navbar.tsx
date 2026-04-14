@@ -91,12 +91,16 @@ export function Navbar() {
               if (!loading && username) {
                 return (
                   <>
-                    <div className="flex items-center gap-2 px-3 py-1.5 rounded-full text-sm font-medium bg-white/5 border border-white/10">
+                    <Link 
+                      href={routes.dashboard}
+                      className="flex items-center gap-2 px-3 py-1.5 rounded-full text-sm font-medium bg-white/5 border border-white/10 hover:bg-white/10 transition-colors cursor-pointer"
+                      onClick={() => triggerDefaultHaptic(trigger)}
+                    >
                       <div className="w-6 h-6 rounded-full bg-gradient-to-br from-white to-white/40 text-black flex items-center justify-center text-xs font-bold">
                         {username.charAt(0).toUpperCase()}
                       </div>
                       <span className="hidden sm:block">{username}</span>
-                    </div>
+                    </Link>
                     <button
                       className="p-2 rounded-md text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-colors"
                       onClick={handleLogout}
