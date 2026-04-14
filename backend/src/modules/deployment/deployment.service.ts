@@ -8,6 +8,7 @@
 import path       from 'node:path';
 import fs         from 'node:fs';
 import os         from 'node:os';
+import crypto     from 'node:crypto';
 import { execFileSync } from 'node:child_process';
 import { DeploymentRepository, LogRepository, DeploymentRow, LogRow }   from './deployment.repository';
 import { RepoRepository }                        from '../repos/repo.repository';
@@ -93,7 +94,7 @@ function stepCheckout(
       timeout: 60_000,
       env: {
         ...process.env,
-        GIT_INDEX_FILE: path.join(workDir, '.git-index-' + Math.random().toString(36).slice(2)),
+        GIT_INDEX_FILE: path.join(workDir, '.git-index-' + crypto.randomUUID()),
       }
     }
   );
