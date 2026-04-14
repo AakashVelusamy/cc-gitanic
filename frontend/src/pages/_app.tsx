@@ -26,16 +26,16 @@ export default function App({ Component, pageProps }: AppProps) {
   // on homepage: driven by scroll direction. on other pages: always true
   const [navVisible, setNavVisible] = useState(true);
   // on homepage: driven by scroll direction. on other pages: always true
-  const [footerVisible, setFooterVisible] = useState(!isHomePage);
+  const [footerVisible, setFooterVisible] = useState(true);
   const lastScrollRef = useRef(0);
   const navbarRef = useRef<HTMLElement>(null);
 
   // when the route changes away from / reset bars to their non-homepage defaults
   useEffect(() => {
     if (isHomePage) {
-      // entering homepage: reset to initial state (nav shown, footer hidden)
+      // entering homepage: reset to initial state
       setNavVisible(true);
-      setFooterVisible(false);
+      setFooterVisible(true);
       setShowMiniLogo(false);
       lastScrollRef.current = 0;
     } else {
@@ -66,13 +66,13 @@ export default function App({ Component, pageProps }: AppProps) {
           return;
         }
         if (delta > 0) {
-          // scrolling down — hide navbar, reveal footer
+          // scrolling down — hide navbar
           setNavVisible(false);
           setFooterVisible(true);
         } else {
-          // scrolling up — reveal navbar, hide footer
+          // scrolling up — reveal navbar
           setNavVisible(true);
-          setFooterVisible(false);
+          setFooterVisible(true);
         }
       }
 
@@ -139,8 +139,8 @@ export default function App({ Component, pageProps }: AppProps) {
           {/* top spacer: compensates for fixed navbar height (h-16 = 64px) */}
           <div className="h-16 shrink-0" />
           <Component {...pageProps} />
-          {/* bottom spacer: compensates for fixed footer height — only needed on non-homepage */}
-          {!isHomePage && <div className="h-20 shrink-0" />}
+          {/* bottom spacer: compensates for fixed footer height */}
+          <div className="h-20 shrink-0" />
         </main>
       </div>
     </ToastProvider>
