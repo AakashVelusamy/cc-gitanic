@@ -193,7 +193,7 @@ exit 0
 
   // absolute filesystem path for a repo
   repoPath(username: string, repoName: string): string {
-    const p = path.join(REPOS_ROOT, username, `${repoName}.git`);
+    const p = path.join(REPOS_ROOT, username.toLowerCase(), `${repoName.toLowerCase()}.git`);
     assertSafePath(p, REPOS_ROOT);
     return p;
   },

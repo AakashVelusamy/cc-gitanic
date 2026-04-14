@@ -26,7 +26,7 @@ function repoPath(username: string, repoName: string): string {
   if (!SAFE_USERNAME_RE.test(username) || !SAFE_REPO_RE.test(repoName)) {
     throw createError(400, 'Invalid username or repository name');
   }
-  const resolved = path.join(REPOS_ROOT, username, `${repoName}.git`);
+  const resolved = path.join(REPOS_ROOT, username.toLowerCase(), `${repoName.toLowerCase()}.git`);
   // final sanity check: ensure constructed path stays within repos_root
   const normalBase = path.resolve(REPOS_ROOT);
   if (!path.resolve(resolved).startsWith(normalBase + path.sep) && path.resolve(resolved) !== normalBase) {

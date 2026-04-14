@@ -28,7 +28,7 @@ function buildCgiEnv(
   const reposRoot = process.env.REPOS_ROOT ?? '/repos';
 
   return {
-    GIT_PROJECT_ROOT:   path.join(reposRoot, username),
+    GIT_PROJECT_ROOT:   path.join(reposRoot, username.toLowerCase()),
     GIT_HTTP_EXPORT_ALL: '1',   // allow clone of any repo under project_root
 
     REQUEST_METHOD:  req.method,
