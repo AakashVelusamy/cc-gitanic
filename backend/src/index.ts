@@ -51,6 +51,17 @@ app.use(errorHandler);
 // start server
 app.listen(PORT, async () => {
   console.log(`[HTTP] Server listening on port ${PORT}`);
+
+  // fix git dubious ownership errors on linux (Railway volumes)
+  try {
+    const { execFileSync } = await import('node:child_process');
+    const GIT_BIN = process.env.GIT_BIN_PATH || 'git';
+    execFileSync(GIT_BIN, ['config', '--global', '--add', 'safe.directory', '*'], { timeout: 5000 });
+    console.log('[System] Git safe.directory configured.');
+  } catch (err) {
+    console.warn('[System] Warning: Failed to set git safe.directory:', err);
+  }
+
   const shouldSync = process.env.SYNC_REPOS_ON_STARTUP !== 'false';
   if (shouldSync) {
     console.log('[System] SYNC_REPOS_ON_STARTUP=true -> Reconciling repos...');
