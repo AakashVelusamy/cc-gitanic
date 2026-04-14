@@ -62,39 +62,31 @@ export default function Home() {
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.6 }}
-              className="flex flex-col items-center"
+              className="flex flex-col items-center relative"
             >
               <motion.div
                 initial={{ opacity: 0, scale: 0.8 }}
                 animate={{ opacity: 1, scale: 1 }}
                 transition={{ delay: 0.1, duration: 0.6 }}
-                className="mb-8"
+                className="absolute bottom-full mb-8"
               >
                 <img src="/logo.png" alt="Gitanic Logo" className="w-24 h-24 object-contain drop-shadow-[0_0_20px_rgba(255,255,255,0.8)]" />
               </motion.div>
+
               <motion.h1
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: 0.2, duration: 0.6 }}
-                className="mb-6 text-6xl md:text-8xl font-black tracking-tight glow-text"
+                className="text-6xl md:text-8xl font-black tracking-tight glow-text"
               >
                 Commit. Ship. <br className="sm:hidden" /> Repeat.
               </motion.h1>
-
-              <motion.p
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: 0.3, duration: 0.6 }}
-                className="mx-auto mb-10 max-w-2xl text-xl md:text-2xl text-muted-foreground font-light"
-              >
-
-              </motion.p>
 
               <motion.div
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: 0.5, duration: 0.6 }}
-                className="flex flex-wrap justify-center gap-4"
+                className="absolute top-full mt-10 flex flex-wrap justify-center gap-4 w-max"
               >
                 <Link
                   href={isAuthenticated ? routes.dashboard : routes.login}

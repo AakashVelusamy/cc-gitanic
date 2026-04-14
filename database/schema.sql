@@ -144,10 +144,11 @@ FOR EACH ROW EXECUTE FUNCTION enforce_deployment_immutability();
 CREATE OR REPLACE FUNCTION validate_status_transition()
 RETURNS TRIGGER AS $$
 DECLARE
-    s_pending CONSTANT deployment_status := 'pending';
-    s_building CONSTANT deployment_status := 'building';
-    s_success CONSTANT deployment_status := 'success';
-    s_failed CONSTANT deployment_status := 'failed';
+    enums deployment_status[] := enum_range(NULL::deployment_status);
+    s_pending CONSTANT deployment_status := enums[1];
+    s_building CONSTANT deployment_status := enums[2];
+    s_success CONSTANT deployment_status := enums[3];
+    s_failed CONSTANT deployment_status := enums[4];
 BEGIN
     IF OLD.status = s_success THEN
         RAISE EXCEPTION 'Cannot modify completed deployment';
@@ -174,7 +175,7 @@ FOR EACH ROW EXECUTE FUNCTION validate_status_transition();
 CREATE OR REPLACE FUNCTION auto_deploy_on_success()
 RETURNS TRIGGER AS $$
 DECLARE
-    s_success CONSTANT deployment_status := 'success';
+    s_success CONSTANT deployment_status := (enum_range(NULL::deployment_status))[3];
 BEGIN
     IF NEW.status = s_success AND OLD.status <> s_success THEN
         UPDATE repositories
