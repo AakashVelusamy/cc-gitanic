@@ -151,7 +151,7 @@ export function RepoHeader({
                   className="btn-primary flex items-center justify-center gap-2 shadow-lg shadow-primary/20 h-[42px] px-4 w-full lg:w-auto shrink-0"
                 >
                   <Ship className={deploying ? 'animate-bounce' : ''} size={16} />
-                  Deploy
+                  {deploying ? 'Deploying' : 'Deploy'}
                 </button>
                 <div className="flex items-center gap-2 h-[42px] w-full lg:w-auto shrink-0">
                   <button
