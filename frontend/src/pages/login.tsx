@@ -368,7 +368,7 @@ export default function LoginPage() {
             </div>
           </div>
           <h2 className="text-3xl font-bold tracking-tight text-foreground">
-            {isLogin ? 'Welcome Back To Gitanic' : 'Join Gitanic'}
+            {isLogin ? 'Welcome Back To Gitanic' : 'Welcome to Gitanic'}
           </h2>
         </div>
 
