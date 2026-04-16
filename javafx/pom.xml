@@ -81,6 +81,7 @@
                             <classPath>
                                 <mainClass>com.gitanic.Main</mainClass>
                             </classPath>
+                            <icon>src/main/resources/assets/logo.ico</icon>
                             <jre>
                                 <minVersion>17.0.0</minVersion>
                                 <requires64Bit>true</requires64Bit>

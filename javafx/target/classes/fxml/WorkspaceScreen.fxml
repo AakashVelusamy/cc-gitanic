@@ -1,0 +1,108 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<?import javafx.scene.layout.BorderPane?>
+<?import javafx.scene.layout.VBox?>
+<?import javafx.scene.layout.HBox?>
+<?import javafx.scene.layout.Region?>
+<?import javafx.scene.control.Label?>
+<?import javafx.scene.control.Button?>
+<?import javafx.scene.control.ListView?>
+<?import javafx.scene.control.TextArea?>
+<?import javafx.scene.control.TextField?>
+<?import javafx.scene.control.TabPane?>
+<?import javafx.scene.control.Tab?>
+<?import javafx.scene.control.SplitPane?>
+<?import javafx.scene.control.Separator?>
+<?import javafx.geometry.Insets?>
+
+<BorderPane xmlns="http://javafx.com/javafx/17"
+            xmlns:fx="http://javafx.com/fxml/1"
+            fx:controller="com.gitanic.controllers.WorkspaceController"
+            styleClass="screen-root">
+
+    <!-- TOP: Toolbar -->
+    <top>
+        <HBox styleClass="workspace-toolbar" alignment="CENTER_LEFT" spacing="10">
+            <padding><Insets top="8" right="14" bottom="8" left="14"/></padding>
+
+            <Button text="&lt;" onAction="#onBackClicked" styleClass="back-button" prefWidth="32"/>
+            <Separator orientation="VERTICAL" styleClass="bar-sep"/>
+
+            <Label fx:id="repoNameLabel" styleClass="toolbar-repo-name" text=""/>
+
+            <Region HBox.hgrow="ALWAYS"/>
+
+            <Label fx:id="operationStatusLabel" styleClass="op-status-label"/>
+
+            <Button fx:id="syncButton" text="Sync" onAction="#onSyncClicked" styleClass="toolbar-btn-accent"/>
+        </HBox>
+    </top>
+
+    <!-- CENTER: Files sidebar | Diff / File Content tabs -->
+    <center>
+        <SplitPane dividerPositions="0.25" styleClass="main-split">
+
+            <!-- LEFT SIDEBAR: FILE LIST -->
+            <VBox styleClass="sidebar" minWidth="160" prefWidth="220">
+                <HBox styleClass="sidebar-section-bar" alignment="CENTER_LEFT">
+                    <padding><Insets top="6" right="8" bottom="6" left="10"/></padding>
+                    <Label fx:id="filesCountLabel" text="FILES"
+                           styleClass="sidebar-section-label" HBox.hgrow="ALWAYS"/>
+                </HBox>
+                <ListView fx:id="filesListView" VBox.vgrow="ALWAYS" styleClass="file-list"/>
+            </VBox>
+
+            <!-- RIGHT: TABS -->
+            <TabPane fx:id="mainTabPane" tabClosingPolicy="UNAVAILABLE" styleClass="workspace-tabs">
+
+                <!-- 0: DIFF -->
+                <Tab text="  Diff  ">
+                    <VBox spacing="0">
+                        <HBox styleClass="tab-subheader" alignment="CENTER_LEFT">
+                            <padding><Insets top="5" right="10" bottom="5" left="10"/></padding>
+                            <Label fx:id="diffFileLabel" styleClass="diff-file-label"
+                                   text="Select a file to view its diff" HBox.hgrow="ALWAYS"/>
+                        </HBox>
+                        <ListView fx:id="diffListView" VBox.vgrow="ALWAYS" styleClass="diff-list"/>
+                    </VBox>
+                </Tab>
+
+                <!-- 1: FILE CONTENT -->
+                <Tab text="  File Content  ">
+                    <VBox spacing="0">
+                        <HBox styleClass="tab-subheader" alignment="CENTER_LEFT">
+                            <padding><Insets top="5" right="10" bottom="5" left="10"/></padding>
+                            <Label fx:id="fileContentLabel" styleClass="diff-file-label"
+                                   text="Select a file to view its content" HBox.hgrow="ALWAYS"/>
+                        </HBox>
+                        <ListView fx:id="fileContentListView" VBox.vgrow="ALWAYS" styleClass="file-content-list"/>
+                    </VBox>
+                </Tab>
+
+            </TabPane>
+
+        </SplitPane>
+    </center>
+
+    <!-- BOTTOM: Commit bar + Status bar -->
+    <bottom>
+        <VBox>
+            <!-- Compact commit bar -->
+            <HBox styleClass="commit-bar" alignment="CENTER_LEFT" spacing="8">
+                <padding><Insets top="8" right="12" bottom="8" left="12"/></padding>
+                <TextField fx:id="commitMessageField" HBox.hgrow="ALWAYS"/>
+                <Button fx:id="commitAndPushButton"
+                        text="Commit &amp; Push"
+                        onAction="#onCommitAndPushClicked"
+                        styleClass="primary-button"/>
+            </HBox>
+            <!-- Status bar -->
+            <HBox styleClass="status-bar" alignment="CENTER_LEFT">
+                <padding><Insets top="4" right="16" bottom="4" left="16"/></padding>
+                <Label fx:id="statusBarLabel" styleClass="status-bar-label" text=" "/>
+                <Region HBox.hgrow="ALWAYS"/>
+                <Label fx:id="commitStatusLabel" styleClass="muted-label"/>
+            </HBox>
+        </VBox>
+    </bottom>
+
+</BorderPane>
