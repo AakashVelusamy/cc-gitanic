@@ -1,16 +1,14 @@
 # Gitanic
 
-Welcome to Gitanic, a distributed cloud-native Git hosting platform and static website deployment system. This project was developed as part of the coursework for 23XT66 - Cloud Computing Lab at PSG College of Technology.
+## Overview
 
-Gitanic helps developers to easily create Git repositories, push source code, and deploy static websites automatically through one unified interface. We also offer a desktop client that provides a graphical interface similar to GitHub Desktop. For convenience, the package of the entire desktop application is provided as a single portable executable file.
+Gitanic is a distributed cloud-native Git hosting platform combined with a static website deployment system that allows developers to create repositories, push source code, and deploy static websites automatically through a unified interface. The platform also includes a desktop client that provides a graphical interface similar to GitHub Desktop, and the entire application is packaged as a single portable executable for easy distribution and usage.
 
 ---
 
 ## System Architecture
 
-Gitanic operates as a three-service distributed system. By using cloud providers, the platform separates responsibilities to maintain smooth and scalable performance. The backend uses the design of a modular monolith: it runs as a single process for simplicity but keeps the internal modules for authentication, repositories, and deployment pipelines cleanly separated.
-
-Furthermore, instead of relying on traditional reverse proxies for Git operations, we built a custom routing approach. This securely streams data natively through the application environment.
+Gitanic is designed as a three-service distributed system that separates responsibilities across multiple cloud providers to ensure scalability and stable performance under load. The backend follows a modular monolith architecture, where the application runs as a single process while maintaining clear internal separation between modules such as authentication, repository management, and deployment pipelines to improve maintainability.
 
 ```mermaid
 graph TD
@@ -26,33 +24,29 @@ graph TD
     Frontend -.->|Listens to Live Events| Database
 ```
 
-We distribute the workload across the following infrastructure:
-
-| Cloud Service      | Primary Responsibility                                                                                                                                                                                                                                           |
-| ------------------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **Vercel**   | Hosts the primary web interface. It handles rendering and serves custom websites by dynamically fetching data on request without relying on complex wildcard domain setups.                                                                                      |
-| **Railway**  | Hosts the main application server securely within a minimal container environment. This is where background job queues run, deployments execute, and raw repository data is held.                                                                                |
-| **Supabase** | Manages the core data of the system through a relational database. It maintains data access rules so users can only access data they own. It also handles object storage for the files of the hosted site and handles a realtime connection for live build logs. |
+| Cloud Service      | Primary Responsibility                                                                                                                                                                                                                       |
+| :----------------- | :------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Vercel**   | Hosts the frontend interface, while handling dynamic request resolution at runtime to serve deployed websites without relying on complex wildcard domain configuration.                                                                      |
+| **Railway**  | Runs the core backend server inside a lightweight container environment, where it manages background job queues, executes deployment workflows, and stores repository data, allowing controlled and isolated execution of backend processes. |
+| **Supabase** | Manages the database, enforces access rules for user-level isolation, handles object storage for production assets, and streams deployment logs in real time for monitoring.                                                                 |
 
 ---
 
-## Design Patterns
+## Design Patterns Used
 
-To ensure long-term maintainability, the core logic of the application is built using standard design patterns:
-
-| Pattern Utilized                | Application Purpose      | Conceptual Function                                                                                                                                                                                    |
-| ------------------------------- | ------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| **Model View Controller** | Overall Web Architecture | Web pages serve as the view layer, backend routers act as controllers, and dedicated internal services handle the business logic securely.                                                             |
-| **Repository Pattern**    | Database Interactions    | Data logic is entirely separated from the business logic. Server services request data abstractly while specialized database layers process the required queries securely.                             |
-| **Strategy Pattern**      | Build Automation Engine  | The system dynamically inspects incoming code. Based on the framework detected, it smoothly selects and applies the build steps required without hardcoding.                                           |
-| **Observer Pattern**      | Log Streaming Lifecycle  | During a deployment, the system broadcasts internal events whenever a stage starts or finishes. The realtime platform observes these events and forwards them instantly to the client interface.       |
-| **Singleton Pattern**     | Resource Management      | Prevents memory leaks by ensuring that heavy connections - such as database tunnels and client application state - are clearly instantiated only once across the life cycle of the entire application. |
+| Pattern                         | Application              | Conceptual Functionality                                                                                                                                                                     |
+| :------------------------------ | :----------------------- | :------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Model View Controller** | Overall Web Architecture | Separates the frontend, backend routing, and core services into view, controller, and model layers to maintain clear separation of concerns and keep the system easier to extend and manage. |
+| **Repository**            | Database Interaction     | Abstracts database operations through dedicated layers so that application logic does not directly depend on queries, making changes safer and reducing coupling.                            |
+| **Strategy**              | Build Automation Engine  | Selects the appropriate build strategy by analyzing repository structure, allowing the deployment pipeline to be extended easily later on.                                                   |
+| **Observer**              | Log Streaming Lifecycle  | Tracks deployment stages and streams logs to the frontend in real time, allowing users to monitor progress continuously without waiting for the deployment to complete.                      |
+| **Singleton**             | Resource Management      | Maintains single instances of shared resources such as database connections and application state to avoid duplication and control resource usage.                                           |
 
 ---
 
 ## Deployment Pipeline
 
-When a developer updates code or triggers a rebuild manually, the platform safely runs an execution workflow behind the scenes.
+When a developer pushes code or manually triggers a deployment, the platform executes a structured workflow:
 
 ```mermaid
 flowchart TD
@@ -73,13 +67,13 @@ flowchart TD
     Upload -.->|Failure| Abort
 ```
 
-1. **Job Queueing:** The deployment request is pushed into a sequential line. This prevents the server from crashing by running only one active task at a time.
-2. **Workspace Preparation:** The server generates an isolated, temporary workstation folder. All previous dependencies are wiped out to ensure a fresh build context.
-3. **Framework Analysis:** The system completely scans the configuration files of the project to determine the necessary build sequence. If the application requires a persistent backend server, the deployment is blocked to protect the infrastructure.
-4. **Sandboxed Build Execution:** Instead of giving the build complete server access, the deployment runs inside a restricted environment. We give it zero access to system secrets, limited downloading paths, and strict time limits.
-5. **Parallel Object Upload:** After the site is packaged, the thousands of resulting files are chunked together and uploaded simultaneously to the storage servers to maximize the speed of transfer.
-6. **Atomic Database Update:** A database-level trigger executes. This creates a guarantee that the live routing link of a website instantly swaps over to the newly constructed site, but strictly only if the whole process was completely successful.
-7. **Workstation Reset:** The server scrubs the temporary data and cleans out remnants of the build container to free up server storage space.
+- **Job Queueing**: Places deployment requests in a sequential queue so that only one build runs at a time, which prevents resource contention and avoids overloading the server.
+- **Workspace Preparation**: Creates a fresh and isolated workspace for each deployment, ensuring that every build starts in a clean and reproducible environment.
+- **Framework Analysis**: Scans project configuration files to determine the required build strategy, and to prevent deployment of repositories containing unsupported frameworks earlier.
+- **Sandboxed Execution**: Executes the build inside a sandboxed environment with restricted permission, controlled resource access, and enforced time constraint to ensure safe execution.
+- **Parallel Object Upload**: Splits generated files into chunks and uploads them concurrently, improving throughput and reducing overall deployment time.
+- **Atomic Database Update**: Updates the routing layer only after the deployment completes successfully, ensuring users are served a consistent and stable version.
+- **Workspace Reset**: Resets the build environment after deployment, to free resources and maintain system hygiene.
 
 ---
 
@@ -89,12 +83,12 @@ The build system of the platform identifies projects and sets up build rules aut
 
 <div align="center">
 
-| Project Type         | Framework Instances                    | Support Status     |
-|---------------------|----------------------------------------|--------------------|
-| Progressive Web Apps | React, Vue, Svelte, Bundled JavaScript | Fully Supported    |
-| Single Page Apps     | Create React App, Standard SPAs        | Fully Supported    |
-| Static Websites      | Plain HTML, CSS, JavaScript files      | Fully Supported    |
-| Server Side Apps     | Next.js, Nuxt, Django, Express routing | Blocked |
+| Project Type         | Framework Instances                    | Support Status  |
+| -------------------- | -------------------------------------- | --------------- |
+| Progressive Web Apps | React, Vue, Svelte, Bundled JavaScript | Fully Supported |
+| Single Page Apps     | Create React App, Standard SPAs        | Fully Supported |
+| Static Websites      | Plain HTML, CSS, JavaScript files      | Fully Supported |
+| Server Side Apps     | Next.js, Nuxt, Django, Express routing | Blocked         |
 
 </div>
 
@@ -102,45 +96,20 @@ We block server frameworks intentionally to ensure the infrastructure of the pla
 
 ---
 
-## Deployment Routing
-
-Whenever a visitor navigates to a public project link, they see a clean, readable pathway based on the username of the owner and the native project name of the repository. They will not see a randomized system number.
-
-To achieve this, the web application intercepts the request dynamically. It evaluates the project name, safely queries the backend to determine what the newest active state of the site is, and funnels the remote files straight from the server storage bucket to the end user. To guarantee that integrated resources - like custom images or stylesheets - reconnect correctly behind the scenes, we automatically inject mapping metadata natively into the text structure right before the webpage finishes loading on the browser!
-
----
-
-## Technology Stack
+## Technology Stack & Deployment Infrastructure
 
 <div align="center">
 
-| Category        | Stack Used                       |
-|-----------------|----------------------------------|
-| Frontend        | Next.js + Tailwind CSS           |
-| Backend         | Node.js + Express.js             |
-| Database        | PostgreSQL                       |
-| Version Control | Git - CLI + Smart HTTP           |
-| Deployment      | Linux - child_process + npm      |
-| CI/CD           | Git Push Trigger                 |
-| Desktop Application | JavaFX                       |
-| Authentication  | JWT + Basic Auth + bcrypt        |
-
-</div>
-
----
-
-## Deployment Infrastructure
-
-<div align="center">
-
-| Layer     | Provider   |
-|-----------|------------|
-| Frontend  | Vercel     |
-| Backend   | Railway    |
-| Database  | Supabase   |
-| Object Storage | Supabase |
-| Routing   | Vercel Wildcard Domain |
-| Logging   | Supabase Realtime |
+| Category                      | Stack Used                  | Layer                    | Provider               |
+| :---------------------------- | :-------------------------- | :----------------------- | :--------------------- |
+| **Frontend**            | Next.js + Tailwind CSS      | **Frontend**       | Vercel                 |
+| **Backend**             | Node.js + Express.js        | **Backend**        | Railway                |
+| **Database**            | PostgreSQL                  | **Database**       | Supabase               |
+| **Version Control**     | Git - CLI + Smart HTTP      | **Object Storage** | Supabase               |
+| **Deployment**          | Linux - child_process + npm | **Routing**        | Vercel Wildcard Domain |
+| **CI/CD**               | Git Push Trigger            | **Logging**        | Supabase Realtime      |
+| **Desktop Application** | JavaFX                      |                          |                        |
+| **Authentication**      | JWT + Basic Auth + bcrypt   |                          |                        |
 
 </div>
 
@@ -165,7 +134,7 @@ Navigate into the directory of the server implementation. Build an environment c
 ```bash
 cd backend
 npm install
-npm run dev        # Begins the backend application process with active hot-reloading
+npm run dev       
 ```
 
 ### 3. Web Interface
@@ -175,7 +144,7 @@ Access the primary frontend folder. Mirror the connection strings of your enviro
 ```bash
 cd frontend
 npm install
-npm run dev        # Starts the presentation interface on your standard development port
+npm run dev        
 ```
 
 ### 4. Client Desktop Compilation
@@ -184,6 +153,12 @@ To build a standalone executable application for operating straight from the mac
 
 ```bash
 cd javafx
-mvn clean install    # Compiles and packs the executable source material together
-mvn javafx:run       # Evaluates environment variables and initializes the graphical dashboard natively
+mvn clean install    
+mvn javafx:run       
 ```
+
+---
+
+## Conclusion
+
+Overall, this project helped in understanding how to design a system by dividing it into components with a separate responsibility, while also highlighting through the deployment flow the importance of controlled execution, proper sequencing, and isolation for maintaining reliable behavior, and strengthening the ability to think at a system level and design an application that remain stable and maintainable over time.
