@@ -87,27 +87,18 @@ flowchart TD
 
 The build system of the platform identifies projects and sets up build rules automatically. We support the following types of frameworks:
 
+<div align="center">
+
 | Project Type         | Framework Instances                    | Support Status     |
-| -------------------- | -------------------------------------- | ------------------ |
+|---------------------|----------------------------------------|--------------------|
 | Progressive Web Apps | React, Vue, Svelte, Bundled JavaScript | Fully Supported    |
 | Single Page Apps     | Create React App, Standard SPAs        | Fully Supported    |
 | Static Websites      | Plain HTML, CSS, JavaScript files      | Fully Supported    |
-| Server Side Apps     | Next.js, Nuxt, Django, Express routing | Blocked by default |
+| Server Side Apps     | Next.js, Nuxt, Django, Express routing | Blocked |
+
+</div>
 
 We block server frameworks intentionally to ensure the infrastructure of the platform stays dedicated to static deployments without taking heavy processing loads.
-
----
-
-## Security
-
-Security is integrated into the foundation of the platform, bringing safe transactions to the operations of the data persistence.
-
-- **Data Ownership Rules:** A strict security model controls the database. Clients are structurally prevented from reading or writing information outside the boundaries of their explicit ownership.
-- **Data Hardening Triggers:** Core state swaps - such as pointing public traffic to a newly deployed site - cannot be accidentally manipulated because strict database rules govern these shifts natively.
-- **Secure Authentication:** The pipeline uses standard session tokens encrypted via high-level cryptographic operations.
-- **Terminal Smart Protocol:** Command-line interface interactions evaluate credentials automatically by performing timing-safe verifications against securely stored hashed passwords.
-- **One-Time Verification Elements:** Code sequences are cryptographically hashed local to the server prior to long-term database storage. This keeps all stored verification variables permanently unreadable.
-- **Operating Integrity Constraints:** Production containers execute workloads using limited permission profiles rather than system-wide superuser privileges. This provides a clean defense mechanism aligning with strict code vulnerability standards.
 
 ---
 
@@ -121,9 +112,37 @@ To achieve this, the web application intercepts the request dynamically. It eval
 
 ## Technology Stack
 
-- **Interactive User Interfaces:** Structured successfully with React using a modern routing strategy. Styling is implemented through utility-first CSS practices. The interface presents glass-like blur components and seamless interactive micro-animations.
-- **Application Server Backend:** Built cleanly by Node.js and the Express framework wrapped closely with strict Typescript configurations. It integrates naturally with PostgreSQL platforms and object storage systems.
-- **Desktop Packaging:** We assembled modern graphical tools locally using reliable enterprise Java standards combined closely with structural packaging build tools.
+<div align="center">
+
+| Category        | Stack Used                       |
+|-----------------|----------------------------------|
+| Frontend        | Next.js + Tailwind CSS           |
+| Backend         | Node.js + Express.js             |
+| Database        | PostgreSQL                       |
+| Version Control | Git - CLI + Smart HTTP           |
+| Deployment      | Linux - child_process + npm      |
+| CI/CD           | Git Push Trigger                 |
+| Desktop Application | JavaFX                       |
+| Authentication  | JWT + Basic Auth + bcrypt        |
+
+</div>
+
+---
+
+## Deployment Infrastructure
+
+<div align="center">
+
+| Layer     | Provider   |
+|-----------|------------|
+| Frontend  | Vercel     |
+| Backend   | Railway    |
+| Database  | Supabase   |
+| Object Storage | Supabase |
+| Routing   | Vercel Wildcard Domain |
+| Logging   | Supabase Realtime |
+
+</div>
 
 ---
 
