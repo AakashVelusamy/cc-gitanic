@@ -25,10 +25,6 @@ export function Footer() {
               commit. ship. repeat.
             </span>
           </div>
-
-          <div className="flex items-center text-center">
-            <span className="font-mono">built by: aakash velusamy - jovisha curlie k</span>
-          </div>
         </div>
       </div>
     </footer>

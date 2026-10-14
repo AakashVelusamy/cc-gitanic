@@ -22,7 +22,6 @@ import { AuthRepository }                        from '../auth/auth.repository';
 import { detectStrategy }                        from './strategies';
 import { bustDeploymentCache, bustLocalServeCache } from '../../lib/cacheBust';
 
-
 // build workspaces location
 const BUILD_ROOT = process.env.BUILD_DIR || path.join(os.tmpdir(), 'gitanic-build');
 
@@ -49,7 +48,6 @@ function assertRepoOwner(
   }
 }
 
-
 function makeLog(deploymentId: string, repoId: string, userId: string) {
   return async (text: string): Promise<void> => {
     // extract step prefix from log text
@@ -69,7 +67,6 @@ function makeLog(deploymentId: string, repoId: string, userId: string) {
     await LogRepository.append(deploymentId, repoId, userId, text).catch(() => undefined);
   };
 }
-
 
 // extracts working tree from bare repo using --work-tree
 function stepCheckout(
@@ -117,8 +114,6 @@ function getCommitInfo(repoPath: string): { sha: string; message: string } {
   }
 }
 
-
-
 async function runPipeline(
   deploymentId: string,
   repoId:       string,
@@ -132,7 +127,6 @@ async function runPipeline(
   const log     = makeLog(deploymentId, repoId, userId);
 
   try {
-
     await log('[validate] Checking repository status');
     const repo = await RepoRepository.findById(repoId);
     assertRepoOwner(repo, userId, 'Repository not found or access denied');
@@ -203,7 +197,6 @@ async function runPipeline(
     );
 
   } catch (pipelineErr) {
-
     // failure handling
     const durationMs = Date.now() - startMs;
     await DeploymentRepository.markFailed(deploymentId, durationMs).catch(() => undefined);
@@ -226,7 +219,6 @@ async function runPipeline(
     throw pipelineErr; // re-throw → deployQueue.emit('failed', job, err)
 
   } finally {
-
     try {
       fs.rmSync(workDir, { recursive: true, force: true });
       await log('[cleanup] Workspace removed').catch(() => undefined);
@@ -237,9 +229,7 @@ async function runPipeline(
   }
 }
 
-
 export const DeploymentService = {
-
   // create pending row and push to fifo queue
   async enqueue(userId: string, repoId: string): Promise<{ deploymentId: string }> {
     const user = await AuthRepository.findById(userId);

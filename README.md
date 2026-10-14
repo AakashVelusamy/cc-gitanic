@@ -134,7 +134,7 @@ Navigate into the directory of the server implementation. Build an environment c
 ```bash
 cd backend
 npm install
-npm run dev       
+npm run dev     
 ```
 
 ### 3. Web Interface
@@ -144,7 +144,7 @@ Access the primary frontend folder. Mirror the connection strings of your enviro
 ```bash
 cd frontend
 npm install
-npm run dev        
+npm run dev      
 ```
 
 ### 4. Client Desktop Compilation
@@ -153,8 +153,8 @@ To build a standalone executable application for operating straight from the mac
 
 ```bash
 cd javafx
-mvn clean install    
-mvn javafx:run       
+mvn clean install  
+mvn javafx:run     
 ```
 
 ---
